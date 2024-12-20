@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="" />
+        <meta property="og:type" content="" />
+        <meta property="og:url" content="" />
+        <meta property="og:image" content="" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+    </head>
+
+    <body>
+        <div class="screen-overlay"></div>
+
+            <%- include(`./partials/admin/aside`) %>
+
+        <main class="main-wrap">
+
+            <%- include(`./partials/admin/header`) %>
+
+            <section class="content-main">
+                <form action="/api/admin/add-product" method="POST" id="add-product-form" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-9">
+                            <div class="content-header">
+                                <h2 class="content-title">Edit Product Details</h2>
+                                <div>
+                                    <button class="btn btn-light rounded font-sm mr-5 text-body hover-up" id="draft-button" >Save to draft</button>
+                                    <button class="btn btn-md rounded font-sm hover-up" type="submit" id="add-product-btn">Publish</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <label for="product_title" class="form-label">Product title</label>
+                                        <input type="text" placeholder="Type here" class="form-control" id="productname" name="productname" value="<%= product.productname %>" />
+                                    </div>
+                                    <div class="row gx-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="product_sku" class="form-label">Stock</label>
+                                            <input type="text" placeholder="Type here" class="form-control" id="stock" name="stock" value="<%= product.stock %>"/>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="product_color" class="form-label">Category</label>
+                                            <select class="form-select" name="category" id="category">
+                                                
+                                                <option value="null">No Parent</option>
+                                                <option value="<%= product.category._id %>" selected><%= product.category.name %></option>
+
+                                                <% categdata.forEach(category => { %>
+                                                    <option value="<%= category._id %>"><%= category.name %></option>
+                                                <% }); %>
+
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="product_size" class="form-label">Subcategory</label>
+                                            <select class="form-select" id="subcategory" name="subcategory">
+
+                                                <option value="null">No Parent</option>
+                                                <option value="<%= product.subcategory._id %>" selected><%= product.subcategory.name %></option>
+                                                <% categdata.forEach(category => { %>
+                                                    <option value="<%= category._id %>"><%= category.name %></option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="product_brand" class="form-label">Brand</label>
+                                        <select class="form-select" id="brand" name="brand">
+
+                                            <option value="null">No Parent</option>
+                                            <option value="<%= product.subcategory._id %>" selected><%= product.subcategory.name %></option>
+
+                                            <% categdata.forEach(category => { %>
+                                                <option value="<%= category._id %>"><%= category.name %></option>
+                                            <% }); %>
+                                            
+                                        </select>
+                                        <!-- <input type="text" placeholder="Type here" class="form-control" id="brand" name="brand"/> -->
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- card end// -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div>
+                                        <label class="form-label">Description</label>
+                                        <textarea placeholder="Type here" class="form-control" rows="4" id="description" name="description" value="<%= product.description %>"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- card end// -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div>
+                                        <label class="form-label">Images</label>
+                                        <input class="form-control" type="file" name= "images" multiple/>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- card end// -->
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <label class="form-label">Price</label>
+                                        <input type="text" placeholder="Type here" class="form-control" name="price" id="price" value="<%= product.price %>" />
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select">
+                                            <option>Published</option>
+                                            <option>Draft</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label">Tags</label>
+                                        <input type="text" placeholder="Type here" class="form-control" />
+                                    </div>
+                                    <a href="#" class="font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Tech</a>
+                                    <a href="#" class="font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Mobile</a>
+                                    <a href="#" class="font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Apple</a>
+                                    <hr />
+                                    <h5 class="mb-3">Categories</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="product-cat" />
+                                        <label class="form-check-label" for="product-cat"> Shirt </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="product-cat-1" />
+                                        <label class="form-check-label" for="product-cat-1"> T-Shirt </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="product-cat-2" />
+                                        <label class="form-check-label" for="product-cat-2"> Sneakers </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="product-cat-3" />
+                                        <label class="form-check-label" for="product-cat-3"> Joggers </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="product-cat-4" />
+                                        <label class="form-check-label" for="product-cat-4"> Vests </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="product-cat-5" />
+                                        <label class="form-check-label" for="product-cat-5"> Knitwear </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="product-cat-8" />
+                                        <label class="form-check-label" for="product-cat-8"> Shorts </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- card end// -->
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="main-footer font-xs">
+                <div class="row pb-30 pt-15">
+                    <div class="col-sm-6">
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
+                        &copy; Nest - HTML Ecommerce Template .
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end">All rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+        <script src="/assets/js/fetch/admin-add-product.js"></script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+    </body>
+</html>

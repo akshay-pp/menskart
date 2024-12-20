@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+        
+        <!-- cropper -->
+        <link href="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/cropperjs"></script>
+
+        <style>
+            #preview-container img {
+              max-width: 100px;
+              margin: 10px;
+              cursor: pointer;
+            }
+            #crop-image {
+              max-width: 100%;
+            }
+            /* Custom modal overlay styles */
+            .screen-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: none;
+                z-index: 1050;
+            }
+            .cropper-modal {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                padding: 20px;
+                z-index: 1051;
+            }
+            .cropper-modal img {
+                max-width: 100%;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="screen-overlay" id="overlay"></div>
+        <div class="cropper-modal" id="cropperModal" style="display:none;">
+            <img id="crop-image" />
+            <button id="crop-save" class="btn btn-primary mt-3">Save</button>
+        </div>
+
+      
+
+        <main class="main-wrap">
+        
+
+            <section class="content-main">
+                <form action="/api/admin/add-product" method="POST" id="add-product-form" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-9">
+                            <!-- Add your form inputs here, the same as before -->
+
+                            <!-- Card for uploading images -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div>
+                                        <label class="form-label">Images</label>
+                                        <input class="form-control" id="image-input" type="file" name="images" accept="image/*" multiple/>
+                                    </div>
+                                    <div id="preview-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <footer class="main-footer font-xs">
+            <div class="row pb-30 pt-15">
+                <div class="col-sm-6">
+                    <script>
+                        document.write(new Date().getFullYear());
+                    </script>
+                    &copy; Nest - HTML Ecommerce Template .
+                </div>
+                <div class="col-sm-6">
+                    <div class="text-sm-end">All rights reserved</div>
+                </div>
+            </div>
+        </footer>
+
+        <script src="/assets/js/fetch/admin-add-product.js"></script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+
+        <script>
+            // Image upload and preview logic
+            document.getElementById('image-input').addEventListener('change', function(e) {
+                const files = e.target.files;
+                const previewContainer = document.getElementById('preview-container');
+                previewContainer.innerHTML = ''; // Clear previous previews
+
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.alt = file.name;
+                        previewContainer.appendChild(img);
+
+                        // Attach click event to open modal for cropping
+                        img.addEventListener('click', function() {
+                            openCropperModal(img.src);
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            // Initialize cropper modal
+            let cropper;
+
+            function openCropperModal(imageSrc) {
+                const overlay = document.getElementById('overlay');
+                const cropperModal = document.getElementById('cropperModal');
+                const cropImage = document.getElementById('crop-image');
+
+                overlay.style.display = 'block';
+                cropperModal.style.display = 'block';
+
+                cropImage.src = imageSrc;
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: 1, // Optional: set aspect ratio to 1 for square crop
+                    viewMode: 1,    // Optional: limits the crop box to the image boundary
+                });
+
+                // Save the cropped image
+                document.getElementById('crop-save').addEventListener('click', function() {
+                    const canvas = cropper.getCroppedCanvas();
+                    const croppedImage = canvas.toDataURL('image/png');
+
+                    // Do something with the cropped image (e.g., upload or preview)
+                    console.log(croppedImage); // Placeholder for saving logic
+
+                    // Close modal
+                    overlay.style.display = 'none';
+                    cropperModal.style.display = 'none';
+                    cropper.destroy();
+                });
+
+                // Close modal on overlay click
+                overlay.addEventListener('click', function() {
+                    overlay.style.display = 'none';
+                    cropperModal.style.display = 'none';
+                    cropper.destroy();
+                });
+            }
+        </script>
+    </body>
+</html>

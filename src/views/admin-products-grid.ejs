@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="" />
+        <meta property="og:type" content="" />
+        <meta property="og:url" content="" />
+        <meta property="og:image" content="" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+    </head>
+
+    <body>
+        <div class="screen-overlay"></div>
+
+        <%- include(`./partials/admin/aside`) %>
+
+        <main class="main-wrap">
+
+            <%- include(`./partials/admin/header`) %>
+
+            <section class="content-main">
+                <div class="content-header">
+                    <div>
+                        <h2 class="content-title card-title">Products</h2>
+                        <p>Manage your products</p>
+                    </div>
+                    <div>
+                        <a href="#" class="btn btn-light rounded font-md">Export</a>
+                        <a href="#" class="btn btn-light rounded font-md">Import</a>
+                        <a href="/api/admin/add-product" class="btn btn-primary btn-sm rounded">Create new</a>
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <header class="card-header">
+                        <div class="row gx-3">
+                            <div class="col-lg-4 col-md-6 me-auto">
+                                <input type="text" placeholder="Search..." class="form-control" />
+                            </div>
+                            <div class="col-lg-2 col-6 col-md-3">
+                                <select class="form-select">
+                                    <option>All category</option>
+                                    <option>Electronics</option>
+                                    <option>Clothings</option>
+                                    <option>Something else</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-2 col-6 col-md-3">
+                                <select class="form-select">
+                                    <option>Latest added</option>
+                                    <option>Cheap first</option>
+                                    <option>Most viewed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </header>
+                    <!-- card-header end// -->
+                    <div class="card-body">
+                        <div class="row gx-3 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 row-cols-xxl-5">
+                            <% productdata.forEach(product => { %>
+                                
+                                <div class="col">
+                                    <div class="card card-product-grid">
+                                        <a href="#" class="img-wrap"> <img src="../../<%= product.images[0] %>" alt="Product-image" /> </a>
+                                        <div class="info-wrap">
+                                            <a href="#" class="title text-truncate"><%= product.productname %></a>
+                                            <div class="price mb-2"><%= product.price %></div>
+                                            <!-- price.// -->
+                                            <a href="/api/admin/p/edit/<%= product._id %>" class="btn btn-sm font-sm rounded btn-brand"> <i class="material-icons md-edit"></i> Edit </a>
+                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="<%= product.isUnListed ? "btn btn-sm font-sm btn-light rounded" : "btn btn-sm font-sm btn-danger rounded" %>" > <i class="material-icons md-delete_forever"></i> <%= product.isUnListed ? "List Product" : "Unlist Product" %> </a>
+                                        </div>
+                                    </div>
+                                    <!-- card-product  end// -->
+                                </div>
+
+                            <% }); %>
+                            
+                        </div>
+                        <!-- row.// -->
+                    </div>
+                    <!-- card-body end// -->
+                </div>
+
+                <!-- unlist product modal -->
+                <div class="modal fade" id="unlist-product-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered ">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="unlist-modal-header">Unlist Product?</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="alert alert-danger" style="display: none" id="unlist-product-error" role="alert">
+                            A simple danger alert—check it out!
+                        </div>
+                        <div class="modal-body fs-6" id ="unlist-modal-content"> Hello
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <form action="#" method="POST" id= "confirm-unlist-form">
+                                <button type="submit" class="btn btn-danger" id="confirm-unlist-btn" >Confirm Unlist</button>
+                            </form>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- card end// -->
+                <div class="pagination-area mt-30 mb-50">
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination justify-content-start">
+                            <li class="page-item active"><a class="page-link" href="#">01</a></li>
+                            <li class="page-item"><a class="page-link" href="#">02</a></li>
+                            <li class="page-item"><a class="page-link" href="#">03</a></li>
+                            <li class="page-item"><a class="page-link dot" href="#">...</a></li>
+                            <li class="page-item"><a class="page-link" href="#">16</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#"><i class="material-icons md-chevron_right"></i></a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </section>
+            <!-- content-main end// -->
+            <footer class="main-footer font-xs">
+                <div class="row pb-30 pt-15">
+                    <div class="col-sm-6">
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
+                        &copy; Nest - HTML Ecommerce Template .
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end">All rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+        <script>
+
+            const unlistProductBtn = document.querySelectorAll("#unlist-product-btn");
+            unlistProductBtn.forEach((button) => {
+
+                button.addEventListener("click", async function(){
+                    const prod = this.getAttribute("data-product");
+                    const product = JSON.parse(prod);
+                    console.log(product);
+                    console.log(product.isUnListed);
+                    const form = document.getElementById("confirm-unlist-form")
+
+                    if (product.isUnListed){
+
+                        document.getElementById("unlist-modal-header").textContent = "List Product?";
+                        document.getElementById("unlist-modal-content").textContent = `Are you sure you want to List the product : ${product.productname}?`;
+                        document.getElementById("confirm-unlist-btn").className = "btn btn-success text-white";
+                        document.getElementById("confirm-unlist-btn").textContent = "List Product";
+                        form.action = `/api/admin/p/edit/${product._id}`
+
+                    }else {
+
+                        document.getElementById("unlist-modal-header").textContent = "Unlist Product?";
+                        document.getElementById("unlist-modal-content").textContent = `Are you sure you want to Unlist the product : ${product.productname}?`;
+                        document.getElementById("confirm-unlist-btn").className = "btn btn-danger";
+                        document.getElementById("confirm-unlist-btn").textContent = "Unlist Product";
+                        form.action = `/api/admin/p/edit/${product._id}/unlist`
+
+                    }
+
+                    // document.getElementById("confirm-unlist-form").addEventListener("submit", async (e) => {
+                    //     e.preventDefault();
+
+                    //     const payload = category.isUnListed ? "To List" : "To Unlist" ; 
+                        
+                    //     const response = await fetch(`/api/admin/c/unlist/${category._id}`, {
+                    //         method : "POST",
+                    //         headers : { "Content-Type" : "application/json" },
+                    //         body : JSON.stringify({payload})
+                    //     });
+
+                    //     const data = await response.json();
+
+                    //     if (!data.success){
+                            
+                    //         document.getElementById("unlist-category-error").textContent = data.error;
+                    //         document.getElementById("unlist-category-error").className = "alert alert-danger";
+                    //         document.getElementById("unlist-category-error").style.display = "block";
+                        
+                    //     }else{
+
+                    //         document.getElementById("unlist-category-error").textContent = data.message;
+                    //         document.getElementById("unlist-category-error").className = "alert alert-success";
+                    //         document.getElementById("unlist-category-error").style.display = "block";
+                    //         setTimeout(() => {
+                    //             location.reload();
+                    //         }, 1000);
+
+                    //     }
+                    // })
+
+                })
+            })
+
+
+        </script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+    </body>
+</html>

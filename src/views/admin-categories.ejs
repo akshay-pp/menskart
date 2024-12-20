@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="" />
+        <meta property="og:type" content="" />
+        <meta property="og:url" content="" />
+        <meta property="og:image" content="" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+    </head>
+
+    <body>
+        <div class="screen-overlay"></div>
+       
+        <%- include(`./partials/admin/aside`) %>
+        
+        <main class="main-wrap">
+           
+            <%- include(`./partials/admin/header`) %>
+            
+            <section class="content-main">
+                <div class="content-header">
+                    <div>
+                        <h2 class="content-title card-title">Categories</h2>
+                        <p>Add, edit or delete a category</p>
+                    </div>
+                    <div>
+                        <input type="text" placeholder="Search Categories" class="form-control bg-white" />
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="alert alert-danger" style="display: none" id="add-category-error" role="alert">
+                                    A simple danger alert—check it out!
+                                </div>
+                                <form action="#" id="createCategoryForm">
+                                    <div class="mb-4">
+                                        <label for="categoryName" class="form-label">Name</label>
+                                        <input type="text" placeholder="Type here" class="form-control" name="categoryName" id="categoryName" />
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    <!-- <div class="mb-4">
+                                        <label for="product_slug" class="form-label">Slug</label>
+                                        <input type="text" placeholder="Type here" class="form-control" id="product_slug" />
+                                    </div> -->
+                                    <div class="mb-4">
+                                        <label class="form-label">Parent category</label>
+                                        <select class="form-select" name="parentCategory" id="parentCategory">
+                                            <option value="null">No Parent</option>
+                                            <% categdata.forEach(category => { %>
+                                                <option value="<%= category._id %>"><%= category.name %></option>
+                                            <% }); %>
+                                        </select>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label">Description</label>
+                                        <textarea placeholder="Type here" class="form-control" name="categoryDescription" id="categoryDescription"></textarea>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class= "btn btn-primary">Create category</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- category list table -->
+                            <div class="col-md-9">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <!-- <th class="text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="" />
+                                                    </div>
+                                                </th> -->
+                                                <th>Name</th>
+                                                <th>Description</th>
+                                                <th>Parent</th>
+                                                <th>isListed</th>
+                                                <th>Created at</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% categdata.forEach(category => { %>
+                                                <tr>
+                                                    <td><b><%= category.name %></b></td>
+                                                    <td><%= category.description %></td>
+                                                    <td><%= category.parent?.name || "No Parent Category" %></td>
+
+                                                    <% if (category.isUnListed){ %>
+                                                        <td><span class="badge rounded-pill alert-danger">Unlisted</span></td>
+                                                    <% } else { %>
+                                                        <td><span class="badge rounded-pill alert-success">Listed</span></td>
+                                                    <% } %>
+
+                                                    <td><%= new Date(category.createdAt).toLocaleDateString("en-IN") %></td>
+                                                    <td class="text-end">
+                                                        <div class="dropdown">
+                                                            <a href="#" data-bs-toggle="dropdown" class="btn btn-light rounded btn-sm font-sm"> <i class="material-icons md-more_horiz"></i> </a>
+                                                            <div class="dropdown-menu">
+                                                                <a href="#" data-bs-toggle="modal" data-bs-target="#edit-category-modal" id="editCategoryModalBtn" data-category="<%= JSON.stringify(category) %>" class="dropdown-item">Edit Details</a>
+
+                                                                <a href="#" data-bs-toggle="modal" data-bs-target="#unlist-category-modal" data-category="<%= JSON.stringify(category) %>" class= "<%= category.isUnListed ? "dropdown-item text-success" : "dropdown-item text-danger" %>" id="unlistCategoryModalBtn"> <%= category.isUnListed ? "List category" : "Unlist category" %></a>
+                                                            </div>
+                                                        </div>
+                                                        <!-- dropdown //end -->
+                                                    </td>
+                                                </tr>
+                                            <% }); %>
+                                            
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- .col// -->
+                        </div>
+                        <!-- .row // -->
+                    </div>
+                    <!-- card body .// -->
+                </div>
+                <!-- card .// -->
+            </section>
+
+
+            <!-- edit category modal -->
+
+            <div class="modal fade" id="edit-category-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Edit Category</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body fs-6 card" id ="delete-modal-content"> 
+                        <div class="col-md-12">
+                            <form action="#" method="POST" id="edit-category-form">
+                                <div class="mb-4">
+                                    <label for="categoryName" class="form-label">Name</label>
+                                    <input type="text" placeholder="Type here" class="form-control" name="editCategoryName" id="edit-category-name" />
+                                    <div class="invalid-feedback">
+                                        Feedback message
+                                    </div>
+                                </div>
+                                <!-- <div class="mb-4">
+                                    <label for="product_slug" class="form-label">Slug</label>
+                                    <input type="text" placeholder="Type here" class="form-control" id="product_slug" />
+                                </div> -->
+                                <div class="mb-4">
+                                    <label class="form-label">Parent category</label>
+                                    <select class="form-select" name="editParentCategory" id="edit-parent-category">
+                                        <option value="null">No Parent</option>
+                                        <% categdata.forEach(category => { %>
+                                            <option value="<%= category._id %>"><%= category.name %></option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Description</label>
+                                    <textarea placeholder="Type here" class="form-control" name="editCategoryDescription" id="edit-category-description"></textarea>
+                                    <div class="invalid-feedback">
+                                        Feedback message
+                                    </div>
+                                </div>
+                                <div class="alert alert-danger" style="display: none" id="edit-category-error" role="alert">
+                                    A simple danger alert—check it out!
+                                </div>
+                                <div class="d-flex flex-row" >
+                                    <button type="submit" class= "btn btn-primary">Update Details</button>
+                                    <button type="button" class="btn btn-secondary mx-2" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+            
+
+            <!-- unlist category modal  -->
+
+            <div class="modal fade" id="unlist-category-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered ">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="unlist-modal-header">Unlist category?</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="alert alert-danger" style="display: none" id="unlist-category-error" role="alert">
+                        A simple danger alert—check it out!
+                    </div>
+                    <div class="modal-body fs-6" id ="unlist-modal-content"> Hello
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <form action="#" method="POST" id= "confirm-unlist-form">
+                            <button type="submit" class="btn btn-danger" id="confirm-unlist-btn" >Confirm Unlist</button>
+                        </form>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- content-main end// -->
+            <footer class="main-footer font-xs">
+                <div class="row pb-30 pt-15">
+                    <div class="col-sm-6">
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
+                        &copy; Nest - HTML Ecommerce Template .
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end">All rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+        
+        <script src="/assets/js/fetch/admin-category-fetch.js"></script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+    </body>
+</html>

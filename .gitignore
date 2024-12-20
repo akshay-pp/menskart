@@ -1,0 +1,6 @@
+node_modules/
+uploads
+.env
+mongoatlas.txt
+src/views/assets/images
+src/views/assets/imgs
