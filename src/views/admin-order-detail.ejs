@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="" />
+        <meta property="og:type" content="" />
+        <meta property="og:url" content="" />
+        <meta property="og:image" content="" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+    </head>
+
+    <body>
+        <div class="screen-overlay"></div>
+        
+        <%- include(`./partials/admin/aside`) %>
+
+        <main class="main-wrap">
+            
+            <%- include(`./partials/admin/header`) %>
+
+            <section class="content-main">
+                <div class="content-header">
+                    <div>
+                        <h2 class="content-title card-title">Order detail</h2>
+                        <p>Details for Order ID: <%= order._id.toString().slice(12) %></p>
+                    </div>
+                </div>
+                <div class="alert alert-danger" style="display: none" id="order-details-alert" role="alert">
+                    A simple danger alert—check it out!
+                </div>
+                <div class="card">
+                    <header class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-lg-6 col-md-6 mb-lg-0 mb-15">
+                                <span> <i class="material-icons md-calendar_today"></i> <b><%= new Date(order.createdAt).toLocaleString("en-IN", { 
+                                    day: "numeric", 
+                                    month: "short", 
+                                    year: "numeric", 
+                                    hour: "numeric", 
+                                    minute: "numeric", 
+                                    hour12: true 
+                                }).replace(" at", ", ") %></b> </span> <br />
+                                <small class="text-muted">Order ID: <%= order._id.toString().slice(12) %></small>
+                            </div>
+                            <div class="col-lg-6 col-md-6 ms-auto text-md-end">
+                                <form id="change-order-status-form" data-id="<%= order._id %>">
+                                    <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
+                                        <option hidden disabled selected value>Change Order Status</option>
+                                        <option value="processing">Processing</option>
+                                        <option value="shipped">Shipped</option>
+                                        <option value="delivered">Delivered</option>
+                                        <option value="cancelled">Cancelled</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary" href="#">Save</button>
+                                </form>
+                                
+                                <!-- <a class="btn btn-secondary print ms-2" href="#"><i class="icon material-icons md-print"></i></a> -->
+                            </div>
+                        </div>
+                    </header>
+                    <!-- card-header end// -->
+                    <div class="card-body">
+                        <div class="row mb-50 mt-20 order-info-wrap">
+                            <div class="col-md-4">
+                                <article class="icontext align-items-start">
+                                    <span class="icon icon-sm rounded-circle bg-primary-light">
+                                        <i class="text-primary material-icons md-person"></i>
+                                    </span>
+                                    <div class="text">
+                                        <h6 class="mb-1">Customer</h6>
+                                        <p class="mb-1">
+                                            <%= order.owner.fullname %> <br />
+                                            <%= order.owner.email %> <br />
+                                            +91 <%= order.owner.phone %>
+                                        </p>
+                                        <!-- <a href="#">View profile</a> -->
+                                    </div>
+                                </article>
+                            </div>
+                            <!-- col// -->
+                            <div class="col-md-4">
+                                <article class="icontext align-items-start">
+                                    <span class="icon icon-sm rounded-circle bg-primary-light">
+                                        <i class="text-primary material-icons md-local_shipping"></i>
+                                    </span>
+                                    <div class="text">
+                                        <h6 class="mb-1">Order info</h6>
+                                        <p class="mb-1">
+                                            Shipping: Delhivery <br />
+                                            Pay method: <%= order.paymentInfo.mode %> <br />
+                                            <div>Status: <% if (order.orderStatus == "cancelled") { %> 
+                                                <p id="order-status" class="badge rounded-pill alert-danger text-danger"><%= order.orderStatus %></p>
+                                                <% } else { %>
+                                                    <p id="order-status" class="badge rounded-pill alert-success text-success"><%= order.orderStatus %></p>
+                                                <% } %>
+                                            </div>
+                                        </p> 
+                                        <!-- <a href="#">Download info</a> -->
+                                    </div>
+                                </article>
+                            </div>
+                            <!-- col// -->
+                            <div class="col-md-4">
+                                <article class="icontext align-items-start">
+                                    <span class="icon icon-sm rounded-circle bg-primary-light">
+                                        <i class="text-primary material-icons md-place"></i>
+                                    </span>
+                                    <div class="text">
+                                        <h6 class="mb-1">Deliver to</h6>
+                                        <p class="mb-1">
+                                            City: <%= order.address.city %>, <%= order.address.state %> <br /><%= order.address.address %> <br />
+                                            Po Box <%= order.address.pincode %>
+                                        </p>
+                                        <!-- <a href="#">View profile</a> -->
+                                    </div>
+                                </article>
+                            </div>
+                            <!-- col// -->
+                        </div>
+                        <!-- row // -->
+                        <div class="row">
+                            <div class="col-lg-7">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th width="40%">Product</th>
+                                                <th width="20%">Unit Price</th>
+                                                <th width="20%">Quantity</th>
+                                                <th width="20%" class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% order.orderItems.forEach(item => { %>
+                                                <tr>
+                                                    <td>
+                                                        <a class="itemside" href="#">
+                                                            <div class="left">
+                                                                <img src="/<%= item.product.images[0] %>" width="40" height="40" class="img-xs" alt="Item" />
+                                                            </div>
+                                                            <div class="info"><%= item.product.productname %></div>
+                                                        </a>
+                                                    </td>
+                                                    <td>₹<%= item.price %></td>
+                                                    <td><%= item.quantity %></td>
+                                                    <td class="text-end">₹<%= item.price * item.quantity %></td>
+                                                </tr>
+                                            <% }) %>
+                                            <tr>
+                                                <td colspan="4">
+                                                    <article class="float-end">
+                                                        <dl class="dlist">
+                                                            <dt>Subtotal:</dt>
+                                                            <dd>₹<%= order.totalPrice %></dd>
+                                                        </dl>
+                                                        <dl class="dlist">
+                                                            <dt>Shipping cost:</dt>
+                                                            <dd>0.00</dd>
+                                                        </dl>
+                                                        <dl class="dlist">
+                                                            <dt>Grand total:</dt>
+                                                            <dd><b class="h5">₹<%= order.totalPrice %></b></dd>
+                                                        </dl>
+                                                        <dl class="dlist">
+                                                            <dt class="text-muted">Status:</dt>
+                                                            <dd>
+                                                                <span class="badge rounded-pill alert-success text-success">Payment <%= order.paymentInfo.status %></span>
+                                                            </dd>
+                                                        </dl>
+                                                    </article>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- table-responsive// -->
+                            </div>
+                            <!-- col// -->
+                            <div class="col-lg-1"></div>
+                            <div class="col-lg-4">
+                                <div class="box shadow-sm bg-light">
+                                    <h6 class="mb-15">Payment info</h6>
+                                    <p>
+                                        <img src="/assets/imgs/card-brands/2.png" class="border" height="20" /> Master Card **** **** 4768 <br />
+                                        Business name: Grand Market LLC <br />
+                                        Phone: +1 (800) 555-154-52
+                                    </p>
+                                </div>
+                                <!-- <div class="h-25 pt-4">
+                                    <div class="mb-3">
+                                        <label>Notes</label>
+                                        <textarea class="form-control" name="notes" id="notes" placeholder="Type some note"></textarea>
+                                    </div>
+                                    <button class="btn btn-primary">Save note</button>
+                                </div> -->
+                            </div>
+                            <!-- col// -->
+                        </div>
+                    </div>
+                    <!-- card-body end// -->
+                </div>
+                <!-- card end// -->
+            </section>
+            <!-- content-main end// -->
+            <footer class="main-footer font-xs">
+                <div class="row pb-30 pt-15">
+                    <div class="col-sm-6">
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
+                        &copy; Nest - HTML Ecommerce Template .
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end">All rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+
+        <script>
+
+            const form = document.getElementById("change-order-status-form");
+            form.addEventListener("submit", async function(e){
+
+                e.preventDefault();
+                const orderId = this.getAttribute("data-id");
+                let formData = new FormData(this);
+                const payload = Object.fromEntries(formData);
+                console.log(payload, orderId);
+
+                const response = await fetch(`/api/admin/orders/${orderId}/change-status`, {
+                    method: "PATCH",
+                    headers: {"Content-Type" : "application/json"},
+                    body: JSON.stringify(payload)
+                })
+
+                const data = await response.json();
+
+                if (!data.success){
+                    
+                    document.getElementById("order-details-alert").textContent = data.error;
+                    document.getElementById("order-details-alert").className = "alert alert-danger";
+                    document.getElementById("order-details-alert").style.display = "block";
+                                
+                }else{
+        
+                    if (data.orderStatus == "cancelled"){
+                        document.getElementById("order-status").className = "badge rounded-pill alert-danger text-danger";
+                    }else{
+                        document.getElementById("order-status").className = "badge rounded-pill alert-success text-success";
+                    }
+
+                    document.getElementById("order-status").textContent = data.orderStatus;
+                    document.getElementById("order-details-alert").textContent = data.message;
+                    document.getElementById("order-details-alert").className = "alert alert-success";
+                    document.getElementById("order-details-alert").style.display = "block";
+                }
+
+            })
+        </script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+    </body>
+</html>

@@ -38,7 +38,7 @@ const sendOtp = async function (email){
         if (error) {
           console.log(error);
         } else {
-          console.log('Email sent: ' + info.response);
+          console.log('otp email sent: ' + info.response);
         }
     });
 
@@ -47,4 +47,27 @@ const sendOtp = async function (email){
 
 
 
-export { sendOtp };
+const sendOrderConfirmation = async function (email, order){
+
+    let mailOptions = {
+        from: process.env.MAILER_EMAIL,
+        to: email,
+        subject: `Your order has been successfully placed`,
+        text: `Hi, your order for ${order.orderItems.length} items has been confirmed by menskart.
+        here's the order id for reference : ${order._id}`
+    };
+
+    transporter.sendMail(mailOptions, function(error, info){
+        if (error) {
+          console.log(error);
+        } else {
+          console.log(`order confirmation email sent to : ${email}`  + info.response);
+        }
+    });
+
+    return mailOptions.text;
+}
+
+
+
+export { sendOtp, sendOrderConfirmation };

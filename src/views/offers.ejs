@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="" />
+        <meta property="og:type" content="" />
+        <meta property="og:url" content="" />
+        <meta property="og:image" content="" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+    </head>
+
+    <body>
+        <div class="screen-overlay"></div>
+        
+        <%- include(`./partials/admin/aside`) %>
+
+        <main class="main-wrap">
+            
+            <%- include(`./partials/admin/header`) %>
+
+            <section class="content-main">
+                <div class="content-header">
+                    <div>
+                        <h2 class="content-title card-title">Offers</h2>
+                        <p>Manage Offers</p>
+                    </div>
+                    <div>
+                        <input type="text" placeholder="Search Categories" class="form-control bg-white" />
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <form id="createOfferForm">
+                                    
+                                    <div class="mb-4">
+                                        <label for="offerName" class="form-label">Name</label>
+                                        <input type="text" name="offerName" placeholder="Type here" class="form-control" id="offerName"/>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4 border rounded">
+                                        <fieldset class="p-2">
+                                            <legend class="mb-2">Applicable categories: </legend>
+                                                
+                                            <% categories.forEach(category => { %>
+                                                <div class="">
+                                                    <input type="checkbox" id="<%= category.name %>" name="appliesTo" value="<%= category._id %>"/>
+                                                    <label for="<%= category.name %>"><%= category.name %></label>
+                                                </div>
+                                            <% }) %>
+                                        </fieldset>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="isPercentage">isPercentage? : </label>
+                                        <input type="checkbox" name="isPercentage" id="isPercentage" class="form-check-input" checked>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="offerAmount">Discount Amount</label>
+                                        <input type="number" id="offerAmount" name="offerAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id= 'maxDiscount-div'>
+                                        <label class="form-label" for="maxDiscount">Maximum Discount</label>
+                                        <input type="number" id="maxDiscount" name="maxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="minimumValue">Minimum Product Value</label>
+                                        <input type="number" id="minimumValue" name="minimumValue" placeholder="Type here" min="1" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label" for="offerStartDate">Valid from: </label>
+                                        <input type="date" name="offerStartDate" id="offerStartDate" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="offerExpiryDate">Expires on: </label>
+                                        <input type="date" name="offerExpiry" id="offerExpiryDate" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="offerdescription">Description</label>
+                                        <textarea placeholder="Type here" class="form-control form-field" id="offerdescription" name="offerdescription"></textarea>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary" type="submit">Create Offer</button>
+                                    </div>
+
+                                </form>
+                           </div>
+                            <div class="col-md-9">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="" />
+                                                    </div>
+                                                </th>
+                                                <th>Offer</th>
+                                                <th>Discount</th>
+                                                <th>Min. Value</th>
+                                                <th>isActive</th>
+                                                <th>Valid until</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% offers.forEach(offer => { %>
+                                            <tr>
+                                                <td class="text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="" />
+                                                    </div>
+                                                </td>
+                                                <td><%= offer.name %></td>
+                                                <td><%= !offer.isPercent ? "₹" : "" %><%= offer.offerAmount %><%= offer.isPercent ? "%" : "" %></td>
+                                                <td><b>₹<%= offer.minimumValue %></b></td>
+                                                
+                                                <td><%= offer.isActive %></td>
+                                                <td><%= offer.expiry.toISOString().split("T")[0] %></td>
+                                                <td class="text-end">
+                                                    <div class="dropdown">
+                                                        <a href="#" data-bs-toggle="dropdown" class="btn btn-light rounded btn-sm font-sm"> <i class="material-icons md-more_horiz"></i> </a>
+                                                        <div class="dropdown-menu">
+                                                            <a href="#" data-bs-toggle="modal" data-bs-target="#disable-offer-modal" data-offer="<%= offer.isActive %>" class= "<%= offer.isActive ? "dropdown-item text-danger" : "dropdown-item text-success" %> disable-offer-modal-btn" id="<%= offer._id %>"> <%= offer.isActive ? "Disable" : "Enable" %></a>
+                                                            <!-- <a class="dropdown-item text-danger" href="#">Disable</a> -->
+                                                            <a class="dropdown-item" href="#">Edit info</a>
+                                                            <!-- <a class="dropdown-item text-danger" href="#">Delete</a> -->
+                                                        </div>
+                                                    </div>
+                                                    <!-- dropdown //end -->
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- .col// -->
+                        </div>
+                        <!-- .row // -->
+                    </div>
+                    <!-- card body .// -->
+                </div>
+                <!-- card .// -->
+            </section>
+
+            <div class="modal fade" id="disable-offer-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered ">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="disable-modal-header">Are you sure?</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="alert alert-danger" style="display: none" id="disable-offer-error" role="alert">
+                        A simple danger alert—check it out!
+                    </div>
+                    <div class="modal-body fs-6" id ="disable-offer-content"> Hello
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <form action="#" method="POST" id= "confirm-disable-form">
+                            <button type="submit" class="btn btn-danger" id="confirm-disable-btn" >Confirm Unlist</button>
+                        </form>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="toast" id="cart-page-toast" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; bottom: 2rem; right: 1rem; z-index: 1055; width: 400px;">
+                <div class="toast-header bg-dark text-white justify-content-between" id="toast-header">
+
+                    <div class="d-flex p-2">
+                        
+                        <svg id="success-toast" class="d-none toast-icon" fill="#28a745" width="20px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <title>checkmark</title>
+                            <path d="M16 3c-7.18 0-13 5.82-13 13s5.82 13 13 13 13-5.82 13-13-5.82-13-13-13zM23.258 12.307l-9.486 9.485c-0.238 0.237-0.623 0.237-0.861 0l-0.191-0.191-0.001 0.001-5.219-5.256c-0.238-0.238-0.238-0.624 0-0.862l1.294-1.293c0.238-0.238 0.624-0.238 0.862 0l3.689 3.716 7.756-7.756c0.238-0.238 0.624-0.238 0.862 0l1.294 1.294c0.239 0.237 0.239 0.623 0.001 0.862z"></path>
+                        </svg>
+
+                        <svg id="warning-toast" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--emojione d-none toast-icon" width="20px" preserveAspectRatio="xMidYMid meet" fill="#000000" transform="rotate(0)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M5.9 62c-3.3 0-4.8-2.4-3.3-5.3L29.3 4.2c1.5-2.9 3.9-2.9 5.4 0l26.7 52.5c1.5 2.9 0 5.3-3.3 5.3H5.9z" fill="#ffce31"> </path> <g fill="#231f20"> <path d="M27.8 23.6l2.8 18.5c.3 1.8 2.6 1.8 2.9 0l2.7-18.5c.5-7.2-8.9-7.2-8.4 0"> </path> <circle cx="32" cy="49.6" r="4.2"> </circle> </g> </g></svg>
+
+
+                        <svg id="failure-toast" class="d-none toast-icon" version="1.1"  fill="#DC3545" width="20px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                        viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
+                            <g>
+                                <g>
+                                    <path d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0z M327.115,365.904
+                                        L256,294.789l-71.115,71.115l-38.789-38.789L217.211,256l-71.115-71.115l38.789-38.789L256,217.211l71.115-71.115l38.789,38.789
+                                        L294.789,256l71.115,71.115L327.115,365.904z"/>
+                                </g>
+                            </g>
+                        </svg>
+
+                        <span class="ms-3" id="toast-title" style="font-size: 14px;">Notification</span>
+
+                    </div>
+
+                    <button type="button" class="ms-2 mb-1 btn btn-outline-light" data-dismiss="toast" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- content-main end// -->
+            <footer class="main-footer font-xs">
+                <div class="row pb-30 pt-15">
+                    <div class="col-sm-6">
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
+                        &copy; Nest - HTML Ecommerce Template .
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end">All rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+
+        <script type="module">
+
+            import {
+                emptyFieldCheck,
+                hasMinimumLength,
+                hasMaximumLength,
+                setError,
+                setSuccess,
+                isEmpty,
+                triggerToast
+            } from "/assets/js/fetch/validationHelpers.js"
+
+
+            //==================== disable an offer ====================//
+
+            const disbaleOfferButton = document.querySelectorAll(".disable-offer-modal-btn");
+            disbaleOfferButton.forEach((button) => {
+
+                button.addEventListener("click", async function(){
+
+                    const offerId = this.id;
+                    console.log({offerId});
+                    const isActive = JSON.parse(this.getAttribute("data-offer"));
+                    console.log({isActive});
+                    if (!isActive){
+
+                        document.getElementById("disable-modal-header").textContent = "Activate Offer?";
+                        document.getElementById("disable-offer-content").textContent = `Are you sure you want to activate the offer?`;
+                        document.getElementById("confirm-disable-btn").className = "btn btn-success text-white";
+                        document.getElementById("confirm-disable-btn").textContent = "Activate";
+
+                    }else {
+
+                        document.getElementById("disable-modal-header").textContent = "Deactivate the offer?";
+                        document.getElementById("disable-offer-content").textContent = `Are you sure you want to deactivate the the offer?`;
+                        document.getElementById("confirm-disable-btn").className = "btn btn-danger";
+                        document.getElementById("confirm-disable-btn").textContent = "Deactivate";
+
+                    }
+
+                    document.getElementById("confirm-disable-form").addEventListener("submit", async (e) => {
+                        e.preventDefault();
+
+                        const payload = isActive ? "Deactivate" : "Activate" ; 
+                        console.log({payload, offerId});
+                        const response = await fetch(`/api/admin/offers/unlist/${offerId}`, {
+                            method : "POST",
+                            headers : { "Content-Type" : "application/json" },
+                            body : JSON.stringify({payload})
+                        });
+
+                        const data = await response.json();
+
+                        if (!data.success) {
+                            
+                            document.getElementById("disable-offer-error").textContent = data.error;
+                            document.getElementById("disable-offer-error").className = "alert alert-danger";
+                            document.getElementById("disable-offer-error").style.display = "block";
+                                    
+                        } else {
+
+                            document.getElementById("disable-offer-error").textContent = data.message;
+                            document.getElementById("disable-offer-error").className = "alert alert-success";
+                            document.getElementById("disable-offer-error").style.display = "block";
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+
+                        }
+                    })
+
+                })
+            });
+
+            
+            
+            
+            //==================== create offer ====================//
+
+
+            // fields references
+            const fields = {
+                offerName: document.getElementById("offerName"),
+                isPercentage: document.getElementById("isPercentage"),
+                offerAmount: document.getElementById("offerAmount"),
+                maxDiscount: document.getElementById("maxDiscount"),
+                minimumValue: document.getElementById("minimumValue"),
+                offerStartDate: document.getElementById("offerStartDate"),
+                offerExpiryDate: document.getElementById("offerExpiryDate"),
+                offerDescription: document.getElementById("offerdescription")
+            }
+
+
+            // toggle max discount wrt isPercentage
+            fields.isPercentage.addEventListener('change', function () {
+
+                if (this.checked) {
+                    document.getElementById('maxDiscount-div').classList.remove('d-none')
+                } else {
+                    document.getElementById('maxDiscount-div').classList.add('d-none')
+                }
+
+            })
+
+
+            //disable previous dates
+            fields.offerStartDate.min = new Date().toISOString().split('T')[0];
+            fields.offerExpiryDate.min = new Date().toISOString().split('T')[0];
+
+            
+
+            //==================== blur validations ====================//
+
+            
+            // validation for empty field
+            emptyFieldCheck("blur", ...document.querySelectorAll(".form-field"));
+
+
+            //minimum maximum length validation
+            fields.offerName.addEventListener("blur", function() {
+
+                if (isEmpty(this)) {
+                    return setError(this, "field cant be empty");
+                }
+                
+                if (!hasMinimumLength(this, 6)){
+                    return setError(this, "minimum 6 characters");
+                }
+                
+                if (!hasMaximumLength(this, 15)){
+                    return setError(this, "maximum 15 characters");
+                }
+
+            })
+            
+
+            fields.offerExpiryDate.addEventListener("blur", function() {
+                if (fields.offerStartDate.value && this.value < fields.offerStartDate.value) {
+                    return setError(this, "select a higher date than start date");
+                }
+            })
+
+
+            fields.offerStartDate.addEventListener("blur", function() {
+                if (fields.offerExpiryDate.value && this.value > fields.offerExpiryDate.value) {
+                    return setError(this, "select a lower date than expiry date");
+                }
+            })
+
+
+            //cross field validations
+            fields.offerAmount.addEventListener("blur", function(){
+                
+                if (fields.isPercentage.checked) {
+                    if(this.value.trim() > 100 || this.value.trim() < 0){
+                        setError(this, "Invalid percentage value");
+                        return;
+                    }
+                } else {
+                    if (this.value.trim() <= fields.minimumValue.value.trim()) {
+                        setError(this, "Discount amount should be less than cart value");
+                        return;
+                    }
+                }
+
+            });
+
+
+            fields.maxDiscount.addEventListener('blur', function() {
+
+                if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
+                    setError(this, "not that much discount Mr Admin!");
+                    return;
+                }
+
+            });
+
+
+            fields.minimumValue.addEventListener('blur', function() {
+
+                if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
+                    setError(this, "higher cart value please!");
+                    return false;
+                }
+
+            });
+
+            
+            document.getElementById("createOfferForm").addEventListener("submit", async function(e){
+
+                e.preventDefault();
+
+                if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field"))){
+                    return;
+                }
+
+                
+                function submitValidations(fields) {
+
+                    if (isEmpty(this)) {
+                        return setError(this, "field cant be empty");
+                    }
+                    
+                    if (!hasMinimumLength(this, 6)){
+                        return setError(this, "minimum 6 characters");
+                    }
+                    
+                    if (!hasMaximumLength(this, 15)){
+                        return setError(this, "maximum 15 characters");
+                    }
+                    
+                    setSuccess(this);
+
+                }
+
+
+                const appliesTo = Array.from(document.querySelectorAll("input[name='appliesTo']:checked")).map(box => ({categName: box.id, categId: box.value}));
+                
+
+                console.log({appliesTo});
+
+                const formData = new FormData(this);
+
+                const payload = Object.fromEntries(formData);
+                delete payload.appliesTo;
+                payload.appliesTo = appliesTo;
+                console.log(payload);
+
+                const response = await fetch("/api/admin/offers", {
+                    method: "POST",
+                    headers: {"Content-Type" : "application/json"},
+                    body: JSON.stringify(payload)
+                })
+
+                const data = await response.json();
+                location.reload();
+                console.log(data);
+
+            })
+
+
+        </script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+    </body>
+</html>

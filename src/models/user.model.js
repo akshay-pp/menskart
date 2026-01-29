@@ -49,7 +49,19 @@ const userSchema = new Schema(
             type: String,
             default: "email",
             enum: ["email", "google"]
-        }
+        },
+
+        couponsUsed: [
+            {
+                couponId: {
+                    type: Schema.Types.ObjectId,
+                    ref: "Coupon"
+                },
+                coupon: {
+                    type: String
+                }
+            }
+        ]
 
     },
 

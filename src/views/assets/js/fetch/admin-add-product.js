@@ -1,3 +1,9 @@
+import {emptyFieldCheck} from "./validationHelpers.js"
+
+
+
+// ------------ cropper js ------------ //
+
 let cropper;
 let fileMap = new Map();
 
@@ -121,11 +127,66 @@ function removeImage(key){
 }
 
 
+// ------------ cropper js end ------------ //
+
+
+
+
+// ------------ form validations and submission ------------ //
+
+
+const productName = document.getElementById("productname");
+const stock = document.getElementById("stock");
+const category = document.getElementById("category");
+const subcategory = document.getElementById("subcategory");
+const brand = document.getElementById("brand");
+const description = document.getElementById("description");
+const price = document.getElementById("price");
+
+emptyFieldCheck("blur", productName, stock, category, subcategory, brand, description, price);
+
+document.getElementById("image-input").addEventListener("blur", () => {
+    if (fileMap.size < 3) {
+        document.getElementById("file-feedback").textContent = "Choose atleast 3 files";
+        document.getElementById("image-input").classList.add("is-invalid");
+        document.getElementById("image-input").classList.remove("is-valid");
+    }else{
+        document.getElementById("image-input").classList.add("is-valid");
+        document.getElementById("image-input").classList.remove("is-invalid");
+    }
+})
+
 
 const form = document.getElementById("add-product-form");
 form.addEventListener("submit", async (e) => {
     
     e.preventDefault();
+
+    function submitValidations() {
+        
+        let isValid = true;
+
+        if (!emptyFieldCheck("submit", productName, stock, category, subcategory, brand, description, price)){
+            isValid = false;
+        }
+    
+        if (fileMap.size < 3) {
+            document.getElementById("file-feedback").textContent = "Choose atleast 3 files";
+            document.getElementById("image-input").classList.add("is-invalid");
+            document.getElementById("image-input").classList.remove("is-valid");
+            isValid = false;
+        }else{
+            document.getElementById("image-input").classList.add("is-valid");
+            document.getElementById("image-input").classList.remove("is-invalid");
+        }
+
+        return isValid;
+    }
+
+    if(!submitValidations()){
+        return;
+    }
+
     const formData = new FormData(form);
     formData.delete("images");
     fileMap.forEach((value,key) => {
@@ -135,7 +196,32 @@ form.addEventListener("submit", async (e) => {
     for (let [key, value] of formData.entries()) {
         console.log(key, value);
     }
-    const payload = Object.fromEntries(formData);
+    
+
+    const response = await fetch("/api/admin/add-product", {
+        method : "POST",
+        body : formData
+    })
+
+    const data = await response.json();
+
+    if (!data.success){
+        
+        document.getElementById("add-product-error").className = "alert alert-danger";
+        document.getElementById("add-product-error").textContent = data.error;
+        document.getElementById("add-product-error").style.display = "block";
+
+    }else{
+        
+        document.getElementById("add-product-error").className = "alert alert-success";
+        document.getElementById("add-product-error").textContent = data.message;
+        document.getElementById("add-product-error").style.display = "block";
+        setTimeout(() => {
+            window.location.href = "/api/admin/product-list";
+        }, 1500);
+
+    }
+    
     
 
 })

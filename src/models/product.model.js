@@ -18,6 +18,23 @@ const productSchema = new Schema(
             required: true
         },
 
+        discountedPrice: {
+            type: Number
+        },
+
+        activeOffer: {
+            offerId: {
+                type: Schema.Types.ObjectId,
+                ref: "Offer"
+            },
+            isPercent: {
+                type: Boolean
+            },
+            amount: {
+                type: Number
+            }
+        },
+
         brand: {
             type: Schema.Types.ObjectId,
             ref: "Brand",
@@ -46,7 +63,19 @@ const productSchema = new Schema(
             type: Number,
             required: true
         },
-        
+
+        maxQuantity: {
+            type: Number,
+            required: true,
+            default: 10
+        },
+
+        returnPeriod: {
+            type: Number,
+            required: true,
+            default: 14
+        },
+
         reviews: {
             type: Schema.Types.ObjectId,
             ref: "Review",

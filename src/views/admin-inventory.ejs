@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="" />
+        <meta property="og:type" content="" />
+        <meta property="og:url" content="" />
+        <meta property="og:image" content="" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+    </head>
+
+    <body>
+        <div class="screen-overlay"></div>
+        
+        <%- include(`./partials/admin/aside`) %>
+
+        <main class="main-wrap">
+            
+            <%- include(`./partials/admin/header`) %>
+
+            <section class="content-main">
+                <div class="content-header">
+                    <div>
+                        <h2 class="content-title card-title">Product Inventory</h2>
+                        <p>Manage stock information here</p>
+                    </div>
+                    <div>
+                        <input type="text" placeholder="Search order ID" class="form-control bg-white" />
+                    </div>
+                </div>
+                <div class="alert alert-danger" style="display: none" id="inventory-alert" role="alert">
+                    A simple danger alert—check it out!
+                </div>
+                <div class="card mb-4">
+                    <header class="card-header">
+                        <div class="row gx-3">
+                            <!-- <div class="col-lg-4 col-md-6 me-auto">
+                                <input type="text" placeholder="Search..." class="form-control" />
+                            </div> -->
+                            <!-- <div class="col-lg-2 col-6 col-md-3">
+                                <select class="form-select">
+                                    <option>Status</option>
+                                    <option>Active</option>
+                                    <option>Disabled</option>
+                                    <option>Show all</option>
+                                </select>
+                            </div> -->
+                            <!-- <div class="col-lg-2 col-6 col-md-3">
+                                <select class="form-select">
+                                    <option>Show 20</option>
+                                    <option>Show 30</option>
+                                    <option>Show 40</option>
+                                </select>
+                            </div> -->
+                        </div>
+                    </header>
+                    <!-- card-header end// -->
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th scope="col">Category</th>
+                                        <th scope="col">Unit Price</th>
+                                        <th scope="col">Stock Left</th>
+                                        <th scope="col">Stock Status</th>
+                                        <th scope="col">createdAt</th>
+                                        <th scope="col" class="text-end">Update Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% productdata.forEach(product => { %>
+                                        <tr>
+                                            <td>
+                                                <div class="left d-flex align-items-center">
+                                                    <img src="/<%= product.images[0] %>" class="img-sm img-thumbnail mx-2" alt="Item" />
+                                                    <span class="text-capitalize"><%= product.productname %></span>
+                                                </div>
+                                            </td>                                           
+                                            <td><%= product.category.name %></td>
+                                            <td><%= product.price %></td>
+                                            <td id="product-stock"><%= product.stock %></td>
+                                            <td id="stock-badge">
+
+                                                <% if (product.stock == 0){ %>
+                                                    <span class="badge rounded-pill alert-danger">Out of Stock</span>
+                                                <% } else if (product.stock <= 200) { %>
+                                                    <span class="badge rounded-pill alert-warning">Stock Very Low</span>
+                                                <% } else { %>
+                                                    <span class="badge rounded-pill alert-success">Product in Stock</span>
+                                                <% } %>
+
+                                            </td>
+
+                                            <td><b><%= new Date(product.createdAt).toLocaleString("en-IN", { 
+                                                day: "numeric", 
+                                                month: "short", 
+                                                year: "numeric", 
+                                                hour: "numeric", 
+                                                minute: "numeric", 
+                                                hour12: true 
+                                            }).replace(" at", ", ") %></b></td>
+
+                                            <td class="text-end">
+
+                                                <form id="update-stock-form" data-id="<%= product._id %>">
+                                                    <div class="d-flex ">
+                                                        <input type="number" placeholder="update stock" class="form-control mx-2" name="stockQuantity" id="update-stock-field" />
+                                                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                                    </div>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- table-responsive //end -->
+                    </div>
+                    <!-- card-body end// -->
+                </div>
+                <!-- card end// -->
+                <div class="pagination-area mt-30 mb-50">
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination justify-content-start">
+
+                            <% if (page > 1) { %>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<%= page - 1 %>"><i class="material-icons md-chevron_left"></i></a>
+                                </li>
+                            <% } %>
+                            
+                            <% for (let i = 1; i <= totalPages; i++) { %>
+                                <li class="page-item <%= page === i ? 'active' : '' %>"><a class="page-link" href="?page=<%= i %>"><%= i %></a></li>
+                            <% } %>
+
+                            <% if (page < totalPages) { %>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<%= page + 1 %>"><i class="material-icons md-chevron_right"></i></a>
+                                </li>
+                            <% } %>
+
+                        </ul>
+                    </nav>
+                </div>
+            </section>
+            <!-- content-main end// -->
+            <footer class="main-footer font-xs">
+                <div class="row pb-30 pt-15">
+                    <div class="col-sm-6">
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
+                        &copy; Nest - HTML Ecommerce Template .
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end">All rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+        <script>
+
+            const forms = document.querySelectorAll("#update-stock-form");
+            forms.forEach(form => {
+
+                form.addEventListener("submit", async function(e){
+
+                    e.preventDefault();
+
+                    const productId = this.getAttribute("data-id");
+                    const stockQuantity = this.closest("form").querySelector("#update-stock-field").value;
+
+                    const response = await fetch(`/api/admin/product/${productId}/update-stock`, {
+                        method: "PATCH",
+                        headers: {"Content-Type" : "application/json"},
+                        body: JSON.stringify({stockQuantity})
+                    })
+
+                    const data = await response.json();
+
+                    if (!data.success){
+                        
+                        document.getElementById("inventory-alert").textContent = data.error;
+                        document.getElementById("inventory-alert").className = "alert alert-danger";
+                        document.getElementById("inventory-alert").style.display = "block";
+                                    
+                    }else{
+
+                        if (data.stock == 0){
+
+                            this.closest("tr").querySelector("#stock-badge").innerHTML = '<span class="badge rounded-pill alert-danger">Out of Stock</span>';
+
+                        }else if (data.stock <= 200){
+                            
+                            this.closest("tr").querySelector("#stock-badge").innerHTML = '<span class="badge rounded-pill alert-warning">Stock Very Low</span>';
+                        
+                        }else{
+
+                            this.closest("tr").querySelector("#stock-badge").innerHTML = '<span class="badge rounded-pill alert-success">Product in Stock</span>';
+                        
+                        }
+
+                        this.closest("tr").querySelector("#product-stock").textContent = data.stock;
+                        document.getElementById("inventory-alert").textContent = data.message;
+                        document.getElementById("inventory-alert").className = "alert alert-success";
+                        document.getElementById("inventory-alert").style.display = "block";
+                    }
+                })
+                
+            })
+        </script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+    </body>
+</html>

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<!-- molla/cart.html  22 Nov 2019 09:55:06 GMT -->
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Molla - Bootstrap eCommerce Template</title>
+    <meta name="keywords" content="HTML5 Template">
+    <meta name="description" content="Molla - Bootstrap eCommerce Template">
+    <meta name="author" content="p-themes">
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/icons/favicon-16x16.png">
+    <link rel="manifest" href="/assets/images/icons/site.html">
+    <link rel="mask-icon" href="/assets/images/icons/safari-pinned-tab.svg" color="#666666">
+    <link rel="shortcut icon" href="/assets/images/icons/favicon.ico">
+    <meta name="apple-mobile-web-app-title" content="Molla">
+    <meta name="application-name" content="Molla">
+    <meta name="msapplication-TileColor" content="#cc9966">
+    <meta name="msapplication-config" content="/assets/images/icons/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+    <!-- Plugins CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <!-- Main CSS File -->
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        
+        <%- include("./partials/user/header") %>
+
+        <main class="main">
+        	<div class="page-header text-center" style="background-image: url('/assets/images/page-header-bg.jpg')">
+        		<div class="container">
+        			<h1 class="page-title">Shopping Cart<span>Shop</span></h1>
+        		</div><!-- End .container -->
+        	</div><!-- End .page-header -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                <div class="container">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                        <li class="breadcrumb-item"><a href="#">Shop</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Shopping Cart</li>
+                    </ol>
+                </div><!-- End .container -->
+            </nav><!-- End .breadcrumb-nav -->
+
+            <div class="page-content">
+                <div class="alert alert-danger" style="display: none" id="cart-alert" role="alert">
+                    A simple danger alert—check it out!
+                </div>
+            	<div class="cart">
+	                <div class="container">
+	                	<%# if (!cart || cart.items.length === 0) { %>
+                            
+                            <div class="<%= !cart?.items?.length ? 'd-flex' : 'd-none' %>  flex-column align-items-center" id="empty-cart-div">
+                                <div>
+                                    <img src="/assets/images/Empty-cuate.svg" class="img-fluid" alt="Empty Cart Image" style="width: 400px; height: auto;">
+                                </div>
+                                <div class="d-flex flex-column align-items-center">
+                                    <h3 class="mb-0">Your cart is currently empty!</h3>
+                                    <p>checkout some cool products! 👇 </p>
+                                    <a href="/api/user/products" class="my-4 btn btn-primary btn-rounded rounded-pill">SHOP COOL STUFF</a>
+                                </div>
+                            </div>
+
+
+                        <%# } else { %>
+
+                            <div class="<%= cart?.items?.length ? 'd-flex' : 'd-none' %> row" id="cart-content">
+	                		    <div class="col-lg-9">
+	                			    <table class="table table-cart table-mobile">
+									    <thead>
+										    <tr>
+                                                <th>Product</th>
+                                                <th>Price</th>
+                                                <th>Quantity</th>
+                                                <th>Total</th>
+                                                <th></th>
+										    </tr>
+									    </thead>
+
+                                        <tbody>
+                                            <%cart?.items?.forEach(item => { %>
+                                                <tr id="<%= item._id %>-cart">
+                                                    <td class="product-col">
+                                                        <div class="product">
+                                                            <figure class="product-media">
+                                                                <a href="/api/user/products/<%= item.product._id %>">
+                                                                    <img src="/<%= item.product.images[0] %>" alt="Product image">
+                                                                </a>
+                                                            </figure>
+
+                                                            <h3 class="product-title">
+                                                                <a href="#"><%= item.product.productname %></a>
+                                                            </h3><!-- End .product-title -->
+                                                        </div><!-- End .product -->
+                                                    </td>
+                                                    <td class="price-col" id="product-price">₹<%= item.product.price %></td>
+                                                    <td class="quantity-col">
+                                                        <div class="cart-product-quantity">
+                                                            <input type="number" id="item-quantity-<%=item._id%>" class="item-quantity form-control" value="<%= item.quantity %>" min="1" max="<%= Math.min(item.product.maxQuantity, item.product.stock) %>" step="1" data-decimals="0" data-maxStock="<%= item.product.stock %>" data-id="<%= item._id %>" required>
+                                                        </div><!-- End .cart-product-quantity -->
+                                                    </td>
+                                                    <td class="total-col" id="total-per-product">₹<%= item.product.price * item.quantity %></td>
+                                                    <td class="remove-col"><button class="btn-remove remove-from-cart" data-id="<%= item._id %>" data-toggle="modal" data-target="#remove-from-cart-modal"><i class="icon-close"></i></button></td>
+                                                </tr>
+                                                <% }) %>
+                                        </tbody>
+								    </table><!-- End .table table-wishlist -->
+
+                                    <!-- <div class="cart-bottom">
+                                        <div class="cart-discount">
+                                            <form action="#">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" required placeholder="coupon code">
+                                                    <div class="input-group-append">
+                                                        <button class="btn btn-outline-primary-2" type="submit"><i class="icon-long-arrow-right"></i></button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <a href="#" class="btn btn-outline-dark-2"><span>UPDATE CART</span><i class="icon-refresh"></i></a>
+                                    </div> -->
+	                		    </div>
+                                <aside class="col-lg-3">
+                                    <div class="summary summary-cart">
+                                        <h3 class="summary-title">Cart Total</h3><!-- End .summary-title -->
+
+                                        <table class="table table-summary">
+                                            <tbody>
+                                                <tr class="summary-subtotal">
+                                                    <td>Subtotal:</td>
+                                                    <td id="cart-sub-total">₹<%= cart?.totalPrice %></td>
+                                                </tr><!-- End .summary-subtotal -->
+                                                <tr class="summary-shipping">
+                                                    <td>Shipping:</td>
+                                                    <td>&nbsp;</td>
+                                                </tr>
+
+                                                <tr class="summary-shipping-row">
+                                                    <td>
+                                                        <div class="custom-control custom-radio">
+                                                            <input type="radio" id="free-shipping" name="shipping" class="custom-control-input">
+                                                            <label class="custom-control-label" for="free-shipping">Free Shipping</label>
+                                                        </div><!-- End .custom-control -->
+                                                    </td>
+                                                    <td>₹0.00</td>
+                                                </tr><!-- End .summary-shipping-row -->
+
+                                                <tr class="summary-shipping-row">
+                                                    <td>
+                                                        <div class="custom-control custom-radio">
+                                                            <input type="radio" id="standart-shipping" name="shipping" class="custom-control-input">
+                                                            <label class="custom-control-label" for="standart-shipping">Standart:</label>
+                                                        </div><!-- End .custom-control -->
+                                                    </td>
+                                                    <td>₹10.00</td>
+                                                </tr><!-- End .summary-shipping-row -->
+
+                                                <tr class="summary-shipping-row">
+                                                    <td>
+                                                        <div class="custom-control custom-radio">
+                                                            <input type="radio" id="express-shipping" name="shipping" class="custom-control-input">
+                                                            <label class="custom-control-label" for="express-shipping">Express:</label>
+                                                        </div><!-- End .custom-control -->
+                                                    </td>
+                                                    <td>₹20.00</td>
+                                                </tr><!-- End .summary-shipping-row -->
+
+                                                <tr class="summary-shipping-estimate">
+                                                    <td>Estimate for Your Country<br> <a href="dashboard.html">Change address</a></td>
+                                                    <td>&nbsp;</td>
+                                                </tr><!-- End .summary-shipping-estimate -->
+
+                                                <tr class="summary-total">
+                                                    <td>Total:</td>
+                                                    <td id="total-order-value">₹<%= cart?.totalPrice %></td>
+                                                </tr><!-- End .summary-total -->
+                                            </tbody>
+                                        </table><!-- End .table table-summary -->
+
+                                        <a href="<%= cart?.items.length ? "/api/user/checkout" : "" %>" class="btn btn-outline-primary-2 btn-order btn-block" >PROCEED TO CHECKOUT</a>
+                                    </div><!-- End .summary -->
+
+                                    <a href="/api/user/products" class="btn btn-outline-dark-2 btn-block mb-3"><span>CONTINUE SHOPPING</span><i class="icon-refresh"></i></a>
+                                </aside><!-- End .col-lg-3 -->
+	                	    </div><!-- End .row -->
+                        <%# } %>
+	                </div><!-- End .container -->
+                </div><!-- End .cart -->
+            </div><!-- End .page-content -->
+        </main><!-- End .main -->
+
+
+        <!-- remove from cart modal -->
+        <div class="modal fade" id="remove-from-cart-modal" tabindex="-1" role="dialog" aria-labelledby="removeFromCartModal" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="remove-cart-header">Remove the product from cart?</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                </div>
+                <div class="modal-body my-3">
+                  <span class="mx-3">are you sure you want to remove this product from your cart?</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+                    <form action="#" method="POST" id="confirm-remove-from-cart">
+                        <button type="submit" class="btn btn-danger">Remove Product</button>
+                    </form>
+                </div>
+              </div>
+            </div>
+        </div>
+        
+
+        <!-- Toast -->
+        <!-- <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+              <img src="..." class="rounded mr-2" alt="...">
+              <strong class="mr-auto">Bootstrap</strong>
+              <small class="text-muted">11 mins ago</small>
+              <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="toast-body">
+              Hello, world! This is a toast message.
+            </div>
+        </div> -->
+
+
+
+        <div class="toast" id="cart-page-toast" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; bottom: 2rem; right: 1rem; z-index: 1055; width: 400px;">
+            <div class="toast-header bg-dark text-white justify-content-between" id="toast-header">
+
+                <div class="d-flex p-4">
+                    
+                    <svg id="success-toast" class="d-none toast-icon" fill="#28a745" width="20px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <title>checkmark</title>
+                        <path d="M16 3c-7.18 0-13 5.82-13 13s5.82 13 13 13 13-5.82 13-13-5.82-13-13-13zM23.258 12.307l-9.486 9.485c-0.238 0.237-0.623 0.237-0.861 0l-0.191-0.191-0.001 0.001-5.219-5.256c-0.238-0.238-0.238-0.624 0-0.862l1.294-1.293c0.238-0.238 0.624-0.238 0.862 0l3.689 3.716 7.756-7.756c0.238-0.238 0.624-0.238 0.862 0l1.294 1.294c0.239 0.237 0.239 0.623 0.001 0.862z"></path>
+                    </svg>
+
+                    <svg id="warning-toast" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--emojione d-none toast-icon" width="20px" preserveAspectRatio="xMidYMid meet" fill="#000000" transform="rotate(0)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M5.9 62c-3.3 0-4.8-2.4-3.3-5.3L29.3 4.2c1.5-2.9 3.9-2.9 5.4 0l26.7 52.5c1.5 2.9 0 5.3-3.3 5.3H5.9z" fill="#ffce31"> </path> <g fill="#231f20"> <path d="M27.8 23.6l2.8 18.5c.3 1.8 2.6 1.8 2.9 0l2.7-18.5c.5-7.2-8.9-7.2-8.4 0"> </path> <circle cx="32" cy="49.6" r="4.2"> </circle> </g> </g></svg>
+
+
+                    <svg id="failure-toast" class="d-none toast-icon" version="1.1"  fill="#DC3545" width="20px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                    viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
+                        <g>
+                            <g>
+                                <path d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0z M327.115,365.904
+                                    L256,294.789l-71.115,71.115l-38.789-38.789L217.211,256l-71.115-71.115l38.789-38.789L256,217.211l71.115-71.115l38.789,38.789
+                                    L294.789,256l71.115,71.115L327.115,365.904z"/>
+                            </g>
+                        </g>
+                    </svg>
+
+                    <span class="ml-3" id="toast-title" style="font-size: 14px;">Notification</span>
+
+                </div>
+
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- footer -->
+        <%- include("./partials/user/footer") %>
+    </div><!-- End .page-wrapper -->
+    <button id="scroll-top" title="Back to Top"><i class="icon-arrow-up"></i></button>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu-overlay"></div><!-- End .mobil-menu-overlay -->
+
+    <div class="mobile-menu-container">
+        <div class="mobile-menu-wrapper">
+            <span class="mobile-menu-close"><i class="icon-close"></i></span>
+
+            <form action="#" method="get" class="mobile-search">
+                <label for="mobile-search" class="sr-only">Search</label>
+                <input type="search" class="form-control" name="mobile-search" id="mobile-search" placeholder="Search in..." required>
+                <button class="btn btn-primary" type="submit"><i class="icon-search"></i></button>
+            </form>
+            
+            <nav class="mobile-nav">
+                <ul class="mobile-menu">
+                    <li class="active">
+                        <a href="index.html">Home</a>
+
+                        <ul>
+                            <li><a href="index-1.html">01 - furniture store</a></li>
+                            <li><a href="index-2.html">02 - furniture store</a></li>
+                            <li><a href="index-3.html">03 - electronic store</a></li>
+                            <li><a href="index-4.html">04 - electronic store</a></li>
+                            <li><a href="index-5.html">05 - fashion store</a></li>
+                            <li><a href="index-6.html">06 - fashion store</a></li>
+                            <li><a href="index-7.html">07 - fashion store</a></li>
+                            <li><a href="index-8.html">08 - fashion store</a></li>
+                            <li><a href="index-9.html">09 - fashion store</a></li>
+                            <li><a href="index-10.html">10 - shoes store</a></li>
+                            <li><a href="index-11.html">11 - furniture simple store</a></li>
+                            <li><a href="index-12.html">12 - fashion simple store</a></li>
+                            <li><a href="index-13.html">13 - market</a></li>
+                            <li><a href="index-14.html">14 - market fullwidth</a></li>
+                            <li><a href="index-15.html">15 - lookbook 1</a></li>
+                            <li><a href="index-16.html">16 - lookbook 2</a></li>
+                            <li><a href="index-17.html">17 - fashion store</a></li>
+                            <li><a href="index-18.html">18 - fashion store (with sidebar)</a></li>
+                            <li><a href="index-19.html">19 - games store</a></li>
+                            <li><a href="index-20.html">20 - book store</a></li>
+                            <li><a href="index-21.html">21 - sport store</a></li>
+                            <li><a href="index-22.html">22 - tools store</a></li>
+                            <li><a href="index-23.html">23 - fashion left navigation store</a></li>
+                            <li><a href="index-24.html">24 - extreme sport store</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="category.html">Shop</a>
+                        <ul>
+                            <li><a href="category-list.html">Shop List</a></li>
+                            <li><a href="category-2cols.html">Shop Grid 2 Columns</a></li>
+                            <li><a href="category.html">Shop Grid 3 Columns</a></li>
+                            <li><a href="category-4cols.html">Shop Grid 4 Columns</a></li>
+                            <li><a href="category-boxed.html"><span>Shop Boxed No Sidebar<span class="tip tip-hot">Hot</span></span></a></li>
+                            <li><a href="category-fullwidth.html">Shop Fullwidth No Sidebar</a></li>
+                            <li><a href="product-category-boxed.html">Product Category Boxed</a></li>
+                            <li><a href="product-category-fullwidth.html"><span>Product Category Fullwidth<span class="tip tip-new">New</span></span></a></li>
+                            <li><a href="cart.html">Cart</a></li>
+                            <li><a href="checkout.html">Checkout</a></li>
+                            <li><a href="wishlist.html">Wishlist</a></li>
+                            <li><a href="#">Lookbook</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="product.html" class="sf-with-ul">Product</a>
+                        <ul>
+                            <li><a href="product.html">Default</a></li>
+                            <li><a href="product-centered.html">Centered</a></li>
+                            <li><a href="product-extended.html"><span>Extended Info<span class="tip tip-new">New</span></span></a></li>
+                            <li><a href="product-gallery.html">Gallery</a></li>
+                            <li><a href="product-sticky.html">Sticky Info</a></li>
+                            <li><a href="product-sidebar.html">Boxed With Sidebar</a></li>
+                            <li><a href="product-fullwidth.html">Full Width</a></li>
+                            <li><a href="product-masonry.html">Masonry Sticky Info</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#">Pages</a>
+                        <ul>
+                            <li>
+                                <a href="about.html">About</a>
+
+                                <ul>
+                                    <li><a href="about.html">About 01</a></li>
+                                    <li><a href="about-2.html">About 02</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="contact.html">Contact</a>
+
+                                <ul>
+                                    <li><a href="contact.html">Contact 01</a></li>
+                                    <li><a href="contact-2.html">Contact 02</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="login.html">Login</a></li>
+                            <li><a href="faq.html">FAQs</a></li>
+                            <li><a href="404.html">Error 404</a></li>
+                            <li><a href="coming-soon.html">Coming Soon</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="blog.html">Blog</a>
+
+                        <ul>
+                            <li><a href="blog.html">Classic</a></li>
+                            <li><a href="blog-listing.html">Listing</a></li>
+                            <li>
+                                <a href="#">Grid</a>
+                                <ul>
+                                    <li><a href="blog-grid-2cols.html">Grid 2 columns</a></li>
+                                    <li><a href="blog-grid-3cols.html">Grid 3 columns</a></li>
+                                    <li><a href="blog-grid-4cols.html">Grid 4 columns</a></li>
+                                    <li><a href="blog-grid-sidebar.html">Grid sidebar</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">Masonry</a>
+                                <ul>
+                                    <li><a href="blog-masonry-2cols.html">Masonry 2 columns</a></li>
+                                    <li><a href="blog-masonry-3cols.html">Masonry 3 columns</a></li>
+                                    <li><a href="blog-masonry-4cols.html">Masonry 4 columns</a></li>
+                                    <li><a href="blog-masonry-sidebar.html">Masonry sidebar</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">Mask</a>
+                                <ul>
+                                    <li><a href="blog-mask-grid.html">Blog mask grid</a></li>
+                                    <li><a href="blog-mask-masonry.html">Blog mask masonry</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">Single Post</a>
+                                <ul>
+                                    <li><a href="single.html">Default with sidebar</a></li>
+                                    <li><a href="single-fullwidth.html">Fullwidth no sidebar</a></li>
+                                    <li><a href="single-fullwidth-sidebar.html">Fullwidth with sidebar</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="elements-list.html">Elements</a>
+                        <ul>
+                            <li><a href="elements-products.html">Products</a></li>
+                            <li><a href="elements-typography.html">Typography</a></li>
+                            <li><a href="elements-titles.html">Titles</a></li>
+                            <li><a href="elements-banners.html">Banners</a></li>
+                            <li><a href="elements-product-category.html">Product Category</a></li>
+                            <li><a href="elements-video-banners.html">Video Banners</a></li>
+                            <li><a href="elements-buttons.html">Buttons</a></li>
+                            <li><a href="elements-accordions.html">Accordions</a></li>
+                            <li><a href="elements-tabs.html">Tabs</a></li>
+                            <li><a href="elements-testimonials.html">Testimonials</a></li>
+                            <li><a href="elements-blog-posts.html">Blog Posts</a></li>
+                            <li><a href="elements-portfolio.html">Portfolio</a></li>
+                            <li><a href="elements-cta.html">Call to Action</a></li>
+                            <li><a href="elements-icon-boxes.html">Icon Boxes</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav><!-- End .mobile-nav -->
+
+            <div class="social-icons">
+                <a href="#" class="social-icon" target="_blank" title="Facebook"><i class="icon-facebook-f"></i></a>
+                <a href="#" class="social-icon" target="_blank" title="Twitter"><i class="icon-twitter"></i></a>
+                <a href="#" class="social-icon" target="_blank" title="Instagram"><i class="icon-instagram"></i></a>
+                <a href="#" class="social-icon" target="_blank" title="Youtube"><i class="icon-youtube"></i></a>
+            </div><!-- End .social-icons -->
+        </div><!-- End .mobile-menu-wrapper -->
+    </div><!-- End .mobile-menu-container -->
+
+    <!-- Sign in / Register Modal -->
+    <div class="modal fade" id="signin-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true"><i class="icon-close"></i></span>
+                    </button>
+
+                    <div class="form-box">
+                        <div class="form-tab">
+                            <ul class="nav nav-pills nav-fill" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="signin-tab" data-toggle="tab" href="#signin" role="tab" aria-controls="signin" aria-selected="true">Sign In</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="register-tab" data-toggle="tab" href="#register" role="tab" aria-controls="register" aria-selected="false">Register</a>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="tab-content-5">
+                                <div class="tab-pane fade show active" id="signin" role="tabpanel" aria-labelledby="signin-tab">
+                                    <form action="#">
+                                        <div class="form-group">
+                                            <label for="singin-email">Username or email address *</label>
+                                            <input type="text" class="form-control" id="singin-email" name="singin-email" required>
+                                        </div><!-- End .form-group -->
+
+                                        <div class="form-group">
+                                            <label for="singin-password">Password *</label>
+                                            <input type="password" class="form-control" id="singin-password" name="singin-password" required>
+                                        </div><!-- End .form-group -->
+
+                                        <div class="form-footer">
+                                            <button type="submit" class="btn btn-outline-primary-2">
+                                                <span>LOG IN</span>
+                                                <i class="icon-long-arrow-right"></i>
+                                            </button>
+
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="signin-remember">
+                                                <label class="custom-control-label" for="signin-remember">Remember Me</label>
+                                            </div><!-- End .custom-checkbox -->
+
+                                            <a href="#" class="forgot-link">Forgot Your Password?</a>
+                                        </div><!-- End .form-footer -->
+                                    </form>
+                                    <div class="form-choice">
+                                        <p class="text-center">or sign in with</p>
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <a href="#" class="btn btn-login btn-g">
+                                                    <i class="icon-google"></i>
+                                                    Login With Google
+                                                </a>
+                                            </div><!-- End .col-6 -->
+                                            <div class="col-sm-6">
+                                                <a href="#" class="btn btn-login btn-f">
+                                                    <i class="icon-facebook-f"></i>
+                                                    Login With Facebook
+                                                </a>
+                                            </div><!-- End .col-6 -->
+                                        </div><!-- End .row -->
+                                    </div><!-- End .form-choice -->
+                                </div><!-- .End .tab-pane -->
+                                <div class="tab-pane fade" id="register" role="tabpanel" aria-labelledby="register-tab">
+                                    <form action="#">
+                                        <div class="form-group">
+                                            <label for="register-email">Your email address *</label>
+                                            <input type="email" class="form-control" id="register-email" name="register-email" required>
+                                        </div><!-- End .form-group -->
+
+                                        <div class="form-group">
+                                            <label for="register-password">Password *</label>
+                                            <input type="password" class="form-control" id="register-password" name="register-password" required>
+                                        </div><!-- End .form-group -->
+
+                                        <div class="form-footer">
+                                            <button type="submit" class="btn btn-outline-primary-2">
+                                                <span>SIGN UP</span>
+                                                <i class="icon-long-arrow-right"></i>
+                                            </button>
+
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="register-policy" required>
+                                                <label class="custom-control-label" for="register-policy">I agree to the <a href="#">privacy policy</a> *</label>
+                                            </div><!-- End .custom-checkbox -->
+                                        </div><!-- End .form-footer -->
+                                    </form>
+                                    <div class="form-choice">
+                                        <p class="text-center">or sign in with</p>
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <a href="#" class="btn btn-login btn-g">
+                                                    <i class="icon-google"></i>
+                                                    Login With Google
+                                                </a>
+                                            </div><!-- End .col-6 -->
+                                            <div class="col-sm-6">
+                                                <a href="#" class="btn btn-login  btn-f">
+                                                    <i class="icon-facebook-f"></i>
+                                                    Login With Facebook
+                                                </a>
+                                            </div><!-- End .col-6 -->
+                                        </div><!-- End .row -->
+                                    </div><!-- End .form-choice -->
+                                </div><!-- .End .tab-pane -->
+                            </div><!-- End .tab-content -->
+                        </div><!-- End .form-tab -->
+                    </div><!-- End .form-box -->
+                </div><!-- End .modal-body -->
+            </div><!-- End .modal-content -->
+        </div><!-- End .modal-dialog -->
+    </div><!-- End .modal -->
+
+    <!-- Plugins JS File -->
+     <script type="module">
+
+        import {triggerToast} from '/assets/js/fetch/validationHelpers.js'
+
+        let debounceTimer, lastUpdatedQuantity = new Map();
+        const cartItems = document.querySelectorAll(".item-quantity");
+        
+        cartItems.forEach(item => {
+
+            item.addEventListener("change", async function(e) {
+
+                const itemId = this.getAttribute("data-id");
+                const quantity = parseInt(this.value);
+                const maxstock = parseInt(this.dataset.maxstock);
+
+                console.log({quantity, maxstock});
+                if (quantity > maxstock) {
+                    console.log('triggered');
+                    this.value = maxstock;
+                    triggerToast('failure', `only ${maxstock} units available`);
+                    return;
+                }
+
+                if (lastUpdatedQuantity.get(itemId) == quantity || quantity == 0) return;
+                console.log({quantity, lastUpdatedQuantity: lastUpdatedQuantity.get(itemId)});
+                
+                const productPrice = parseFloat(this.closest("tr").querySelector("#product-price").textContent.replace("₹", ""));
+                
+                //total price field of the cart item
+                this.closest("tr").querySelector("#total-per-product").textContent = `₹${productPrice * parseInt(this.value).toFixed(2)}`;
+
+                //updating the subtotal in the cart
+                const totalsPerProduct = [];
+                document.querySelectorAll("#total-per-product").forEach(item => totalsPerProduct.push(item.textContent));
+
+                let cartSubTotal = totalsPerProduct.reduce((acc, value) => {
+                    return acc + parseFloat(value.replace("₹", ""))
+                },0);
+
+                document.getElementById("cart-sub-total").textContent = `₹${cartSubTotal}`;
+                document.getElementById("total-order-value").textContent = `₹${cartSubTotal}`;
+
+                
+                clearTimeout(debounceTimer);
+
+                debounceTimer =  setTimeout(async() => {
+                    
+                    const response = await fetch(`/api/user/cart/item/${itemId}`, {
+                    
+                        method: "PATCH",
+                        headers: {"Content-Type" : "application/json"},
+                        body:  JSON.stringify({quantity})
+                    
+                    })
+
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        
+                        triggerToast('failure', data.error || "soemthing went wrong");
+                        // document.getElementById("cart-alert").className = `alert alert-danger`;
+                        // document.getElementById("cart-alert").textContent = data.error;
+                        // document.getElementById("cart-alert").style.display = "block";
+                        // setTimeout(() => {
+                        //    document.getElementById("cart-alert").style.display = "none"; 
+                        // }, 3000);
+
+                    } else {
+
+                        triggerToast('success', data.message || 'quantity updated!');
+                        lastUpdatedQuantity.set(itemId, data.lastUpdatedQuantity);
+                        // document.getElementById("cart-alert").className = `alert alert-primary`;
+                        // document.getElementById("cart-alert").textContent = data.message;
+                        // document.getElementById("cart-alert").style.display = "block";
+                        // setTimeout(() => {
+                        //    document.getElementById("cart-alert").style.display = "none"; 
+                        // }, 3000);
+
+                    }
+
+                }, 400)
+
+            })
+        })
+
+     </script>
+    <script src="/assets/js/fetch/cart.js" type="module"></script>
+    <script src="/assets/js/jquery.min.js"></script>
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/jquery.hoverIntent.min.js"></script>
+    <script src="/assets/js/jquery.waypoints.min.js"></script>
+    <script src="/assets/js/superfish.min.js"></script>
+    <script src="/assets/js/owl.carousel.min.js"></script>
+    <script src="/assets/js/bootstrap-input-spinner.js"></script>
+    <!-- Main JS File -->
+    <script src="/assets/js/main.js"></script>
+</body>
+
+
+<!-- molla/cart.html  22 Nov 2019 09:55:06 GMT -->
+</html>

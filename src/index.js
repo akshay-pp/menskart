@@ -22,12 +22,3 @@ import {app} from "./app.js";
     }
 
 })();
-
-
-
-// connectDb()
-//     .then(() => {
-//         app.listen(process.env.PORT, ()=> {
-//             console.log(`server listening from port ${process.env.PORT}`);
-//         })
-//     })

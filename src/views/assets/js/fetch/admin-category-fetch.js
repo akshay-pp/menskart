@@ -1,81 +1,23 @@
-// ------- validation helper functions -----------// 
-
-//set error function
-function setError(element, message){
-    element.classList.add("is-invalid");
-    element.classList.remove("is-valid");
-    element.nextElementSibling.textContent = message;
-}
-
-//set success function
-function setSuccess(element){
-    element.classList.add("is-valid");
-    element.classList.remove("is-invalid");
-    element.nextElementSibling.textContent = "";
-}
-
-// //function to check if input empty
-// function isEmpty(element){
-//     return element.value.trim() == "" ;  
-// }
-
-//email validation function
-function validateEmail(email){
-    
-    let emailValue = email.value.trim();
-    return (emailValue.match(
-      /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-    )) ? true : false;
-    
-};
-
-//minimum.length
-function hasMinimumLength(element,len){
-    return element.value.trim().length > len ? true : false;
-}
-
-//maximum.length
-function hasMaximumLength(element,len){
-    return element.value.trim().length < len ? true : false;
-}
-
-
-//empty field validation
-function emptyFieldCheck(...args){
-
-    [...args].forEach(input => {
-
-        input.addEventListener("blur", (e) =>{
-
-            if(input.value.trim() == ""){
-                setError(input, "Field cant be empty")
-            }else{
-                setSuccess(input);
-            }
-    
-        })
-    })
-
-}
-
-
+import {setError, setSuccess, emptyFieldCheck} from "./validationHelpers.js";
 
 
 const categoryName = document.getElementById("categoryName");
 const categoryDescription = document.getElementById("categoryDescription");
-emptyFieldCheck(categoryName,categoryDescription);
 
 
-
-
-
-
+///checking if fields empty on blur event
+emptyFieldCheck("blur", categoryName,categoryDescription);
 
 
 const form = document.getElementById("createCategoryForm");
 form.addEventListener("submit", async function (e) {
 
     e.preventDefault();
+
+    if (!emptyFieldCheck("submit", categoryName,categoryDescription)){
+        return;
+    }
+
     const formData = new FormData(form);
     const payload = Object.fromEntries(formData);
 
@@ -132,11 +74,15 @@ editCategoryBtn.forEach((button) => {
         editCategoryName.value = category.name;
         editCategoryDescription.value = category.description;
 
-        emptyFieldCheck(editCategoryName, editCategoryDescription);
+        emptyFieldCheck("blur", editCategoryName, editCategoryDescription);
         
         document.getElementById("edit-category-form").addEventListener("submit", async (e) => {
                         
             e.preventDefault();
+
+            if (!emptyFieldCheck("submit", categoryName,categoryDescription)){
+                return;
+            }
 
             const formData = new FormData(document.getElementById("edit-category-form"));
             const payload = Object.fromEntries(formData);

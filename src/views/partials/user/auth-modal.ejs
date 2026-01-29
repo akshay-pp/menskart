@@ -1,0 +1,363 @@
+<div class="modal fade" id="signin-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true"><i class="icon-close"></i></span>
+                </button>
+
+
+                <!-- login form -->
+                <div class="form-box" id="login-form">
+                    <div class="form-tab">
+                        
+                        <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="signin-tab" data-toggle="tab" href="#signin" role="tab" aria-controls="signin" aria-selected="true">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="register-tab" data-toggle="tab" href="#register" role="tab" aria-controls="register" aria-selected="false">Register</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="tab-content-5">
+                            <div class="tab-pane fade show active" id="signin" role="tabpanel" aria-labelledby="signin-tab">
+                                <form action="#" id="login-form">
+                                    <div class="alert alert-danger" style="display: none" id="login-error" role="alert">
+                                        A simple danger alert—check it out!
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="login-email">Username or email address *</label>
+                                        <input type="text" class="form-control" id="login-email" name="login-email" required>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div><!-- End .form-group -->
+
+                                      
+                                    <div class="form-group">
+                                        <label for="login-password">Password *</label>
+                                        <input type="password" class="form-control" id="login-password" name="login-password" required>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="toggle-password-visibility" name="toggle-password-visibility">
+                                            <label class="custom-control-label" for="toggle-password-visibility"><small>show password</small></label>
+                                        </div><!-- End .custom-checkbox -->
+                                    </div>
+                                    
+
+                                    <div class="form-footer pt-2">
+                                        <button type="submit" class="btn btn-outline-primary-2" id="login-btn">
+                                            <span>Login</span>
+                                            <i class="icon-long-arrow-right"></i>
+                                        </button>
+
+                                        <a href="#" id="forgot-password" class="forgot-link">Forgot Your Password?</a>
+                                    </div><!-- End .form-footer -->
+                                </form>
+                                <div class="form-choice">
+                                    <p class="text-center">or sign in with</p>
+                                    <div class="row justify-content-center">
+
+                                        <div id="g_id_onload"
+                                            data-client_id="850206602033-tq5rmds3ap17r9trc0he7qtg4d7juo7t.apps.googleusercontent.com"
+                                            data-context="signin"
+                                            data-ux_mode="popup"
+                                            data-login_uri="http://localhost:3000/auth/google/register"
+                                            data-nonce=""
+                                            data-auto_select="true"
+                                            data-itp_support="true">
+                                        </div>
+
+                                        <div class="g_id_signin col-sm-12"
+                                            data-type="standard"
+                                            data-shape="rectangular"
+                                            data-theme="outline"
+                                            data-text="signin_with"
+                                            data-size="large"
+                                            data-logo_alignment="center">
+                                        </div>
+                                        
+
+                                        <!-- <div class="col-sm-12">
+                                            <a href="#" class="btn btn-login btn-g">
+                                                <i class="icon-google"></i>
+                                                Login With Google
+                                            </a>
+                                        </div>  -->
+
+                                        <div class="col-sm-12 py-3 d-none">
+                                            <a href="#" class="btn btn-login btn-f">
+                                                <i class="icon-facebook-f"></i>
+                                                Login With Facebook
+                                            </a>
+                                        </div><!-- End .col-6 -->
+                                    </div><!-- End .row -->
+                                </div><!-- End .form-choice -->
+                            </div><!-- .End .tab-pane -->
+
+
+                            <!-- register form -->
+                            <div class="tab-pane fade" id="register" role="tabpanel" aria-labelledby="register-tab">
+                                <form action="#" id="register-form" >
+                                    <div class="alert alert-danger" style="display: none" id="register-error" role="alert">
+                                        A simple danger alert—check it out!
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="register-name">Your Fullname *</label>
+                                        <input type="text" class="form-control" id="register-name" name="register-name" required>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-group">
+                                        <label for="register-email">Your email address *</label>
+                                        <input type="email" class="form-control" id="register-email" name="register-email" required>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-group">
+                                        <label for="register-password">Password *</label>
+                                        <input type="password" class="form-control" id="register-password" name="register-password" required>
+                                        <div class="invalid-feedback">
+                                            Please provide a name
+                                        </div>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="toggle-register-password-visibility" name="toggle-password-visibility">
+                                            <label class="custom-control-label" for="toggle-register-password-visibility"><small>show password</small></label>
+                                        </div>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-group">
+                                        <label for="register-confirm-password">Confirm Password *</label>
+                                        <input type="password" class="form-control" id="register-confirm-password" name="register-confirm-password" required>
+                                        <div class="invalid-feedback">
+                                            Please provide a name
+                                        </div>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="toggle-register-confirm-password-visibility" name="toggle-password-visibility">
+                                            <label class="custom-control-label" for="toggle-register-confirm-password-visibility"><small>show password</small></label>
+                                        </div>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-footer pt-2">
+                                        <button type="submit" class="btn btn-outline-primary-2" style="width: 100%;" id="signup-btn">
+                                            <span>SIGN UP</span>
+                                            <i class="icon-long-arrow-right"></i>
+                                        </button>
+
+                                        <!-- <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="register-policy" required>
+                                            <label class="custom-control-label" for="register-policy">I agree to the <a href="#">privacy policy</a> *</label> -->
+                                        <!-- </div>End .custom-checkbox -->
+
+                                    </div><!-- End .form-footer -->
+                                </form>
+                                <div class="form-choice">
+                                    <p class="text-center">or sign in with</p>
+                                    <div class="row justify-content-center">
+
+                                        <div id="g_id_onload"
+                                            data-client_id="850206602033-tq5rmds3ap17r9trc0he7qtg4d7juo7t.apps.googleusercontent.com"
+                                            data-context="signup"
+                                            data-ux_mode="popup"
+                                            data-login_uri="http://localhost:3000/auth/google/register"
+                                            data-nonce=""
+                                            data-auto_select="true"
+                                            data-itp_support="true">
+                                        </div>
+
+                                        <div class="g_id_signin col-sm-12"
+                                            data-type="standard"
+                                            data-shape="rectangular"
+                                            data-theme="outline"
+                                            data-text="signup_with"
+                                            data-size="large"
+                                            data-logo_alignment="center">
+                                        </div>
+                                        
+
+                                        <!-- <div class="col-sm-12">
+                                            <a href="#" class="btn btn-login btn-g">
+                                                <i class="icon-google"></i>
+                                                Login With Google
+                                            </a>
+                                        </div>  -->
+
+                                        <div class="col-sm-12 py-3 d-none">
+                                            <a href="#" class="btn btn-login btn-f">
+                                                <i class="icon-facebook-f"></i>
+                                                Login With Facebook
+                                            </a>
+                                        </div><!-- End .col-6 -->
+                                    </div><!-- End .row -->
+                                </div><!-- End .form-choice -->
+                            </div><!-- .End .tab-pane -->
+                        </div><!-- End .tab-content -->
+                    </div><!-- End .form-tab -->
+                </div><!-- End .form-box -->
+
+
+                <!-- register otp form -->
+                <div class="form-box" id="register-otp-form" style="display: none;">
+                    <div class="form-tab">
+                        <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="signin-tab" data-toggle="tab" href="#signin" role="tab" aria-controls="signin" aria-selected="true">Verify OTP</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="tab-content-5">
+                            <div class="tab-pane fade show active" id="signin" role="tabpanel" aria-labelledby="signin-tab">
+                                <form action="#">
+                                    <div class="alert alert-danger" style="display: none" id="register-otp-error" role="alert">
+                                        A simple danger alert—check it out!
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="otp-received">Enter otp received</label>
+                                        <input type="text" class="form-control" id="otp-received" name="otp" required>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-footer d-flex justify-content-between">
+                                        <button type="submit" class="btn btn-outline-primary-2" id="verify-otp-btn">
+                                            <span>Verify</span>
+                                            <i class="icon-long-arrow-right"></i>
+                                        </button>
+
+                                        <div>
+                                            <a href="#" class="forgot-link mx-4" id="resend-otp-timer"></a>
+                                            <button class="btn btn-outline-primary" id="resend-otp" disabled >Resend OTP</button>
+                                        </div>
+                                    </div><!-- End .form-footer -->
+                                </form>
+                            </div><!-- .End .tab-pane -->
+                        </div><!-- End .tab-content -->
+                    </div><!-- End .form-tab -->
+                </div><!-- End .form-box -->
+
+
+                <!-- forgot password form -->
+                <div class="form-box" id="forgot-password-form" style="display: none;">
+                    <div class="form-tab">
+                        <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active">Enter your email</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="tab-content-5">
+                            <div class="tab-pane fade show active" id="forgot-password" role="tabpanel" aria-labelledby="forgot-password">
+                                <form action="#">
+                                    <div class="alert alert-danger" style="display: none" id="forgot-password-error" role="alert">
+                                        A simple danger alert—check it out!
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="forgot-password-email">Enter your email associated with the account</label>
+                                        <input type="text" class="form-control" id="forgot-password-email" name="forgotPasswordEmail" required>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-footer d-flex justify-content-between">
+                                        <button type="submit" class="btn btn-outline-primary-2" id="forgot-password-btn">
+                                            <span>Verify</span>
+                                            <i class="icon-long-arrow-right"></i>
+                                        </button>
+
+                                        <div>
+                                            <a href="#" class="forgot-link mx-4" id="resend-otp-timer"></a>
+                                            <button class="btn btn-outline-primary" id="forgot-email-resend-otp" disabled >Resend OTP</button>
+                                        </div>
+                                    </div><!-- End .form-footer -->
+                                </form>
+                            </div><!-- .End .tab-pane -->
+                        </div><!-- End .tab-content -->
+                    </div><!-- End .form-tab -->
+                </div><!-- End .form-box -->
+
+
+                <!-- forgot password otp form -->
+                <div class="form-box" id="forgot-password-otp-form" style="display: none;">
+                    <div class="form-tab">
+                        <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active">Verify Otp</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="tab-content-5">
+                            <div class="tab-pane fade show active" id="forgot-password-otp" role="tabpanel" aria-labelledby="forgot-password-otp">
+                                <form action="#">
+                                    <div class="alert alert-danger" style="display: none" id="forgot-password-otp-error" role="alert">
+                                        A simple danger alert—check it out!
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="forgot-password-otp">Enter otp received</label>
+                                        <input type="text" class="form-control" id="forgot-password-otp-field" name="forgotPasswordOtp" required>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-footer d-flex justify-content-between">
+                                        <button type="submit" class="btn btn-outline-primary-2" id="forgot-password-otp-btn">
+                                            <span>Verify</span>
+                                            <i class="icon-long-arrow-right"></i>
+                                        </button>
+
+                                        <div>
+                                            <a href="#" class="forgot-link mx-4" id="forgot-password-resend-otp-timer"></a>
+                                            <button class="btn btn-outline-primary" id="forgot-password-resend-otp" disabled >Resend OTP</button>
+                                        </div>
+                                    </div><!-- End .form-footer -->
+                                </form>
+                            </div><!-- .End .tab-pane -->
+                        </div><!-- End .tab-content -->
+                    </div><!-- End .form-tab -->
+                </div><!-- End .form-box -->
+
+                <div class="form-box" id="reset-password-form" style="display: none;">
+                    <div class="form-tab">
+                        <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active">Verify Otp</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="tab-content-5">
+                            <div class="tab-pane fade show active" id="reset-password" role="tabpanel" aria-labelledby="reset-password">
+                                <form action="#">
+                                    <div class="alert alert-danger" style="display: none" id="reset-password-error" role="alert">
+                                        A simple danger alert—check it out!
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new-password">Enter new password</label>
+                                        <input type="password" class="form-control" id="new-password" name="newPassword" required>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-group">
+                                        <label for="confirm-password">Enter otp received</label>
+                                        <input type="password" class="form-control" id="confirm-password" name="confirmPassword" required>
+                                    </div><!-- End .form-group -->
+
+                                    <div class="form-footer d-flex justify-content-between">
+                                        <button type="submit" class="btn btn-outline-primary-2" id="reset-password-btn">
+                                            <span>Update Password</span>
+                                            <i class="icon-long-arrow-right"></i>
+                                        </button>
+
+                                    </div><!-- End .form-footer -->
+                                </form>
+                            </div><!-- .End .tab-pane -->
+                        </div><!-- End .tab-content -->
+                    </div><!-- End .form-tab -->
+                </div><!-- End .form-box -->
+
+
+                <!-- otp digit by digit start -->
+
+                
+
+                <!-- otp digit by digit end -->
+
+
+
+            </div><!-- End .modal-body -->
+        </div><!-- End .modal-content -->
+    </div><!-- End .modal-dialog -->
+</div><!-- End .modal -->

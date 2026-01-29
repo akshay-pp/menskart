@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<!-- molla/dashboard.html  22 Nov 2019 10:03:13 GMT -->
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Molla - Bootstrap eCommerce Template</title>
+    <meta name="keywords" content="HTML5 Template">
+    <meta name="description" content="Molla - Bootstrap eCommerce Template">
+    <meta name="author" content="p-themes">
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/icons/favicon-16x16.png">
+    <link rel="manifest" href="/assets/images/icons/site.html">
+    <link rel="mask-icon" href="/assets/images/icons/safari-pinned-tab.svg" color="#666666">
+    <link rel="shortcut icon" href="/assets/images/icons/favicon.ico">
+    <meta name="apple-mobile-web-app-title" content="Molla">
+    <meta name="application-name" content="Molla">
+    <meta name="msapplication-TileColor" content="#cc9966">
+    <meta name="msapplication-config" content="/assets/images/icons/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+    <!-- Plugins CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <!-- Main CSS File -->
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        
+        <%- include("./partials/user/header") %>
+
+        <main class="main">
+        	<div class="page-header text-center py-4" style="background-image: url('/assets/images/page-header-bg.jpg')">
+        		<div class="container">
+        			<h1 class="page-title">My Account</h1>
+        		</div><!-- End .container -->
+        	</div><!-- End .page-header -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav mb-3">
+                <div class="container">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                        <li class="breadcrumb-item"><a href="#">Shop</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">My Account</li>
+                    </ol>
+                </div><!-- End .container -->
+            </nav><!-- End .breadcrumb-nav -->
+
+            <div class="page-content">
+            	<div class="dashboard">
+	                <div class="container">
+	                	<div class="row">
+	                		<aside class="col-md-3 col-lg-2 py-4">
+	                			<ul class="nav nav-dashboard flex-column mb-3 mb-md-0" role="tablist">
+								    <li class="nav-item">
+								        <a class="nav-link active" id="tab-dashboard-link" data-toggle="tab" href="#tab-dashboard" role="tab" aria-controls="tab-dashboard" aria-selected="true">Dashboard</a>
+								    </li>
+                                    <% if (user) { %>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="tab-orders-link" data-toggle="tab" href="#tab-orders" role="tab" aria-controls="tab-orders" aria-selected="false">Orders</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="tab-wallet-link" data-toggle="tab" href="#tab-wallet" role="tab" aria-controls="tab-wallet" aria-selected="false">Wallet</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="tab-address-link" data-toggle="tab" href="#tab-address" role="tab" aria-controls="tab-address" aria-selected="false">Adresses</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="tab-account-link" data-toggle="tab" href="#tab-account" role="tab" aria-controls="tab-account" aria-selected="false">Account Details</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#">Sign Out</a>
+                                        </li>
+                                    <% } %>
+								</ul>
+	                		</aside><!-- End .col-lg-3 -->
+
+	                		<div class="col-md-9 col-lg-10">
+	                			<div class="tab-content">
+								    <div class="tab-pane fade show active" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-dashboard-link">
+								    	<% if (!user) { %>
+                                            <p>Hello, You're <span class="font-weight-normal text-dark">not logged in. Please</span><span class="font-weight-normal text-dark"> <a href="/">Login</a></span>
+                                                <br>
+                                                From your account dashboard you can view your recent orders, manage your shipping and billing addresses, and edit your password and account details </p>
+                                        <% } %>
+								    </div><!-- .End .tab-pane -->
+
+								    <div class="tab-pane fade" id="tab-orders" role="tabpanel" aria-labelledby="tab-orders-link">
+                                        <div class="alert alert-danger" style="display: none;" id="orders-page-error" role="alert">
+                                        </div>
+
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Product</th>
+                                                            <th scope="col">Date</th>
+                                                            <th scope="col">Amount</th>
+                                                            <th scope="col">Order Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% orders.forEach(order => { %>
+                                                            <tr>
+                                                                <td style="width: 50%;">
+                                                                    <a class="itemside d-flex align-items-center" href="/api/user/order/<%= order._id %>/item/<%= order.orderItems._id %>">
+                                                                        <div class="left px-3">
+                                                                            <img src="/<%= order.orderItems.productData.images[0] %>" width="40" height="40" class="img-xs" alt="Item"/>
+                                                                        </div>
+                                                                        <div class="info mx-4 text-capitalize"><p><%= order.orderItems.productData.productname %></div>
+                                                                    </a>
+                                                                </td>
+                                                                <td style="width: 20%;"><%= new Date(order.createdAt).toLocaleString("en-IN", { 
+                                                                    day: "numeric", 
+                                                                    month: "short", 
+                                                                    year: "numeric"
+                                                                }).replace(" at", ", ") %></td>
+                                                                <td style="width: 20%;"><b>₹ <%= order.orderItems.price %></b></td>
+                                                                <td style="width: 10%;">
+                    
+                                                                    <% if (order.orderItems.returnStatus != "none"){ %>
+                                                                        <span class="badge rounded-pill alert-danger">Return <%= order.orderItems.returnStatus%></span>
+                                                                    <% } else if (order.orderItems.status == "cancelled") { %>
+                                                                        <span class="badge rounded-pill alert-danger">Cancelled</span>
+                                                                    <% } else if (order.orderItems.status == "delivered") { %>
+                                                                        <span class="badge rounded-pill alert-success">Delivered</span>
+                                                                    <% } else { %>
+                                                                        <span class="badge rounded-pill alert-warning"><%= order.orderItems.status %></span>
+                                                                    <% } %>
+                    
+                                                                </td>
+                                                                <!-- <td class="text-end">
+                                                                    <a href="/api/admin/orders/<%# order._id %>" class="btn btn-md rounded font-sm">Detail</a>
+                                                                    <div class="dropdown">
+                                                                        <a href="#" data-bs-toggle="dropdown" class="btn btn-light rounded btn-sm font-sm"> <i class="material-icons md-more_horiz"></i> </a>
+                                                                        <div class="dropdown-menu">
+                                                                            <a class="dropdown-item" href="#">View detail</a>
+                                                                            <a class="dropdown-item" href="#">Edit info</a>
+                                                                            <a class="dropdown-item text-danger" href="#">Delete</a>
+                                                                        </div>
+                                                                    </div>
+                                                                </td> -->
+                                                            </tr>
+                                                        <% }) %>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <!-- table-responsive //end -->
+                                        </div>
+
+                                        <nav aria-label="Page navigation">
+                                            <ul class="pagination">
+
+                                                <% if(page > 1) { %>
+
+                                                    <li class="page-item">
+                                                        <a class="page-link page-link-prev" href="?page=<%= page - 1 %>" aria-label="Previous" tabindex="-1" aria-disabled="true">
+                                                            <span aria-hidden="true"><i class="icon-long-arrow-left"></i></span>Prev
+                                                        </a>
+                                                    </li>
+
+                                                <% } %>
+                                                
+                                                <% for (let i = 1; i <= totalPages; i++) { %>
+
+                                                    <li class="page-item <%= page === i ? 'active' : '' %> " aria-current="page"><a class="page-link" href="?page=<%= i %>"><%= i %></a></li>
+                                                    
+                                                <% } %>
+                                                
+                                                <li class="page-item-total">of <%= totalPages %></li>
+                                                    
+                                                <% if(page < totalPages) { %>
+
+                                                    <li class="page-item">
+                                                        <a class="page-link page-link-next" href="?page=<%= page + 1 %>" aria-label="Next">
+                                                            Next <span aria-hidden="true"><i class="icon-long-arrow-right"></i></span>
+                                                        </a>
+                                                    </li>
+
+                                                <% } %>
+                                            </ul>
+							            </nav>
+								    	
+								    	<!-- <a href="category.html" class="btn btn-outline-primary-2"><span>GO SHOP</span><i class="icon-long-arrow-right"></i></a> -->
+								    </div><!-- .End .tab-pane -->
+
+								    <div class="tab-pane fade mx-4" id="tab-wallet" role="tabpanel" aria-labelledby="tab-wallet-link">
+								    	<div class="d-flex bg-dark justify-content-between align-items-center mb-2" style="border: 1px solid #b1b1b1; border-radius: 8px;">
+                                            <div class="p-5 d-flex flex-column align-items-end">
+                                                <span class="text-white h6 mb-1">Current Wallet Balance</span>
+                                                <h2 class="text-secondary mb-0">
+                                                    <i class="icon-rupee"></i>2499.00
+                                                </h2>
+                                            </div>
+                                            
+                                            <div class="p-5 d-flex flex-column align-items-end">
+                                                <span class="text-white h6 mb-1">Referral Earnings</span>
+                                                <h3 class="text-secondary mb-0">
+                                                    <i class="icon-rupee"></i>300.00
+                                                </h3>
+                                                <span class="text-white">Successfull Referrals: 3</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-2" style="border: 1px solid #b1b1b1; border-radius: 8px; background: rgba(204, 153, 102, 0.1)">
+                                            <div class="p-5 d-flex flex-column align-items-center">
+                                                <h3>Refer a friend. Give <i class="icon-rupee"></i>200 Get <i class="icon-rupee"></i>200</h3>
+                                                <span class="font-weight-normal">Invite a friend to Menskart. Your friend gets <i class="icon-rupee"></i>200 instantly and you get <i class="icon-rupee"></i>200 once he completes his first order</span>
+                                            </div>
+
+                                            <div class="d-flex justify-content-center mb-2">
+                                                <div class="d-flex align-items-center bg-white" style="border: 1px dashed #A6C76C;">
+                                                    <div class="px-5">referralcodesample</div>
+                                                </div>
+                                                <div class="btn btn-secondary">
+                                                    <div class="p-2">Copy</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="" style="border: 1px solid #b1b1b1; border-radius: 8px;">
+                                            <h4 class="pl-5 mt-3 mb-0">Wallet Activity</h4>
+                                            <div class="px-5 mb-0 mt-3">
+                                                <table class="table">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th scope="col" class="pl-4">Type</th>
+                                                            <th scope="col">Source</th>
+                                                            <th scope="col">Amount</th>
+                                                            <th scope="col">Date</th>
+                                                            <th scope="col">Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="pl-4"><span class="badge rounded-pill bg-secondary text-white font-weight-normal px-4 py-2">Credit</span></td>
+                                                            <td>Refund OrderId: #178486</td>
+                                                            <td class="h6 mb-0 text-success">+2499.00</td>
+                                                            <td>Oct 25, 2025</td>
+                                                            <td>Success</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="pl-4"><span class="badge rounded-pill bg-danger text-white font-weight-normal px-4 py-2">Debit</span></td>
+                                                            <td>Payment for OrderId: #17987686</td>
+                                                            <td class="h6 mb-0 text-danger">-3699.00</td>
+                                                            <td>Oct 17, 2025</td>
+                                                            <td>Success</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="pl-4"><span class="badge rounded-pill bg-secondary text-white font-weight-normal px-4 py-2">Credit</span></td>
+                                                            <td>Referral Bonus</td>
+                                                            <td class="h6 mb-0 text-success">+199.00</td>
+                                                            <td>Oct 16, 2025</td>
+                                                            <td>Success</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+								    	<a href="category.html" class="btn btn-outline-primary-2 d-none"><span>GO SHOP</span><i class="icon-long-arrow-right"></i></a>
+								    </div><!-- .End .tab-pane -->
+
+								    <div class="tab-pane fade" id="tab-address" role="tabpanel" aria-labelledby="tab-address-link">
+								    	<p>The following addresses will be used on the checkout page by default.</p>
+                                        <div class="row my-4">
+                                            <div class="col-sm-6">
+                                                <a href="" class="btn btn-outline-primary-2" data-toggle="modal" data-target="#add-address-modal"><i class="icon-plus"></i>ADD A NEW ADDRESS</a>
+                                            </div>
+                                        </div>
+								    	<div class="row">
+                                            <% if (address) { %>
+                                                <% address.forEach(address => {  %>
+                                                    <div class="col-lg-6">
+                                                        <div class="card card-dashboard">
+                                                            <div class="card-body">
+                                                                <h3 class="card-title"><%= address.type %></h3><!-- End .card-title -->
+        
+                                                                <p><%= address.name %><br>
+                                                                    <%= address.phone %><br>
+                                                                    <%= address.address %><br>
+                                                                    <%= address.pincode %><br>
+                                                                    <%= address.city %><br>
+                                                                    <%= address.state %><br>
+                                                                <a href="#" id="edit-address-btn" data-toggle="modal" data-target="#edit-address-modal" class="btn btn-outline-primary-2" data-address="<%= JSON.stringify(address) %>">Edit <i class="icon-edit"></i></a>
+                                                                <a href="#" id="delete-address-btn" data-toggle="modal" data-target="#delete-address-modal" class="btn btn-outline-danger" data-id="<%= address._id %>">Delete <i class="icon-close"></i></a></p>
+                                                            </div><!-- End .card-body -->
+                                                        </div><!-- End .card-dashboard -->
+                                                    </div><!-- End .col-lg-6 -->
+                                                <% }) %>
+                                            <% } %>								    		                                       
+								    	</div><!-- End .row -->
+								    </div><!-- .End .tab-pane -->
+
+								    <div class="tab-pane fade" id="tab-account" role="tabpanel" aria-labelledby="tab-account-link">
+								    	<form action="#">
+                                            <div class="alert alert-danger" style="display: none" id="update-name-error" role="alert">
+                                                A simple danger alert—check it out!
+                                            </div>
+			                				<div class="row align-items-center mb-2">
+			                					<div class="col-sm-6">
+			                						<label>First Name *</label>
+			                						<input type="text" class="form-control" name="firstname" id="edit-firstname" value="<%= user?.fullname.split(" ")[0] %>" required disabled>
+			                					</div><!-- End .col-sm-6 -->
+
+			                					<div class="col-sm-4">
+			                						<label>Last Name *</label>
+			                						<input type="text" class="form-control" id="edit-lastname" name="lastname" value="<%= user?.fullname.split(" ")[1] %>" required disabled>
+			                					</div><!-- End .col-sm-6 -->
+                                                <div class="col-sm-2 mt-2">
+                                                    <a href="#" class="btn btn-outline-dark" id="name-edit-btn">Edit</a>
+                                                </div>                                              
+			                				</div><!-- End .row -->
+                                        </form>
+
+		            						<!-- <label>Display Name *</label>
+		            						<input type="text" class="form-control" required>
+		            						<small class="form-text">This will be how your name will be displayed in the account section and in reviews</small> -->
+                                        <form>
+                                            <div class="alert alert-danger" style="display: none" id="update-email-error" role="alert">
+                                                A simple danger alert—check it out!
+                                            </div>
+                                            <div class="row align-items-center mb-2">
+			                					<div class="col-sm-6">
+			                						<label>Email address *</label>
+		        							        <input type="email" id="edit-email" name="email" class="form-control" value="<%= user?.email %>" required disabled>
+			                					</div><!-- End .col-sm-6 -->
+                                                <div class="col-sm-2 mt-2">
+                                                    <a class="btn btn-outline-dark"  id="email-edit-btn" data-toggle="modal" data-target="#email-updation-modal">Edit</a>
+                                                </div>
+                                            </div>
+                                        </form>
+
+                                        <form>
+                                            <div class="alert alert-danger" style="display: none" id="update-phone-error" role="alert">
+                                                A simple danger alert—check it out!
+                                            </div>
+                                            <div class="row align-items-center mb-2">
+			                					<div class="col-sm-6">
+			                						<label>Phone *</label>
+		        							        <input type="email" id="edit-phone" name="phone" class="form-control" value="<%= user?.phone %>" required disabled>
+			                					</div><!-- End .col-sm-6 -->
+                                                <div class="col-sm-2  mt-2">
+                                                    <a href="#" id="phone-edit-btn" class="btn btn-outline-dark">Edit<i class="icon-edit"></i></a>
+                                                </div>                                              
+			                				</div><!-- End .row -->
+                                        </form>
+
+		                					<!-- <button type="submit" class="btn btn-outline-primary-2">
+			                					<span>SAVE CHANGES</span>
+			            						<i class="icon-long-arrow-right"></i>
+			                				</button> -->
+
+								    </div><!-- .End .tab-pane -->
+								</div>
+	                		</div><!-- End .col-lg-9 -->
+	                	</div><!-- End .row -->
+	                </div><!-- End .container -->
+                </div><!-- End .dashboard -->
+            </div><!-- End .page-content -->
+
+
+            <!-- email updation modal -->
+            <div class="modal fade" id="email-updation-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" >
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true"><i class="icon-close"></i></span>
+                            </button>
+        
+                            <div class="form-box" id="email-verify-otp">
+                                <div class="form-tab">
+                                    <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="signin-tab" data-toggle="tab" role="tab" aria-controls="signin" aria-selected="true">Update Email</a>
+                                        </li>
+                                    </ul>
+                                    <div class="tab-content" id="tab-content-5">
+                                        <div class="tab-pane fade show active" id="signin" role="tabpanel" aria-labelledby="signin-tab">
+
+
+                                            <!-- email update form -->
+                                            <form action="#" id="update-email-form">
+                                                <div class="alert alert-danger" style="display: none" id="email-update-error" role="alert">
+                                                    A simple danger alert—check it out!
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="updated-email">Enter new email </label>
+                                                    <input type="text" class="form-control" id="updated-email" name="updatedEmail" required>
+                                                </div><!-- End .form-group -->
+        
+                                                <div class="form-footer d-flex justify-content-between">
+                                                    <button type="submit" class="btn btn-outline-primary-2" id="send-otp-btn">
+                                                        <span>Send OTP</span>
+                                                        <i class="icon-long-arrow-right"></i>
+                                                    </button>
+                                                </div><!-- End .form-footer -->
+                                            </form>
+
+
+                                            <!-- otp verification form -->
+                                            <form action="#" style="display: none;" id="email-verif-otp">
+                                                <div class="alert alert-danger" style="display: none" id="updateEmail-otp-error" role="alert">
+                                                    A simple danger alert—check it out!
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="otp-old-email">Enter otp sent to old email </label>
+                                                    <input type="text" class="form-control" id="otp-old-email" name="otpOld" required>
+                                                </div><!-- End .form-group -->
+                                                
+                                                <div class="form-group">
+                                                    <label for="otp-received">Enter otp sent to new email</label>
+                                                    <input type="text" class="form-control" id="otp-new-email" name="otpNew" required>
+                                                </div><!-- End .form-group -->
+        
+                                                <div class="form-footer d-flex justify-content-between">
+                                                    <button type="submit" class="btn btn-outline-primary-2" id="verify-otp-btn">
+                                                        <span>Verify</span>
+                                                        <i class="icon-long-arrow-right"></i>
+                                                    </button>
+        
+                                                    <div>
+                                                        <a href="#" class="forgot-link mx-4" id="resend-otp-timer"></a>
+                                                        <button class="btn btn-outline-primary" id="resend-otp" disabled >Resend OTP</button>
+                                                    </div>
+                                                </div><!-- End .form-footer -->
+                                            </form>
+                                        </div><!-- .End .tab-pane -->
+                                    </div><!-- End .tab-content -->
+                                </div><!-- End .form-tab -->
+                            </div><!-- End .form-box -->    
+                        </div><!-- End .modal-body -->
+                    </div><!-- End .modal-content -->
+                </div><!-- End .modal-dialog -->
+            </div><!-- End .modal -->
+
+
+            <!-- add address modal -->
+            <div class="modal fade" id="add-address-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" >
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true"><i class="icon-close"></i></span>
+                            </button>
+        
+                            <div class="form-box">
+                                <div class="form-tab">
+                                    <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="add-address-tab" data-toggle="tab" role="tab" aria-controls="add-address-tab" aria-selected="true">Add New Address</a>
+                                        </li>
+                                    </ul>
+                                    <div class="tab-content" id="tab-content-5">
+                                        <div class="tab-pane fade show active" id="add-address" role="tabpanel" aria-labelledby="add-address-tab">
+
+
+                                            <form action="#" id="add-address-form">
+                                                <div class="alert alert-danger" style="display: none" id="add-address-error" role="alert">
+                                                    A simple danger alert—check it out!
+                                                </div>
+                                                <div class="row">
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="address-name">Name</label>
+                                                        <input type="text" class="form-control" id="address-name" data-valid="name" name="addressName" required>
+                                                        <div class="invalid-feedback">
+                                                            Feedback message
+                                                        </div>
+                                                    </div><!-- End .form-group -->
+
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="address-phone">Phone</label>
+                                                        <input type="text" class="form-control" id="address-phone" data-valid="phone" name="addressPhone" required>
+                                                        <div class="invalid-feedback">
+                                                            Feedback message
+                                                        </div>
+                                                    </div><!-- End .form-group -->
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="address-textarea">Address</label>
+                                                    <textarea class="form-control" id="address-textarea" data-valid="address" name="addressTextarea" rows="3" required></textarea>
+                                                    <div class="invalid-feedback">
+                                                            Feedback message
+                                                    </div>
+                                                </div><!-- End .form-group -->
+
+                                                <div class="row">
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="address-pincode">Pincode</label>
+                                                        <input type="text" class="form-control" id="address-pincode" data-valid="pincode" name="addressPincode" required>
+                                                        <div class="invalid-feedback">
+                                                            Feedback message
+                                                        </div>
+                                                    </div><!-- End .form-group -->
+
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="address-city">City/District/Town</label>
+                                                        <input type="text" class="form-control" id="address-city" data-valid="address" name="addressCity" required>
+                                                        <div class="invalid-feedback">
+                                                            Feedback message
+                                                        </div>
+                                                    </div><!-- End .form-group -->
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="address-state">State</label>
+                                                        <select class="form-control" id="address-state" name="addressState" >
+                                                            <option value="AP">Andhra Pradesh</option>
+                                                            <option value="AR">Arunachal Pradesh</option>
+                                                            <option value="AS">Assam</option>
+                                                            <option value="BR">Bihar</option>
+                                                            <option value="CT">Chhattisgarh</option>
+                                                            <option value="GA">Gujarat</option>
+                                                            <option value="HR">Haryana</option>
+                                                            <option value="HP">Himachal Pradesh</option>
+                                                            <option value="JK">Jammu and Kashmir</option>
+                                                            <option value="GA">Goa</option>
+                                                            <option value="JH">Jharkhand</option>
+                                                            <option value="KA">Karnataka</option>
+                                                            <option value="KL">Kerala</option>
+                                                            <option value="MP">Madhya Pradesh</option>
+                                                            <option value="MH">Maharashtra</option>
+                                                            <option value="MN">Manipur</option>
+                                                            <option value="ML">Meghalaya</option>
+                                                            <option value="MZ">Mizoram</option>
+                                                            <option value="NL">Nagaland</option>
+                                                            <option value="OR">Odisha</option>
+                                                            <option value="PB">Punjab</option>
+                                                            <option value="RJ">Rajasthan</option>
+                                                            <option value="SK">Sikkim</option>
+                                                            <option value="TN">Tamil Nadu</option>
+                                                            <option value="TG">Telangana</option>
+                                                            <option value="TR">Tripura</option>
+                                                            <option value="UT">Uttarakhand</option>
+                                                            <option value="UP">Uttar Pradesh</option>
+                                                            <option value="WB">West Bengal</option>
+                                                            <option value="AN">Andaman and Nicobar Islands</option>
+                                                            <option value="CH">Chandigarh</option>
+                                                            <option value="DN">Dadra and Nagar Haveli</option>
+                                                            <option value="DD">Daman and Diu</option>
+                                                            <option value="DL">Delhi</option>
+                                                            <option value="LD">Lakshadweep</option>
+                                                            <option value="PY">Puducherry</option>
+                                                        </select>
+                                                        <div class="invalid-feedback">
+                                                            Feedback message
+                                                        </div>
+                                                    </div><!-- End .form-group -->
+
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="address-type">Address name</label>
+                                                        <input type="text" class="form-control" placeholder="home/hostel ..." id="address-type" data-valid="name" name="addressType" required>
+                                                        <div class="invalid-feedback">
+                                                            Feedback message
+                                                        </div>
+                                                    </div><!-- End .form-group -->
+                                                </div>
+        
+                                                <div class="form-footer d-flex justify-content-between">
+                                                    <button type="submit" class="btn btn-outline-primary-2" id="add-address-btn">
+                                                        <span>Add New Address</span>
+                                                        <i class="icon-long-arrow-right"></i>
+                                                    </button>
+                                                </div><!-- End .form-footer -->
+                                            </form>                                            
+                                        </div><!-- .End .tab-pane -->
+                                    </div><!-- End .tab-content -->
+                                </div><!-- End .form-tab -->
+                            </div><!-- End .form-box -->    
+                        </div><!-- End .modal-body -->
+                    </div><!-- End .modal-content -->
+                </div><!-- End .modal-dialog -->
+            </div><!-- End .modal -->
+
+            <!-- delete address modal -->
+            <div class="modal fade" id="delete-address-modal" tabindex="-1" role="dialog" aria-labelledby="deleteAddressModal" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="exampleModalLabel">Delete Address?</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      are you sure you want to delete this address from your profile?
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+                      <form action="#" method="POST" id="confirm-delete-form">
+                        <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+            <!-- edit addres modal -->
+            <div class="modal fade" id="edit-address-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" >
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true"><i class="icon-close"></i></span>
+                            </button>
+        
+                            <div class="form-box">
+                                <div class="form-tab">
+                                    <ul class="nav nav-pills nav-fill nav-border-anim" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="edit-address-tab" data-toggle="tab" role="tab" aria-controls="edit-address-tab" aria-selected="true">Edit Address</a>
+                                        </li>
+                                    </ul>
+                                    <div class="tab-content" id="tab-content-5">
+                                        <div class="tab-pane fade show active" id="edit-address" role="tabpanel" aria-labelledby="edit-address-tab">
+
+
+                                            <form action="#" id="edit-address-form">
+                                                <div class="alert alert-danger" style="display: none" id="edit-address-error" role="alert">
+                                                    A simple danger alert—check it out!
+                                                </div>
+                                                <div class="row">
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="edit-address-name">Name</label>
+                                                        <input type="text" class="form-control" id="edit-address-name" name="editAddressName" required>
+                                                    </div><!-- End .form-group -->
+
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="edit-address-phone">Phone</label>
+                                                        <input type="text" class="form-control" id="edit-address-phone" name="editAddressPhone" required>
+                                                    </div><!-- End .form-group -->
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="edit-address-textarea">Address</label>
+                                                    <textarea class="form-control" id="edit-address-textarea" name="editAddressTextarea" rows="3" required></textarea>
+                                                </div><!-- End .form-group -->
+
+                                                <div class="row">
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="edit-address-pincode">Pincode</label>
+                                                        <input type="text" class="form-control" id="edit-address-pincode" name="editAddressPincode" required>
+                                                    </div><!-- End .form-group -->
+
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="edit-address-city">City/District/Town</label>
+                                                        <input type="text" class="form-control" id="edit-address-city" name="editAddressCity" required>
+                                                    </div><!-- End .form-group -->
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="edit-address-state">State</label>
+                                                        <select class="form-control" id="edit-address-state" name="editAddressState" >
+                                                            <option value="AP">Andhra Pradesh</option>
+                                                            <option value="AR">Arunachal Pradesh</option>
+                                                            <option value="AS">Assam</option>
+                                                            <option value="BR">Bihar</option>
+                                                            <option value="CT">Chhattisgarh</option>
+                                                            <option value="GA">Gujarat</option>
+                                                            <option value="HR">Haryana</option>
+                                                            <option value="HP">Himachal Pradesh</option>
+                                                            <option value="JK">Jammu and Kashmir</option>
+                                                            <option value="GA">Goa</option>
+                                                            <option value="JH">Jharkhand</option>
+                                                            <option value="KA">Karnataka</option>
+                                                            <option value="KL">Kerala</option>
+                                                            <option value="MP">Madhya Pradesh</option>
+                                                            <option value="MH">Maharashtra</option>
+                                                            <option value="MN">Manipur</option>
+                                                            <option value="ML">Meghalaya</option>
+                                                            <option value="MZ">Mizoram</option>
+                                                            <option value="NL">Nagaland</option>
+                                                            <option value="OR">Odisha</option>
+                                                            <option value="PB">Punjab</option>
+                                                            <option value="RJ">Rajasthan</option>
+                                                            <option value="SK">Sikkim</option>
+                                                            <option value="TN">Tamil Nadu</option>
+                                                            <option value="TG">Telangana</option>
+                                                            <option value="TR">Tripura</option>
+                                                            <option value="UT">Uttarakhand</option>
+                                                            <option value="UP">Uttar Pradesh</option>
+                                                            <option value="WB">West Bengal</option>
+                                                            <option value="AN">Andaman and Nicobar Islands</option>
+                                                            <option value="CH">Chandigarh</option>
+                                                            <option value="DN">Dadra and Nagar Haveli</option>
+                                                            <option value="DD">Daman and Diu</option>
+                                                            <option value="DL">Delhi</option>
+                                                            <option value="LD">Lakshadweep</option>
+                                                            <option value="PY">Puducherry</option>
+                                                        </select>
+                                                    </div><!-- End .form-group -->
+
+                                                    <div class="form-group col-sm-6">
+                                                        <label for="edit-address-type">Address name</label>
+                                                        <input type="text" class="form-control" placeholder="home/hostel ..." id="edit-address-type" name="editAddressType" required>
+                                                    </div><!-- End .form-group -->
+                                                </div>
+                                                <div class="form-group" style="display: none;">
+                                                    <input type="text" class="form-control" id="address-id" name="editAddressId">
+                                                </div><!-- End .form-group -->
+        
+                                                <div class="form-footer d-flex justify-content-between">
+                                                    <button type="submit" class="btn btn-outline-primary-2" id="edit-address-btn">
+                                                        <span>Save</span>
+                                                        <i class="icon-long-arrow-right"></i>
+                                                    </button>
+                                                </div><!-- End .form-footer -->
+                                            </form>                                            
+                                        </div><!-- .End .tab-pane -->
+                                    </div><!-- End .tab-content -->
+                                </div><!-- End .form-tab -->
+                            </div><!-- End .form-box -->    
+                        </div><!-- End .modal-body -->
+                    </div><!-- End .modal-content -->
+                </div><!-- End .modal-dialog -->
+            </div><!-- End .modal -->
+
+
+            <div class="modal fade" id="cancel-order-modal" tabindex="-1" role="dialog" aria-labelledby="cancelOrderModal" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="exampleModalLabel">cancel this order?</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      are you sure you want to cancel this order?
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+                      <form action="#" method="POST" id="confirm-cancel-order">
+                        <button type="submit" class="btn btn-danger">Cancel Order</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+        </main><!-- End .main -->
+
+        <!-- footer -->
+        <%- include("./partials/user/footer") %>
+        
+    </div><!-- End .page-wrapper -->
+    <button id="scroll-top" title="Back to Top"><i class="icon-arrow-up"></i></button>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu-overlay"></div><!-- End .mobil-menu-overlay -->
+
+    <div class="mobile-menu-container">
+        <div class="mobile-menu-wrapper">
+            <span class="mobile-menu-close"><i class="icon-close"></i></span>
+
+            <form action="#" method="get" class="mobile-search">
+                <label for="mobile-search" class="sr-only">Search</label>
+                <input type="search" class="form-control" name="mobile-search" id="mobile-search" placeholder="Search in..." required>
+                <button class="btn btn-primary" type="submit"><i class="icon-search"></i></button>
+            </form>
+            
+            <nav class="mobile-nav">
+                <ul class="mobile-menu">
+                    <li class="active">
+                        <a href="index.html">Home</a>
+
+                        <ul>
+                            <li><a href="index-1.html">01 - furniture store</a></li>
+                            <li><a href="index-2.html">02 - furniture store</a></li>
+                            <li><a href="index-3.html">03 - electronic store</a></li>
+                            <li><a href="index-4.html">04 - electronic store</a></li>
+                            <li><a href="index-5.html">05 - fashion store</a></li>
+                            <li><a href="index-6.html">06 - fashion store</a></li>
+                            <li><a href="index-7.html">07 - fashion store</a></li>
+                            <li><a href="index-8.html">08 - fashion store</a></li>
+                            <li><a href="index-9.html">09 - fashion store</a></li>
+                            <li><a href="index-10.html">10 - shoes store</a></li>
+                            <li><a href="index-11.html">11 - furniture simple store</a></li>
+                            <li><a href="index-12.html">12 - fashion simple store</a></li>
+                            <li><a href="index-13.html">13 - market</a></li>
+                            <li><a href="index-14.html">14 - market fullwidth</a></li>
+                            <li><a href="index-15.html">15 - lookbook 1</a></li>
+                            <li><a href="index-16.html">16 - lookbook 2</a></li>
+                            <li><a href="index-17.html">17 - fashion store</a></li>
+                            <li><a href="index-18.html">18 - fashion store (with sidebar)</a></li>
+                            <li><a href="index-19.html">19 - games store</a></li>
+                            <li><a href="index-20.html">20 - book store</a></li>
+                            <li><a href="index-21.html">21 - sport store</a></li>
+                            <li><a href="index-22.html">22 - tools store</a></li>
+                            <li><a href="index-23.html">23 - fashion left navigation store</a></li>
+                            <li><a href="index-24.html">24 - extreme sport store</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="category.html">Shop</a>
+                        <ul>
+                            <li><a href="category-list.html">Shop List</a></li>
+                            <li><a href="category-2cols.html">Shop Grid 2 Columns</a></li>
+                            <li><a href="category.html">Shop Grid 3 Columns</a></li>
+                            <li><a href="category-4cols.html">Shop Grid 4 Columns</a></li>
+                            <li><a href="category-boxed.html"><span>Shop Boxed No Sidebar<span class="tip tip-hot">Hot</span></span></a></li>
+                            <li><a href="category-fullwidth.html">Shop Fullwidth No Sidebar</a></li>
+                            <li><a href="product-category-boxed.html">Product Category Boxed</a></li>
+                            <li><a href="product-category-fullwidth.html"><span>Product Category Fullwidth<span class="tip tip-new">New</span></span></a></li>
+                            <li><a href="cart.html">Cart</a></li>
+                            <li><a href="checkout.html">Checkout</a></li>
+                            <li><a href="wishlist.html">Wishlist</a></li>
+                            <li><a href="#">Lookbook</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="product.html" class="sf-with-ul">Product</a>
+                        <ul>
+                            <li><a href="product.html">Default</a></li>
+                            <li><a href="product-centered.html">Centered</a></li>
+                            <li><a href="product-extended.html"><span>Extended Info<span class="tip tip-new">New</span></span></a></li>
+                            <li><a href="product-gallery.html">Gallery</a></li>
+                            <li><a href="product-sticky.html">Sticky Info</a></li>
+                            <li><a href="product-sidebar.html">Boxed With Sidebar</a></li>
+                            <li><a href="product-fullwidth.html">Full Width</a></li>
+                            <li><a href="product-masonry.html">Masonry Sticky Info</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#">Pages</a>
+                        <ul>
+                            <li>
+                                <a href="about.html">About</a>
+
+                                <ul>
+                                    <li><a href="about.html">About 01</a></li>
+                                    <li><a href="about-2.html">About 02</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="contact.html">Contact</a>
+
+                                <ul>
+                                    <li><a href="contact.html">Contact 01</a></li>
+                                    <li><a href="contact-2.html">Contact 02</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="login.html">Login</a></li>
+                            <li><a href="faq.html">FAQs</a></li>
+                            <li><a href="404.html">Error 404</a></li>
+                            <li><a href="coming-soon.html">Coming Soon</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="blog.html">Blog</a>
+
+                        <ul>
+                            <li><a href="blog.html">Classic</a></li>
+                            <li><a href="blog-listing.html">Listing</a></li>
+                            <li>
+                                <a href="#">Grid</a>
+                                <ul>
+                                    <li><a href="blog-grid-2cols.html">Grid 2 columns</a></li>
+                                    <li><a href="blog-grid-3cols.html">Grid 3 columns</a></li>
+                                    <li><a href="blog-grid-4cols.html">Grid 4 columns</a></li>
+                                    <li><a href="blog-grid-sidebar.html">Grid sidebar</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">Masonry</a>
+                                <ul>
+                                    <li><a href="blog-masonry-2cols.html">Masonry 2 columns</a></li>
+                                    <li><a href="blog-masonry-3cols.html">Masonry 3 columns</a></li>
+                                    <li><a href="blog-masonry-4cols.html">Masonry 4 columns</a></li>
+                                    <li><a href="blog-masonry-sidebar.html">Masonry sidebar</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">Mask</a>
+                                <ul>
+                                    <li><a href="blog-mask-grid.html">Blog mask grid</a></li>
+                                    <li><a href="blog-mask-masonry.html">Blog mask masonry</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">Single Post</a>
+                                <ul>
+                                    <li><a href="single.html">Default with sidebar</a></li>
+                                    <li><a href="single-fullwidth.html">Fullwidth no sidebar</a></li>
+                                    <li><a href="single-fullwidth-sidebar.html">Fullwidth with sidebar</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="elements-list.html">Elements</a>
+                        <ul>
+                            <li><a href="elements-products.html">Products</a></li>
+                            <li><a href="elements-typography.html">Typography</a></li>
+                            <li><a href="elements-titles.html">Titles</a></li>
+                            <li><a href="elements-banners.html">Banners</a></li>
+                            <li><a href="elements-product-category.html">Product Category</a></li>
+                            <li><a href="elements-video-banners.html">Video Banners</a></li>
+                            <li><a href="elements-buttons.html">Buttons</a></li>
+                            <li><a href="elements-accordions.html">Accordions</a></li>
+                            <li><a href="elements-tabs.html">Tabs</a></li>
+                            <li><a href="elements-testimonials.html">Testimonials</a></li>
+                            <li><a href="elements-blog-posts.html">Blog Posts</a></li>
+                            <li><a href="elements-portfolio.html">Portfolio</a></li>
+                            <li><a href="elements-cta.html">Call to Action</a></li>
+                            <li><a href="elements-icon-boxes.html">Icon Boxes</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav><!-- End .mobile-nav -->
+
+            <div class="social-icons">
+                <a href="#" class="social-icon" target="_blank" title="Facebook"><i class="icon-facebook-f"></i></a>
+                <a href="#" class="social-icon" target="_blank" title="Twitter"><i class="icon-twitter"></i></a>
+                <a href="#" class="social-icon" target="_blank" title="Instagram"><i class="icon-instagram"></i></a>
+                <a href="#" class="social-icon" target="_blank" title="Youtube"><i class="icon-youtube"></i></a>
+            </div><!-- End .social-icons -->
+        </div><!-- End .mobile-menu-wrapper -->
+    </div><!-- End .mobile-menu-container -->
+
+    <!-- Sign in / Register Modal -->
+    <%- include("./partials/user/auth-modal") %>
+
+    <!-- Plugins JS File -->
+    <script>
+
+        const cancelButtons = document.querySelectorAll('button[name = "cancel-order-button"]');
+        let orderId
+        cancelButtons.forEach(button => {
+            button.addEventListener("click", async function(e) {
+                e.preventDefault();
+                
+                orderId = this.getAttribute("data-id");
+                console.log(orderId);
+
+            })
+        })
+
+        document.getElementById("confirm-cancel-order").addEventListener("submit", async function(e){
+
+            e.preventDefault();
+            console.log(orderId);
+            const response = await fetch ("/api/user/order", {
+                    method: "DELETE",
+                    headers: {"Content-Type" : "application/json"},
+                    body: JSON.stringify({orderId})
+                })
+
+                const data = await response.json();
+
+                if(!data.success) {
+
+                    document.getElementById("orders-page-error").textContent = data.error;
+                    document.getElementById("orders-page-error").className = "alert alert-danger";
+                    document.getElementById("orders-page-error").style.display = "block";
+
+                }else{
+
+                    document.getElementById("orders-page-error").textContent = data.message;
+                    document.getElementById("orders-page-error").className = "alert alert-primary";
+                    document.getElementById("orders-page-error").style.display = "block";
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+
+                }
+        })
+     </script>
+    <script type="module" src="/assets/js/fetch/profile.js"></script>
+    <script src="/assets/js/fetch/index-fetch.js"></script>
+    <script src="/assets/js/jquery.min.js"></script>
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/jquery.hoverIntent.min.js"></script>
+    <script src="/assets/js/jquery.waypoints.min.js"></script>
+    <script src="/assets/js/superfish.min.js"></script>
+    <script src="/assets/js/owl.carousel.min.js"></script>
+    <!-- Main JS File -->
+    <script src="/assets/js/main.js"></script>
+    <script>
+
+        //empty modal inputs on closing the modal
+        $('#add-address-modal').on('hidden.bs.modal', function () {
+
+            const form = $('#add-address-form');
+            form[0].reset();
+
+            form.find(`.form-control`).removeClass(`is-valid is-invalid`);
+
+            //$(this).find('input, textarea, select').val('');
+        });
+
+    </script>
+</body>
+
+
+<!-- molla/dashboard.html  22 Nov 2019 10:03:13 GMT -->
+</html>

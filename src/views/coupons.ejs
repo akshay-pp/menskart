@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Nest Dashboard</title>
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="description" content="" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content="" />
+        <meta property="og:type" content="" />
+        <meta property="og:url" content="" />
+        <meta property="og:image" content="" />
+        <!-- Favicon -->
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
+        <!-- Template CSS -->
+        <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+    </head>
+
+    <body>
+        <div class="screen-overlay"></div>
+        
+        <%- include(`./partials/admin/aside`) %>
+
+        <main class="main-wrap">
+            
+            <%- include(`./partials/admin/header`) %>
+
+            <section class="content-main">
+                <div class="content-header">
+                    <div>
+                        <h2 class="content-title card-title">Coupons</h2>
+                        <p>Manage coupons</p>
+                    </div>
+                    <div>
+                        <input type="text" placeholder="Search Categories" class="form-control bg-white" />
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="alert alert-danger" style="display: none" id="coupon-error" role="alert">
+                        A simple danger alert—check it out!
+                    </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <form id="createCouponForm">
+                                    
+                                    <div class="mb-4">
+                                        <label for="couponName" class="form-label">Name</label>
+                                        <input type="text" id="couponName" name="couponName" placeholder="Type here" class="form-control form-field"/>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    
+                                    <div class="mb-4">
+                                        <label for="couponCode" class="form-label">Coupon Code</label>
+                                        <input type="text" id="couponCode" name="couponCode" placeholder="6 to 15 characters" class="form-control form-field"/>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="isPercentage">isPercentage? : </label>
+                                        <input type="checkbox" name="isPercentage" id="isPercentage" class="form-check-input" checked>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="discountAmount">Discount Amount</label>
+                                        <input type="number" id="discountAmount" name="discountAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4" id= 'maxDiscount-div'>
+                                        <label class="form-label" for="maxDiscount">Maximum Discount</label>
+                                        <input type="number" id="maxDiscount" name="maxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="minimumValue">Minimum Cart Value</label>
+                                        <input type="number" id="minimumValue" name="minimumValue" placeholder="Type here" min="1" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label" for="couponStartDate">Valid from: </label>
+                                        <input type="date" name="couponStartDate" id="couponStartDate" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="couponExpiryDate">Expires on: </label>
+                                        <input type="date" name="couponExpiryDate" id="couponExpiryDate" class="form-control form-field">
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="coupondescription">Description</label>
+                                        <textarea placeholder="Type here" class="form-control form-field" id="coupondescription" name="coupondescription"></textarea>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary" type="submit">Create Coupon</button>
+                                    </div>
+
+                                </form>
+                           </div>
+                            <div class="col-md-9">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="" />
+                                                    </div>
+                                                </th>
+                                                <th>Coupon</th>
+                                                <th>Discount</th>
+                                                <th>Cart Value</th>
+                                                <th>isActive</th>
+                                                <th>Valid thru</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% coupons.forEach(coupon => { %>
+                                            <tr>
+                                                <td class="text-center">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" value="" />
+                                                    </div>
+                                                </td>
+                                                <td><%= coupon.code %></td>
+                                                <td><%= !coupon.isPercent ? "₹" : "" %><%= coupon.couponAmount %><%= coupon.isPercent ? "%" : "" %></td>
+                                                <td><b>₹<%= coupon.minimumCartValue %></b></td>
+                                                
+                                                <td><%= coupon.couponActive %></td>
+                                                <td><%= coupon.validFrom.toISOString().split("T")[0] %> - <%= coupon.expiry.toISOString().split("T")[0] %></td>
+                                                <td class="text-end">
+                                                    <div class="dropdown">
+                                                        <a href="#" data-bs-toggle="dropdown" class="btn btn-light rounded btn-sm font-sm"> <i class="material-icons md-more_horiz"></i> </a>
+                                                        <div class="dropdown-menu">
+                                                            <a class="dropdown-item text-danger" href="#">Disable</a>
+                                                            <a class="dropdown-item" href="#">Edit info</a>
+                                                            <!-- <a class="dropdown-item text-danger" href="#">Delete</a> -->
+                                                        </div>
+                                                    </div>
+                                                    <!-- dropdown //end -->
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- .col// -->
+                        </div>
+                        <!-- .row // -->
+                    </div>
+                    <!-- card body .// -->
+                </div>
+                <!-- card .// -->
+            </section>
+            <!-- content-main end// -->
+            <footer class="main-footer font-xs">
+                <div class="row pb-30 pt-15">
+                    <div class="col-sm-6">
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
+                        &copy; Nest - HTML Ecommerce Template .
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-sm-end">All rights reserved</div>
+                    </div>
+                </div>
+            </footer>
+        </main>
+
+        <script type="module">
+
+            import {
+                emptyFieldCheck,
+                hasMinimumLength,
+                hasMaximumLength,
+                setError, setSuccess,
+                isEmpty,
+                showAlert,
+                clearFeedback
+            } from "/assets/js/fetch/validationHelpers.js"
+
+            
+            //========================= Field reference =========================//
+                    
+            const fields = {
+                couponName: document.getElementById('couponName'),
+                couponCode: document.getElementById('couponCode'),
+                isPercentage: document.getElementById('isPercentage'),
+                discountAmount: document.getElementById('discountAmount'),
+                maxDiscount: document.getElementById('maxDiscount'),
+                minimumValue: document.getElementById('minimumValue'),
+                couponStartDate: document.getElementById('couponStartDate'),
+                couponExpiryDate: document.getElementById('couponExpiryDate'),
+                coupondescription: document.getElementById('coupondescription'),
+            } 
+
+
+            // toggle max discount wrt isPercentage
+            fields.isPercentage.addEventListener('change', function () {
+
+                if (this.checked) {
+                    document.getElementById('maxDiscount-div').classList.remove('d-none')
+                } else {
+                    document.getElementById('maxDiscount-div').classList.add('d-none')
+                }
+
+            })
+
+
+            //disable previous dates
+            fields.couponStartDate.min = new Date().toISOString().split('T')[0];
+            fields.couponExpiryDate.min = new Date().toISOString().split('T')[0];
+
+
+            //========================= Blur validations =========================//
+            
+            //validation for empty field
+            emptyFieldCheck("blur", ...document.querySelectorAll(".form-field"));
+
+
+            //minimum maximum length validation
+            [fields.couponCode, fields.couponName].forEach(field => {
+
+                field.addEventListener("blur", function() {
+
+                    if (!hasMinimumLength(field, 6)) {
+                        setError(field, "minimum 6 characters");
+                        return false;
+                    } else if (!hasMaximumLength(field, 15)){
+                        setError(field, "maximum 15 characters");
+                        return false;
+                    }
+
+                    clearFeedback(field);
+                })
+            });
+
+
+            fields.discountAmount.addEventListener("blur", function(){
+                
+                if (fields.isPercentage.checked) {
+                    if (this.value > 100 || this.value < 0) {
+                        setError(this, "Invalid percentage value");
+                        return false;
+                    }
+                } else {
+                    if (fields.minimumValue.value.trim() && Number(this.value.trim()) >= Number(fields.minimumValue.value.trim())) {
+                        setError(this, "Discount amount should be less than cart value");
+                        return false
+                    }
+
+                    clearFeedback(this);
+                    clearFeedback(fields.minimumValue);
+                }
+
+            });
+
+
+            fields.maxDiscount.addEventListener('blur', function() {
+
+                if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
+                    return setError(this, "not that much discount dude!");
+                }
+
+                clearFeedback(fields.maxDiscount);
+                clearFeedback(fields.minimumValue);
+
+            });
+
+
+            fields.minimumValue.addEventListener('blur', function() {
+
+                if (!fields.isPercentage.checked) {
+                    if (fields.discountAmount.value.trim() && Number(this.value.trim()) <= Number(fields.discountAmount.value.trim())) {
+                        return setError(this, 'chose a higher cart value than discount');
+                    } else {
+                        clearFeedback(this);
+                        clearFeedback(fields.discountAmount);
+                    }
+                }
+
+                if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
+                    return setError(this, "higher cart value please!");
+                } else {
+                    clearFeedback(this);
+                    clearFeedback(fields.maxDiscount);
+                }
+
+            });
+
+
+            // select higher expiry date than start date
+            fields.couponExpiryDate.addEventListener("blur", function(){
+                if (fields.couponStartDate.value && this.value < fields.couponStartDate.value) {
+                    setError(this, "select a higher date than start date");
+                }
+            });
+            
+
+            // select lower start date than expiry date
+            fields.couponStartDate.addEventListener("blur", function(){
+                if (fields.couponExpiryDate.value && this.value > fields.couponExpiryDate.value) {
+                    setError(this, "select a lower date than expiry date");
+                }
+            });
+
+
+            document.getElementById("createCouponForm").addEventListener("submit", async function(e){
+
+                e.preventDefault();
+
+                //============================= Validations =============================//
+
+                let isValid = true;
+                if (fields.isPercentage.checked){
+                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field"))) {
+                        isValid = false;
+                    }
+                } else {
+                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field:not(#maxDiscount)"))) {
+                        isValid = false;
+                    }
+                }
+
+                // console.log("checkpoint 1 ✅", {isValid});
+
+
+                [fields.couponCode, fields.couponName].forEach(field => {
+                    
+                    if (isEmpty(field)) {
+                        setError(field, "field cant be empty");
+                        isValid = false;
+                    } else if (!hasMinimumLength(field, 6)) {
+                        setError(field, "minimum 6 characters");
+                        isValid = false;
+                    } else if (!hasMaximumLength(field, 15)) {
+                        setError(field, "maximum 15 characters");
+                        isValid = false;
+                    }
+
+                });
+                // console.log("checkpoint 2 ✅", {isValid});
+
+                
+                if (fields.isPercentage.checked) {
+                    
+                    if (fields.discountAmount.value.trim() > 100 || fields.discountAmount.value.trim() < 0) {
+                        setError(fields.discountAmount, "Invalid percentage value");
+                        isValid = false;
+                    }
+
+                    if (fields.minimumValue.value && fields.maxDiscount.value && Number(fields.minimumValue.value.trim()) <= Number(fields.maxDiscount.value.trim())) {
+                        setError(fields.maxDiscount, "Discount cant be higher than cart value");
+                        isValid = false;
+                    }
+
+                } else {
+
+                    if (fields.discountAmount.value && fields.minimumValue.value && Number(fields.discountAmount.value.trim()) >= Number(fields.minimumValue.value.trim())) {
+                        setError(fields.discountAmount, "Discount amount should be less than cart value");
+                        isValid = false;
+                    }
+
+                }
+
+                // console.log("checkpoint 3 ✅", {isValid});
+
+
+                // dates validation
+                if (fields.couponExpiryDate.value < fields.couponStartDate.value) {
+                    setError(fields.couponExpiryDate, "select a higher date than start date")
+                    isValid = false;
+                }
+                // console.log("checkpoint 4 ✅", {isValid});
+
+                if (!isValid) {
+                    document.querySelector('.is-invalid')?.focus();
+                    return
+                }
+                // console.log("checkpoint 5 ✅", {isValid});
+
+
+                //============================= Validations end =============================//
+
+
+
+                const formData = new FormData(this);
+                // console.log({formData}, "✅");
+                const payload = Object.fromEntries(formData);
+                // console.log({payload});
+
+                const response = await fetch("/api/admin/coupons", {
+                    method: "POST",
+                    headers: {"Content-Type" : "application/json"},
+                    body: JSON.stringify(payload)
+                })
+
+                const data = await response.json();
+
+                showAlert(data, document.getElementById("coupon-error"));
+
+                if (data.success) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                } else {
+                    if (typeof data.error == "object") {
+                        Object.entries(data.error).forEach(([field, errorMessage]) => {
+                            let element = document.getElementById(field)
+                            setError(element, errorMessage);
+                        })
+                    }
+                    if (response.status == 409) {
+                        setError(document.getElementById("couponCode"), "Use another coupon code");
+                    }
+                }
+
+            })
+        </script>
+        <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
+        <script src="/assets/js/vendors/select2.min.js"></script>
+        <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
+        <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <!-- Main Script -->
+        <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
+    </body>
+</html>

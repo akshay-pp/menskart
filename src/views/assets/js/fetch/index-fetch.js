@@ -31,7 +31,7 @@ function validateEmail(email){
 
 //minimum.length
 function hasMinimumLength(element,len){
-    return element.value.trim().length > len ? true : false;
+    return element.value.trim().length >= len ? true : false;
 }
 
 //maximum.length
@@ -141,10 +141,16 @@ function login(){
                 loginError.className = "alert alert-primary";
                 loginError.textContent = data.message;
                 loginError.style.display = "block";
+
+                
+                if (window.location.pathname == "/api/user/login"){
+                    window.location.href = "/";
+                    return;
+                }
                 
                 setTimeout(() => {
                     location.reload();
-                }, 1500);
+                }, 500);
             
             }
     
@@ -181,14 +187,17 @@ function register(){
     const fullname = document.getElementById("register-name");
     const registerEmail = document.getElementById("register-email");
     const registerPassword = document.getElementById("register-password");
+    const registerConfirmPassword = document.getElementById("register-confirm-password");
 
 
     //input blur validation 
     (function blurValidation(){
 
-        [fullname, registerEmail, registerPassword].forEach(input => {
-
+        let password;
+        [fullname, registerEmail, registerPassword, registerConfirmPassword].forEach(input => {
+            
             input.addEventListener("blur", () => {
+
                 if(input.id == "register-name"){
                     isEmpty(input) ?  setError(input, "Please provide a fullname") : setSuccess(input);
 
@@ -200,11 +209,31 @@ function register(){
                     }
 
                 }else if (input.id == "register-password"){
+                    password = input.value;
                     if (isEmpty(input)){
                         setError(input, "Password can't be empty");
                     }else{
                         hasMinimumLength(input,8) ? setSuccess(input) : setError(input, "Password should be atleast 8 characters long");
                     }
+                }else if (input.id == "register-confirm-password"){
+                    
+                    if (isEmpty(input) || !hasMinimumLength(input,8) || (input.value != password)){
+                        setError(input, "Password doesn't match");
+                        return;
+                    }else{
+                        setSuccess(input);
+                        return;
+                    }
+
+                    // if (isEmpty(input)){
+                    //     setError(input, "Password can't be empty");
+
+                    // }else if (hasMinimumLength(input,8)){
+                    //     setSuccess(input) : setError(input, "Password should be atleast 8 characters long");
+
+                    // }else{
+                    //     input.value != password
+                    // }
                 }
             })
         })
@@ -260,7 +289,7 @@ function register(){
         
                 method: "POST",
                 headers: {"Content-Type" : "application/json"},
-                body: JSON.stringify({fullname: fullname.value, email: registerEmail.value, password: registerPassword.value})
+                body: JSON.stringify({fullname: fullname.value, email: registerEmail.value, password: registerPassword.value, confirmPassword: registerConfirmPassword.value})
         
             });
         
@@ -390,5 +419,158 @@ verifyOtpBtn.addEventListener("click", async(event) => {
         window.location.href = `${data.url}`;
 
     }
+
+})
+
+
+
+
+// ------- forgot password -----------//
+
+function forgotPassword() {
+
+    // variables 
+    const loginForm = document.getElementById("login-form");
+    
+    const forgotForm = document.getElementById("forgot-password-form");
+    const forgotPasswordError = document.getElementById("forgot-password-error");
+
+    const forgotOtpForm = document.getElementById("forgot-password-otp-form");
+    const forgotPasswordOtpBtn = document.getElementById("forgot-password-otp-btn");
+
+    //open forgot password modal
+    document.getElementById("forgot-password").addEventListener("click", async function() {
+        
+        loginForm.style.display = "none",
+        forgotForm.style.display = "block";  
+    
+    })
+    
+
+    //submit email address
+    document.getElementById("forgot-password-btn").addEventListener("click", async function(e){
+    
+        e.preventDefault();
+    
+        
+        const email = document.getElementById("forgot-password-email").value.trim();
+        const response = await fetch("/api/user/forgot-password/request-otp", {
+            method: "POST",
+            headers: {"Content-Type" : "application/json"},
+            body: JSON.stringify({email})
+        })
+    
+        const data = await response.json();
+    
+        if (!data.success){
+    
+            showAlert(forgotPasswordError, data.error, "alert-danger");
+    
+        }else{
+            
+            showAlert(forgotPasswordError, data.message, "alert-primary");
+            setTimeout(() => {
+                forgotForm.style.display = "none";
+                forgotOtpForm.style.display = "block";
+            }, 1500);
+    
+        }
+        
+    }) 
+    
+    
+    //submit otp
+    forgotPasswordOtpBtn.addEventListener("click", async function(e){
+        e.preventDefault();
+        const otp = document.getElementById("forgot-password-otp-field").value.trim();
+        const otpError = document.getElementById("forgot-password-otp-error")
+        
+        const response = await fetch("/api/user/forgot-password/verify-otp", {
+        
+            method: "POST",
+            headers: {"Content-Type" : "application/json"},
+            body: JSON.stringify({otp})
+        
+        })
+    
+        const data = await response.json();
+    
+        if(!data.success){
+    
+            showAlert(otpError, data.error, "alert-danger");
+    
+        }else{
+    
+            showAlert(otpError, data.message, "alert-primary");
+            
+            setTimeout(() => {
+    
+                forgotOtpForm.style.display = "none";
+                document.getElementById("reset-password-form").style.display = "block";
+    
+            }, 1500);
+    
+        }
+        
+    })
+
+    document.getElementById("reset-password-btn").addEventListener("click", async function(e) {
+
+        e.preventDefault();
+        const newPassword = document.getElementById("new-password").value;
+        const confirmPassword = document.getElementById("confirm-password").value;
+        const resetPasswordError = document.getElementById("reset-password-error");
+
+        const response = await fetch("/api/user/forgot-password/reset-password", {
+            method: "PATCH",
+            headers: {"Content-Type" : "application/json"},
+            body: JSON.stringify({newPassword, confirmPassword})
+        })
+
+        const data = await response.json();
+
+        if(!data.success){
+            showAlert(resetPasswordError, data.error, "alert-danger");
+        }else{
+            showAlert(resetPasswordError, data.message, "alert-primary");
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+
+    })
+
+
+
+
+}
+
+forgotPassword()
+
+
+
+
+//helper function for error messages
+function showAlert(element, message, className) {
+    element.className = `alert ${className}`;
+    element.textContent = message;
+    element.style.display = "block";
+}
+
+
+
+
+
+
+
+
+//toggle password visibility
+const toggleBtns = document.querySelectorAll('[name = "toggle-password-visibility"]');
+
+toggleBtns.forEach(btn => {
+
+    btn.addEventListener("change", function(){
+        this.parentElement.parentElement.querySelector(".form-control").type = this.checked ? "text" : "password";
+    })
 
 })
