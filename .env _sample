@@ -1,0 +1,25 @@
+PORT = 
+MONGO_URI = 
+DATABASE_NAME = 
+
+
+//nodemailer
+MAILER_EMAIL = 
+MAILER_PASSWORD = 
+
+//twilio
+ACCOUNTSID = 
+AUTHTOKEN = 
+SERVICESID = 
+
+
+
+
+//express-session
+SESSION_SECRET = 
+
+
+
+//google-AUTHTOKEN
+GOOGLE_CLIENT_SECRET = 
+GOOGLE_CLIENT_ID = 
