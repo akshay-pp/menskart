@@ -3,6 +3,7 @@ import { verifyGoogleToken } from "../utils/verifyGoogleToken.js";
 import { User } from "../models/user.model.js";
 import { sendOtp, sendOrderConfirmation } from "../utils/nodemailer.js";
 import {razorpay, verifySign} from "../utils/razorpay.js";
+import {generateInvoiceNumber} from "../utils/idGenerator.js";
 import { Product } from "../models/product.model.js";
 import {Category} from "../models/category.model.js";
 import { Address } from "../models/address.model.js";
@@ -11,7 +12,10 @@ import { Order } from "../models/order.model.js";
 import { Wishlist } from "../models/wishlist.model.js";
 import {Coupon} from "../models/coupon.model.js";
 import {Offer} from "../models/offer.model.js";
-
+import puppeteer from 'puppeteer';
+import ejs from 'ejs';
+import path from 'path';
+import {fileURLToPath} from 'url';
 
 //homepage
 export const getHome = async (req,res)=> {
@@ -179,45 +183,54 @@ export const resendOtp = async(req,res) => {
 //user profile
 export const getProfile = async (req,res) => {
 
-    // if (!req.session.user){
+        const tab = req.params.tab || "dashboard";
+        let data = {};
 
-    //     const address = null;
-    //     return res.render("profile", {address});
-
-    // }else if (req.session.user){
-        res.set('Cache-Control', 'no-store');
         try {
 
-            const address = await Address.find({owner: req.session.user._id})
+            if (tab === "address") {
+                data.address = await Address.find({owner: req.session.user._id})
+            }
 
-            const page = parseInt(req.query.page) || 1;
-            const limit = 10;
-            const skip = (page-1) * limit;
+            if (tab === "orders"){
+                const page = parseInt(req.query.page) || 1;
+                const limit = 10;
+                const skip = (page-1) * limit;
+    
+                const totalOrders = await Order.countDocuments();
+                const totalPages = Math.ceil(totalOrders/limit);
+    
+                const orders = await Order.aggregate ([
+                    
+                    {$match: {owner: req.session.user._id}},
+                    {$sort: {createdAt: -1}},
+                    {$unwind: "$orderItems"},
+                    {$sort: {createdAt: -1}},
+                    {$lookup: {
+                        from: "products",
+                        localField: "orderItems.product",
+                        foreignField: "_id",
+                        as: "orderItems.productData"
+                    }},
+                    {$unwind: "$orderItems.productData"},
+                    {$skip: skip},
+                    {$limit: limit}
+    
+                ]);
 
-            const totalOrders = await Order.countDocuments();
-            const totalPages = Math.ceil(totalOrders/limit);
-
-            const orders = await Order.aggregate ([
+                data.page = page;
+                data.totalPages = totalPages;
+                data.orders = orders;
                 
-                {$match: {owner: req.session.user._id}},
-                {$sort: {createdAt: -1}},
-                {$unwind: "$orderItems"},
-                {$sort: {createdAt: -1}},
-                {$lookup: {
-                    from: "products",
-                    localField: "orderItems.product",
-                    foreignField: "_id",
-                    as: "orderItems.productData"
-                }},
-                {$unwind: "$orderItems.productData"},
-                {$skip: skip},
-                {$limit: limit}
+            };
 
-            ])
+            if (tab === "wallet") {
 
-            console.log(orders);
+            };
 
-            return res.render("profile", {address, orders, page, totalPages});
+
+
+            return res.render("profile", {activeTab: tab, ...data });
         
         } catch (error) {
     
@@ -1191,10 +1204,10 @@ export const orderStatus = async (req, res) => {
 
     if (req.query.orderId) {
 
-        const order = await Order.findById(req.query.orderId, {owner:1});
+        const order = await Order.findById(req.query.orderId, {owner:1, orderItems:1});
         console.log(order);
         if (order?.owner?.toString() === req?.session?.user?._id.toString()) {
-            return res.status(200).render("order-confirmation", {success: true, order: req.query.orderId});
+            return res.status(200).render("order-confirmation", {success: true, order: req.query.orderId, item: order.orderItems[0]._id});
         }else{
             return res.redirect("404");
         }
@@ -1269,12 +1282,10 @@ export const cancelOrder = async (req,res) => {
 
 
 export const returnOrder = async (req,res) => {
-
+    console.log("============ return order api - start ============");
     const {orderId, itemId} = req.params;
-    // const {returnReason} = req.body;
 
     function findAllowedAction(orderItemStatus){
-            
         const allowedAction = {
             created: "cancel",
             confirmed: "cancel", 
@@ -1292,27 +1303,36 @@ export const returnOrder = async (req,res) => {
 
         const order = await Order.findOne({_id: orderId, 'orderItems._id': itemId});
         if (!order) return res.status(400).json({success: false, error: 'no such order found'});
+        console.log({returnOrder:order}, "✅");
 
         const item = order.orderItems.id(itemId);
         if (!item) return res.status(400).json({success: false, error: 'no such order item found'});
-        
-        const product = Product.findById(item.product);
+        console.log({returnItem:item},"✅");
 
-        if (findAllowedAction(item.status) != 'return') return res.status(400).json({success: false, error: 'This order is not eligible for return'});
+        const product = await Product.findById(item.product);
+        console.log({returnProduct:product}, "✅");
+
+        if (findAllowedAction(item.status) != 'return') {
+            return res.status(400).json({success: false, error: 'This order is not eligible for return'});
+        }
 
         const now = new Date();
         const itemDeliveredAt = item.deliveredAt;
-        const maxReturnDate = itemDeliveredAt + (product.returnPeriod * 24 * 60 * 60 * 1000);
-
+        const maxReturnDate = new Date(itemDeliveredAt.getTime() + (product.returnPeriod * 24 * 60 * 60 * 1000));
+        console.log({now, itemDeliveredAt, maxReturnDate, returnPeriod: product.returnPeriod}, "✅");
+    
         if (now > maxReturnDate) return res.status(400).json({success: false, error: "Return period is over!"});
 
         item.returnStatus = "requested";
+        item.returnReason = req.body.returnReason;
 
         await order.save();
+        console.log("============ return order api - end ============");
         return res.status(200).json({success: true, message: "Return request submitted sucessfully"});
 
+
     } catch (err) {
-        return res.status(500).json({success: true, error: err.message});
+        return res.status(500).json({success: false, error: err.message});
     }
 
 }
@@ -1345,9 +1365,39 @@ export const getOrder = async (req,res) => {
                 foreignField: "_id",
                 as: "productData"
             }},
-            {$unwind: "$productData"}
+            {$unwind: "$productData"},
+            
+            {$lookup: {
+                from: "addresses",
+                localField: "address",
+                foreignField: "_id",
+                as: "addressData"
+            }},
+            {$unwind: "$addressData"}
 
         ])
+
+        const otherItemsInOrder = await Order.aggregate([
+
+            {$match: {_id: orderId}},
+            {$unwind: "$orderItems"},
+            {$match: {"orderItems._id": {$ne:itemId}}},
+            {$lookup: {
+                from: "products",
+                localField: "orderItems.product",
+                foreignField: "_id",
+                as: "productData"
+            }},
+            {$unwind: "$productData"},
+            {$project: {
+                itemId: "$orderItems._id",
+                productName: "$productData.productname",
+                productImage: {$arrayElemAt: ["$productData.images", 0]}
+            }}
+
+        ]);
+
+        console.log({otherItemsInOrder});
 
         
         function findAllowedAction(orderItemStatus){
@@ -1366,10 +1416,12 @@ export const getOrder = async (req,res) => {
 
         const allowedActionForItem = order[0].orderItems.returnStatus == "none" ? findAllowedAction(order[0].orderItems.status) : null;
 
-        console.log({order: order[0].orderItems, allowedAction: allowedActionForItem});
+        console.log({order: order[0], allowedAction: allowedActionForItem});
 
         return res.status(200).render("order", {
             order,
+            orderData: order[0],
+            otherItemsInOrder,
             allowedAction: allowedActionForItem,
             returnStatus: order[0].orderItems.returnStatus,
             payment: order[0].paymentInfo.status
@@ -1384,6 +1436,55 @@ export const getOrder = async (req,res) => {
 }
 
 
+
+
+export const generateInvoice = async (req, res) => {
+
+    // const {orderId, itemId} = req.params;
+    const [orderId, itemId] = ['6990bdd713cc8ed227be8c05', '6990bdd713cc8ed227be8c06'];
+    let invoiceData = {};
+    const order = await Order.findById(orderId).populate('orderItems.product', 'productname').populate('address');
+    const item = order.orderItems.id(itemId);
+
+    console.log({order, item});
+    invoiceData._id = order._id;
+    invoiceData.invoiceNumber = generateInvoiceNumber(itemId);
+    invoiceData.address = order.address;
+    invoiceData.item = {
+        product: item.product.productname,
+        quantity: item.quantity,
+        price: item.price,
+        deliveredAt: item.deliveredAt
+    };
+    invoiceData.coupon = order.couponInfo;
+    invoiceData.createdAt = new Date();
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const htmlData = await ejs.renderFile(
+        path.join(__dirname, '../views/invoice.ejs'),
+        {invoiceData}
+    );
+
+    
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(htmlData);
+    const pdfData = await page.pdf({
+        format: 'A4',
+        printBackground: true 
+    })
+    
+    await browser.close();
+
+    res.set({
+        'Content-Type' : 'application/pdf',
+        'Content-Disposition' : `attachment; filename=${invoiceData.invoiceNumber}.pdf`,
+        'Content-Length' : pdfData.length
+    });
+
+    return res.end(pdfData);
+}
 
 //------------------- address operations -------------------------//
 

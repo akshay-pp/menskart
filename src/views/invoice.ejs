@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Invoice</title>
+
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #333;
+            margin: 40px;
+        }
+
+        .invoice-box {
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .company-details h2 {
+            margin: 0;
+            color: #111;
+        }
+
+        .invoice-details {
+            text-align: right;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #111;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th {
+            background: #f5f5f5;
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .totals {
+            width: 300px;
+            float: right;
+            margin-top: 20px;
+        }
+
+        .totals table td {
+            padding: 8px;
+        }
+
+        .grand-total {
+            font-weight: bold;
+            font-size: 16px;
+            border-top: 2px solid #000;
+        }
+
+        .footer {
+            margin-top: 60px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="invoice-box">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="company-details">
+                <h2>Menskart</h2>
+                <div>Street Address</div>
+                <div>Kannur, Kerala</div>
+                <div>Phone: +91 9995 123456</div>
+                <div>Email: menskartinc@gmail.com</div>
+            </div>
+
+            <div class="invoice-details">
+                <h2>INVOICE</h2>
+                <div><strong>Invoice #:</strong>
+                    <%= invoiceData.invoiceNumber || invoiceData._id %>
+                </div>
+                <div><strong>Date:</strong>
+                    <%= invoiceData.createdAt.toDateString() %>
+                </div>
+                <!-- <div><strong>Status:</strong>
+                    <%# order.status %>
+                </div> -->
+            </div>
+        </div>
+
+
+        <!-- BILL TO -->
+        <div class="section">
+            <div class="section-title">Bill To</div>
+            <div>
+                <%= invoiceData.address.name %>
+            </div>
+            <div>
+                <%= invoiceData.address.phone %>
+            </div>
+            <div>
+                <%= invoiceData.address.address %>
+            </div>
+            <div>
+                <%= invoiceData.address.city %>, <%= invoiceData.address.state %>
+            </div>
+            <div>
+                <%= invoiceData.address.pincode %>
+            </div>
+        </div>
+
+
+        <!-- ITEMS TABLE -->
+        <div class="section">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Qty</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr>
+                        <td>
+                            1
+                        </td>
+                        <td>
+                            <%= invoiceData.item.product %>
+                        </td>
+                        <td>₹<%= invoiceData.item.price.toFixed(2) %>
+                        </td>
+                        <td>
+                            <%= invoiceData.item.quantity %>
+                        </td>
+                        <td class="text-right">
+                            ₹<%= (invoiceData.item.price * invoiceData.item.quantity).toFixed(2) %>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+
+        <!-- TOTALS -->
+        <div class="totals">
+            <table>
+                <tr>
+                    <td>Subtotal</td>
+                    <td class="text-right">₹<%= (invoiceData.item.price * invoiceData.item.quantity).toFixed(2) %>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Shipping</td>
+                    <td class="text-right">₹40<%# order.shipping || 0 %>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Tax</td>
+                    <td class="text-right">₹25.99<%# order.tax || 0 %>
+                    </td>
+                </tr>
+
+                <% if(invoiceData.coupon){ %>
+                    <tr>
+                        <td>Discount</td>
+                        <td class="text-right">- ₹<%= invoiceData.coupon.discount %>
+                        </td>
+                    </tr>
+                    <% } %>
+
+                        <tr class="grand-total">
+                            <td>Total</td>
+                            <td class="text-right">₹<%= (invoiceData.item.price * invoiceData.item.quantity).toFixed(2) %>
+                            </td>
+                        </tr>
+            </table>
+        </div>
+
+
+        <!-- FOOTER -->
+        <div class="footer">
+            Thank you for your purchase.
+            <br />
+            This is a computer generated invoice.
+        </div>
+
+    </div>
+
+</body>
+
+</html>

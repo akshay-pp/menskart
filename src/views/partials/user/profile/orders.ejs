@@ -1,0 +1,99 @@
+<div class="tab-pane fade show active" id="tab-orders" role="tabpanel" aria-labelledby="tab-orders-link">
+    <div class="alert alert-danger" style="display: none;" id="orders-page-error" role="alert">
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Amount</th>
+                        <th scope="col">Order Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% orders.forEach(order => { %>
+                        <tr class="">
+                            <td style="width: 50%;">
+                                <a class="itemside d-flex align-items-center" href="/api/user/order/<%= order._id %>/item/<%= order.orderItems._id %>">
+                                    <div class="left px-3">
+                                        <img src="/<%= order.orderItems.productData.images[0] %>" width="40" height="40" class="img-xs" alt="Item"/>
+                                    </div>
+                                    <div class="info mx-4 text-capitalize"><p><%= order.orderItems.productData.productname %></div>
+                                </a>
+                            </td>
+                            <td style="width: 20%;"><%= new Date(order.createdAt).toLocaleString("en-IN", { 
+                                day: "numeric", 
+                                month: "short", 
+                                year: "numeric"
+                            }).replace(" at", ", ") %></td>
+                            <td style="width: 20%;"><b>₹ <%= order.orderItems.price %></b></td>
+                            <td class="pr-3" style="width: 10%;">
+
+                                <% if (order.orderItems.returnStatus != "none"){ %>
+                                    <span class="badge rounded-pill alert-danger">Return <%= order.orderItems.returnStatus%></span>
+                                <% } else if (order.orderItems.status == "cancelled") { %>
+                                    <span class="badge rounded-pill alert-danger">Cancelled</span>
+                                <% } else if (order.orderItems.status == "delivered") { %>
+                                    <span class="badge rounded-pill alert-success">Delivered</span>
+                                <% } else { %>
+                                    <span class="badge rounded-pill alert-warning"><%= order.orderItems.status %></span>
+                                <% } %>
+
+                            </td>
+                            <!-- <td class="text-end">
+                                <a href="/api/admin/orders/<%# order._id %>" class="btn btn-md rounded font-sm">Detail</a>
+                                <div class="dropdown">
+                                    <a href="#" data-bs-toggle="dropdown" class="btn btn-light rounded btn-sm font-sm"> <i class="material-icons md-more_horiz"></i> </a>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" href="#">View detail</a>
+                                        <a class="dropdown-item" href="#">Edit info</a>
+                                        <a class="dropdown-item text-danger" href="#">Delete</a>
+                                    </div>
+                                </div>
+                            </td> -->
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <!-- table-responsive //end -->
+    </div>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+
+            <% if(page > 1) { %>
+
+                <li class="page-item">
+                    <a class="page-link page-link-prev" href="?page=<%= page - 1 %>" aria-label="Previous" tabindex="-1" aria-disabled="true">
+                        <span aria-hidden="true"><i class="icon-long-arrow-left"></i></span>Prev
+                    </a>
+                </li>
+
+            <% } %>
+            
+            <% for (let i = 1; i <= totalPages; i++) { %>
+
+                <li class="page-item <%= page === i ? 'active' : '' %> " aria-current="page"><a class="page-link" href="?page=<%= i %>"><%= i %></a></li>
+                
+            <% } %>
+            
+            <li class="page-item-total">of <%= totalPages %></li>
+                
+            <% if(page < totalPages) { %>
+
+                <li class="page-item">
+                    <a class="page-link page-link-next" href="?page=<%= page + 1 %>" aria-label="Next">
+                        Next <span aria-hidden="true"><i class="icon-long-arrow-right"></i></span>
+                    </a>
+                </li>
+
+            <% } %>
+        </ul>
+    </nav>
+    
+    <!-- <a href="category.html" class="btn btn-outline-primary-2"><span>GO SHOP</span><i class="icon-long-arrow-right"></i></a> -->
+</div><!-- .End .tab-pane -->

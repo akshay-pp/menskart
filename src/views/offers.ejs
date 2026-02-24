@@ -69,7 +69,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="offerAmount">Discount Amount</label>
-                                        <input type="number" id="offerAmount" name="offerAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field">
+                                        <input type="number" id="offerAmount" name="offerAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field create-offer">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -77,7 +77,7 @@
 
                                     <div class="mb-4" id= 'maxDiscount-div'>
                                         <label class="form-label" for="maxDiscount">Maximum Discount</label>
-                                        <input type="number" id="maxDiscount" name="maxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field">
+                                        <input type="number" id="maxDiscount" name="maxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field create-offer">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -85,7 +85,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="minimumValue">Minimum Product Value</label>
-                                        <input type="number" id="minimumValue" name="minimumValue" placeholder="Type here" min="1" class="form-control form-field">
+                                        <input type="number" id="minimumValue" name="minimumValue" placeholder="Type here" min="1" class="form-control form-field create-offer">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -93,7 +93,7 @@
                                     
                                     <div class="mb-4">
                                         <label class="form-label" for="offerStartDate">Valid from: </label>
-                                        <input type="date" name="offerStartDate" id="offerStartDate" class="form-control form-field">
+                                        <input type="date" name="offerStartDate" id="offerStartDate" class="form-control form-field create-offer">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -101,7 +101,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="offerExpiryDate">Expires on: </label>
-                                        <input type="date" name="offerExpiry" id="offerExpiryDate" class="form-control form-field">
+                                        <input type="date" name="offerExpiry" id="offerExpiryDate" class="form-control form-field create-offer">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -109,7 +109,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="offerdescription">Description</label>
-                                        <textarea placeholder="Type here" class="form-control form-field" id="offerdescription" name="offerdescription"></textarea>
+                                        <textarea placeholder="Type here" class="form-control form-field create-offer" id="offerdescription" name="offerdescription"></textarea>
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -159,7 +159,7 @@
                                                         <div class="dropdown-menu">
                                                             <a href="#" data-bs-toggle="modal" data-bs-target="#disable-offer-modal" data-offer="<%= offer.isActive %>" class= "<%= offer.isActive ? "dropdown-item text-danger" : "dropdown-item text-success" %> disable-offer-modal-btn" id="<%= offer._id %>"> <%= offer.isActive ? "Disable" : "Enable" %></a>
                                                             <!-- <a class="dropdown-item text-danger" href="#">Disable</a> -->
-                                                            <a class="dropdown-item" href="#">Edit info</a>
+                                                            <a class="dropdown-item edit-offer-btn" href="#" data-bs-toggle="modal" data-bs-target="#edit-offer-modal" data-offer="<%= JSON.stringify(offer) %>">Edit info</a>
                                                             <!-- <a class="dropdown-item text-danger" href="#">Delete</a> -->
                                                         </div>
                                                     </div>
@@ -179,6 +179,108 @@
                 </div>
                 <!-- card .// -->
             </section>
+
+            <div class="modal fade" id="edit-offer-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="staticBackdropLabel">Edit Offer</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 card" id ="delete-modal-content"> 
+                            <div class="col-md-12">
+                                <form id="editOfferForm">
+                                    <div class="mb-4">
+                                        <label for="editOfferName" class="form-label">Name</label>
+                                        <input type="text" name="editOfferName" placeholder="Type here" class="form-control" id="editOfferName"/>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4 border rounded">
+                                        <fieldset class="p-2">
+                                            <legend class="mb-2">Applicable categories: </legend>
+                                                
+                                            <% categories.forEach(category => { %>
+                                                <div class="">
+                                                    <input type="checkbox" id="edit-<%= category.name %>" name="editAppliesTo" value="<%= category._id %>"/>
+                                                    <label for="edit-<%= category.name %>"><%= category.name %></label>
+                                                </div>
+                                            <% }) %>
+                                        </fieldset>
+                                    </div>
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center align-items-center">
+                                        <div class="mb-0 col-6">
+                                            <label class="form-label" for="editIsPercentage">isPercentage? : </label>
+                                            <input type="checkbox" name="editIsPercentage" id="editIsPercentage" class="form-check-input" checked>
+                                        </div>
+
+                                        <div class="mb-4 col-6" id= 'edit-maxDiscount-div'>
+                                            <label class="form-label" for="editMaxDiscount">Maximum Discount</label>
+                                            <input type="number" id="editMaxDiscount" name="editMaxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editOfferAmount">Discount Amount</label>
+                                            <input type="number" id="editOfferAmount" name="editOfferAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+    
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editMinimumValue">Minimum Product Value</label>
+                                            <input type="number" id="editMinimumValue" name="editMinimumValue" placeholder="Type here" min="1" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editOfferStartDate">Valid from: </label>
+                                            <input type="date" name="editOfferStartDate" id="editOfferStartDate" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+    
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editOfferExpiryDate">Expires on: </label>
+                                            <input type="date" name="editOfferExpiry" id="editOfferExpiryDate" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="editOfferDescription">Description</label>
+                                        <textarea placeholder="Type here" class="form-control form-field edit-offer" id="editOfferDescription" name="editOfferDescription"></textarea>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary" type="submit">Apply Changes</button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div class="modal fade" id="disable-offer-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered ">
@@ -263,6 +365,201 @@
                 isEmpty,
                 triggerToast
             } from "/assets/js/fetch/validationHelpers.js"
+
+
+
+            document.addEventListener('DOMContentLoaded', editOffer());
+
+            function editOffer() {
+                const fields = {
+                    offerName: document.getElementById("editOfferName"),
+                    isPercentage: document.getElementById("editIsPercentage"),
+                    offerAmount: document.getElementById("editOfferAmount"),
+                    maxDiscount: document.getElementById("editMaxDiscount"),
+                    minimumValue: document.getElementById("editMinimumValue"),
+                    offerStartDate: document.getElementById("editOfferStartDate"),
+                    offerExpiryDate: document.getElementById("editOfferExpiryDate"),
+                    offerDescription: document.getElementById("editOfferDescription")
+                }
+                
+                const editOfferModal = document.getElementById('edit-offer-modal');
+                let offerId;
+
+
+                //==================== pre-populate edit offer modal ====================// 
+                editOfferModal.addEventListener('show.bs.modal', function(e) {
+                    const button = e.relatedTarget;
+                    const offer = JSON.parse(button.dataset.offer);
+                    offerId = offer._id;
+                    console.log(offer);
+                    fields.offerName.value = offer.name;
+                    fields.isPercentage.checked = offer.isPercent;
+                    fields.offerAmount.value = offer.offerAmount;
+                    fields.maxDiscount.value = offer.maxDiscount;
+                    fields.minimumValue.value = offer.minimumValue;
+                    fields.offerStartDate.valueAsDate = new Date(offer.validFrom);
+                    fields.offerExpiryDate.valueAsDate = new Date(offer.expiry);
+                    fields.offerDescription.value = offer.description;
+    
+                    document.querySelectorAll('input[type="checkbox"][name="editAppliesTo"]').forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+    
+                    offer.appliesTo.forEach(item => {
+                        document.getElementById(`edit-${item.categName}`).checked = true;
+                    })
+                })
+
+                // toggle max discount wrt isPercentage
+                fields.isPercentage.addEventListener('change', function () {
+
+                    if (this.checked) {
+                        document.getElementById('edit-maxDiscount-div').classList.remove('d-none')
+                    } else {
+                        document.getElementById('edit-maxDiscount-div').classList.add('d-none')
+                    }
+
+                })
+
+
+                //disable previous dates
+                fields.offerStartDate.min = new Date().toISOString().split('T')[0];
+                fields.offerExpiryDate.min = new Date().toISOString().split('T')[0];
+
+                
+
+                //==================== blur validations ====================//
+
+                
+                // validation for empty field
+                emptyFieldCheck("blur", ...document.querySelectorAll(".form-field edit-offer"));
+
+
+                //minimum maximum length validation
+                fields.offerName.addEventListener("blur", function() {
+                    if (isEmpty(this)) {
+                        return setError(this, "field cant be empty");
+                    }
+                    
+                    if (!hasMinimumLength(this, 6)){
+                        return setError(this, "minimum 6 characters");
+                    }
+                    
+                    if (!hasMaximumLength(this, 30)){
+                        return setError(this, "maximum 30 characters");
+                    }
+                })
+                
+
+                fields.offerExpiryDate.addEventListener("blur", function() {
+                    if (fields.offerStartDate.value && this.value < fields.offerStartDate.value) {
+                        return setError(this, "select a higher date than start date");
+                    }
+                })
+
+
+                fields.offerStartDate.addEventListener("blur", function() {
+                    if (fields.offerExpiryDate.value && this.value > fields.offerExpiryDate.value) {
+                        return setError(this, "select a lower date than expiry date");
+                    }
+                })
+
+
+                //cross field validations
+                fields.offerAmount.addEventListener("blur", function(){
+                    
+                    if (fields.isPercentage.checked) {
+                        if(this.value.trim() > 100 || this.value.trim() < 0){
+                            setError(this, "Invalid percentage value");
+                            return;
+                        }
+                    } else {
+                        if (this.value.trim() <= fields.minimumValue.value.trim()) {
+                            setError(this, "Discount amount should be less than cart value");
+                            return;
+                        }
+                    }
+
+                });
+
+
+                fields.maxDiscount.addEventListener('blur', function() {
+
+                    if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
+                        setError(this, "not that much discount Mr Admin!");
+                        return;
+                    }
+
+                });
+
+
+                fields.minimumValue.addEventListener('blur', function() {
+
+                    if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
+                        setError(this, "higher cart value please!");
+                        return false;
+                    }
+
+                });
+
+
+                document.getElementById("editOfferForm").addEventListener("submit", async function(e){
+
+                    e.preventDefault();
+
+                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field edit-offer"))){
+                        return;
+                    }
+
+                    
+                    function submitValidations(fields) {
+
+                        if (isEmpty(this)) {
+                            return setError(this, "field cant be empty");
+                        }
+                        
+                        if (!hasMinimumLength(this, 6)){
+                            return setError(this, "minimum 6 characters");
+                        }
+                        
+                        if (!hasMaximumLength(this, 30)){
+                            return setError(this, "maximum 30 characters");
+                        }
+                        
+                        setSuccess(this);
+
+                    }
+
+
+                    const appliesTo = Array.from(document.querySelectorAll("input[name='editAppliesTo']:checked")).map(box => ({categName: box.id.replace('edit-', ''), categId: box.value}));
+                    
+
+                    console.log({appliesTo});
+
+                    const formData = new FormData(this);
+
+                    const payload = Object.fromEntries(formData);
+                    delete payload.editAppliesTo;
+                    payload.editAppliesTo = appliesTo;
+                    payload.type = 'category';
+                    payload._id = offerId;
+                    console.log({payload});
+
+                    const response = await fetch("/api/admin/offers", {
+                        method: "PATCH",
+                        headers: {"Content-Type" : "application/json"},
+                        body: JSON.stringify(payload)
+                    })
+
+                    const data = await response.json();
+                    location.reload();
+                    console.log(data);
+
+                })
+
+            }
+
+
 
 
             //==================== disable an offer ====================//
@@ -381,8 +678,8 @@
                     return setError(this, "minimum 6 characters");
                 }
                 
-                if (!hasMaximumLength(this, 15)){
-                    return setError(this, "maximum 15 characters");
+                if (!hasMaximumLength(this, 30)){
+                    return setError(this, "maximum 30 characters");
                 }
 
             })
@@ -444,7 +741,7 @@
 
                 e.preventDefault();
 
-                if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field"))){
+                if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field create-offer"))){
                     return;
                 }
 
@@ -459,8 +756,8 @@
                         return setError(this, "minimum 6 characters");
                     }
                     
-                    if (!hasMaximumLength(this, 15)){
-                        return setError(this, "maximum 15 characters");
+                    if (!hasMaximumLength(this, 30)){
+                        return setError(this, "maximum 30 characters");
                     }
                     
                     setSuccess(this);
@@ -478,6 +775,7 @@
                 const payload = Object.fromEntries(formData);
                 delete payload.appliesTo;
                 payload.appliesTo = appliesTo;
+                payload.type = 'category';
                 console.log(payload);
 
                 const response = await fetch("/api/admin/offers", {

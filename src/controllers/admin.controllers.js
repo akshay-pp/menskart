@@ -402,24 +402,33 @@ export const getOrderDetails = async(req,res) => {
 
 }
 
-export const changeOrderStatus = async (req,res) => {
+export const changeOrderStatus = async (req, res) => {
 
-    const {orderId} = req.params;
-    const {changeOrderStatus} = req.body;
+    const {orderId, itemId} = req.params;
+    console.log({orderId, itemId, body: req.body});
 
     try {
         
         const order = await Order.findById(orderId);
+        const item = order.orderItems.id(itemId);
+        console.log({order, item, status: item.status});
 
-        if(!order){
-            return res.status(400).json({success: false, error: 'Order not found'});
-        }
+        if (item.status === "delivered"){
+            return res.status(400).json({success: false, error: "Item already delivered. cannot change status"});
+        };
 
-        order.orderStatus = changeOrderStatus;
-        await order.save();
+        const result = await Order.updateOne(
+            {_id: orderId, 'orderItems._id': itemId},
+            {$set: {'orderItems.$.status': req.body.status}}
+        );
 
-        return res.status(200).json({success: true, message: "Order status changed!", orderStatus: order.orderStatus});
+        if(result.matchedCount === 0) {
+            return res.status(400).json({success: false, error: "Order or item not found"});
+        };
 
+        //update orderStatus with recalculateOrderStatus();
+
+        return res.status(200).json({success: true, message: "Order status changed", orderStatus: req.body.status});
 
     } catch (error) {
         return res.status(500).json({success: false, error: error.message});
@@ -590,7 +599,7 @@ export const unlistProduct = async (req,res) => {
 
         if (product.isUnListed){
             product.isUnListed = false;
-        }else{
+        } else {
             product.isUnListed = true;
         }
 
@@ -797,16 +806,19 @@ export const createOffer = async(req, res) => {
 
         console.log(req.body);
         //validations
-        const isPercent = req.body.isPercentage ? true : false;
+
+        const isPercent = req.body.productOfferIsPercentage ? true : false;
         const offer = new Offer({
-            name: req.body.offerName,
-            appliesTo: req.body.appliesTo,
-            offerAmount: req.body.offerAmount,
-            maxDiscount: isPercent ? req.body.maxDiscount : null,
-            description: req.body.offerdescription,
-            minimumValue: req.body.minimumValue,
-            validFrom: req.body.offerStartDate,
-            expiry: req.body.offerExpiry,
+            name: req.body.productOfferName,
+            type: req.body.type,
+            appliesTo: req.body.appliesTo ?? null ,
+            productIds: req.body.productId ?? null,
+            offerAmount: req.body.productOfferAmount,
+            maxDiscount: isPercent ? req.body.productOfferMaxDiscount : null,
+            description: req.body.productOfferDescription,
+            minimumValue: req.body.productOfferMinimumValue,
+            validFrom: req.body.productOfferStartDate,
+            expiry: req.body.productOfferExpiryDate,
             isPercent
         });
 
@@ -814,6 +826,40 @@ export const createOffer = async(req, res) => {
 
         await offer.save();
         return res.status(201).json({success: true, message: "Offer created successfully"});
+
+
+    } catch(err) {
+        console.log(err);
+        return res.status(500).json({success: false, error: err.message});
+    }
+    
+}
+
+
+export const editOffer = async(req, res) => {
+
+    try {
+
+        console.log(req.body);
+        //validations
+
+        const isPercent = req.body.editIsPercentage ? true : false;
+        const editOffer = {
+            name: req.body.editOfferName,
+            type: req.body.type,
+            appliesTo: req.body.editAppliesTo,
+            offerAmount: req.body.editOfferAmount,
+            maxDiscount: isPercent ? req.body.editMaxDiscount : null,
+            description: req.body.editOfferDescription,
+            minimumValue: req.body.editMinimumValue,
+            validFrom: req.body.editOfferStartDate,
+            expiry: req.body.editOfferExpiry,
+            isPercent
+        }
+
+        const updatedOffer = await Offer.findByIdAndUpdate(req.body._id, {$set: editOffer}, {new: true});
+        console.log(updatedOffer);
+        return res.status(201).json({success: true, message: "Changes applied successfully"});
 
 
     } catch(err) {
@@ -849,9 +895,35 @@ export const changeOfferStat = async(req,res) => {
         console.log(updatedOffer);
         return res.status(200).json({ success:true, message:"Updated successfully"});
 
-
     } catch (error) {
         return res.status(500).json({ success:false, error: error.message });
+    }
+
+}
+
+
+export const getReturns = async (req,res) => {
+
+    try {
+        
+        const ordersInReturnRequests = await Order.aggregate([
+            {$unwind: "$orderItems"},
+            {$match: {"orderItems.returnStatus" : "requested"}},
+            {$lookup: {
+                from: "addresses",
+                localField: "address",
+                foreignField: "_id",
+                as: "addressData",
+            }},
+            {$unwind: "$addressData"}
+        ])
+
+        console.log({ordersInReturnRequests, sample: ordersInReturnRequests[0].orderItems});
+        return res.status(200).render("admin-returns", {ordersInReturnRequests});
+
+
+    } catch (error) {
+        return res.status(500).json({success: false, error});
     }
 
 }

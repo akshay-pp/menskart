@@ -7,6 +7,11 @@ const offerSchema = new Schema({
         trim: true
     },
 
+    type: {
+        type: String,
+        enum: ['category', 'product', 'referal']
+    },
+
     appliesTo: [
         {
             _id: false,
@@ -19,6 +24,11 @@ const offerSchema = new Schema({
             }
         }
     ],
+
+    productIds: {
+        type: Schema.Types.ObjectId,
+        ref: 'Product'
+    },
 
     isActive: {
         type: Boolean,

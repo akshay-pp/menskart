@@ -1,0 +1,30 @@
+<div class="tab-pane fade show active" id="tab-address" role="tabpanel" aria-labelledby="tab-address-link">
+    <p>The following addresses will be used on the checkout page by default.</p>
+    <div class="row my-4">
+        <div class="col-sm-6">
+            <a href="" class="btn btn-outline-primary-2" data-toggle="modal" data-target="#add-address-modal"><i class="icon-plus"></i>ADD A NEW ADDRESS</a>
+        </div>
+    </div>
+    <div class="row">
+        <% if (address) { %>
+            <% address.forEach(address => {  %>
+                <div class="col-lg-6">
+                    <div class="card card-dashboard">
+                        <div class="card-body">
+                            <h3 class="card-title"><%= address.type %></h3><!-- End .card-title -->
+
+                            <p><%= address.name %><br>
+                                <%= address.phone %><br>
+                                <%= address.address %><br>
+                                <%= address.pincode %><br>
+                                <%= address.city %><br>
+                                <%= address.state %><br>
+                            <a href="#" id="edit-address-btn" data-toggle="modal" data-target="#edit-address-modal" class="btn btn-outline-primary-2" data-address="<%= JSON.stringify(address) %>">Edit <i class="icon-edit"></i></a>
+                            <a href="#" id="delete-address-btn" data-toggle="modal" data-target="#delete-address-modal" class="btn btn-outline-danger" data-id="<%= address._id %>">Delete <i class="icon-close"></i></a></p>
+                        </div><!-- End .card-body -->
+                    </div><!-- End .card-dashboard -->
+                </div><!-- End .col-lg-6 -->
+            <% }) %>
+        <% } %>								    		                                       
+    </div><!-- End .row -->
+</div><!-- .End .tab-pane -->

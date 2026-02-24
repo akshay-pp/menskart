@@ -14,6 +14,13 @@
         <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
         <!-- Template CSS -->
         <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+        <style>
+            .disabled-div {
+                pointer-events: none; /* Blocks all mouse interactions */
+                opacity: 0.6;         /* Visually dims the content */
+                cursor: not-allowed;  /* Optional: Changes cursor to indicate disabled state */
+            }
+        </style>
     </head>
 
     <body>
@@ -126,21 +133,23 @@
                         </div>
                         <!-- row // -->
                         <div class="row">
-                            <div class="col-lg-7">
+                            <div class="col-lg-12">
                                 <div class="table-responsive">
                                     <table class="table">
                                         <thead>
                                             <tr>
-                                                <th width="40%">Product</th>
-                                                <th width="20%">Unit Price</th>
-                                                <th width="20%">Quantity</th>
-                                                <th width="20%" class="text-end">Total</th>
+                                                <th width="30%">Product</th>
+                                                <th width="10%">Status</th>
+                                                <th width="10%">Unit Price</th>
+                                                <th width="10%">Quantity</th>
+                                                <th width="30%">Actions</th>
+                                                <th width="10%" class="text-end">Total</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <% order.orderItems.forEach(item => { %>
-                                                <tr>
-                                                    <td>
+                                                <tr class="border-bottom">
+                                                    <td class="py-4">
                                                         <a class="itemside" href="#">
                                                             <div class="left">
                                                                 <img src="/<%= item.product.images[0] %>" width="40" height="40" class="img-xs" alt="Item" />
@@ -148,59 +157,105 @@
                                                             <div class="info"><%= item.product.productname %></div>
                                                         </a>
                                                     </td>
+                                                    <td>
+                                                        <%
+                                                            const statusMap = {
+                                                                created: {text: "CREATED", class: "alert-warning"},
+                                                                confirmed: {text: "CONFIRMED", class: "alert-warning"},
+                                                                processing: {text: "PROCESSING", class: "alert-primary"},
+                                                                shipped: {text: "SHIPPED", class: "alert-primary"},
+                                                                delivered: {text: "DELIVERED", class: "alert-success"},
+                                                                cancelled: {text: "CANCELLED", class: "alert-danger"},
+                                                            }
+
+                                                            const returnMap = {
+                                                                none: {text: "", class: "d-none"},
+                                                                requested: {text: "RETURN REQUESTED", class: "alert-warning"},
+                                                                approved: {text: "RETURN APPROVED", class: "alert-primary"},
+                                                                rejected: {text: "RETURN REJECTED", class: "alert-danger"},
+                                                                refunded: {text: "RETURNED&REFUNDED", class: "alert-success"}
+                                                            }
+
+                                                            let statusData = statusMap[item.status];
+                                                            let returnData = returnMap[item.returnStatus];
+
+                                                        %>
+
+                                                        <p id="order-status-<%= item._id %>" class="badge rounded-pill <%= statusData.class %>"><%= statusData.text %></p>
+                                                        <a data-bs-toggle="modal" data-bs-target="#return-order-modal" class=" <%# allowedAction ? "" : "disabled" %>" >
+                                                            <p id="return-status-<%= item._id %>" class="badge rounded-pill <%= returnData.class %>" data-return-reason="<%=item.returnReason ?? ""%>"><%= returnData.text %></p>
+                                                        </a>
+                                                        <!-- <%# if (item.returnStatus != "none"){ %>
+                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-danger">Return <%# item.returnStatus%></p>
+                                                        <%# } else if (item.status == "cancelled") { %>
+                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-danger">CANCELLED</p>
+                                                        <%# } else if (item.status == "delivered") { %>
+                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-success">DELIVERED</p>
+                                                        <%# } else { %>
+                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-warning"><%# item.status.toUpperCase() %></p>
+                                                        <%# } %>  -->
+                                                    </td>
                                                     <td>₹<%= item.price %></td>
                                                     <td><%= item.quantity %></td>
+                                                    <td>
+                                                        <div class="<%= item.status === "delivered" ? "disabled-div" : "" %>">
+                                                            <form id="change-order-status-form-<%= item._id %>" class="change-order-status-form d-flex justify-content-start gap-1" data-order-id="<%= order._id %>" data-item-id="<%= item._id %>">
+                                                                <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
+                                                                    <option hidden disabled selected value>Change Order Status</option>
+                                                                    <option value="confirmed">Confirmed</option>
+                                                                    <option value="processing">Processing</option>
+                                                                    <option value="shipped">Shipped</option>
+                                                                    <option value="delivered">Delivered</option>
+                                                                    <option value="cancelled">Cancelled</option>
+                                                                </select>
+                                                                <button type="submit" class="btn btn-primary" href="#">Save</button>
+                                                            </form>
+                                                        </div>
+                                                    </td>
                                                     <td class="text-end">₹<%= item.price * item.quantity %></td>
                                                 </tr>
                                             <% }) %>
-                                            <tr>
-                                                <td colspan="4">
-                                                    <article class="float-end">
-                                                        <dl class="dlist">
-                                                            <dt>Subtotal:</dt>
-                                                            <dd>₹<%= order.totalPrice %></dd>
-                                                        </dl>
-                                                        <dl class="dlist">
-                                                            <dt>Shipping cost:</dt>
-                                                            <dd>0.00</dd>
-                                                        </dl>
-                                                        <dl class="dlist">
-                                                            <dt>Grand total:</dt>
-                                                            <dd><b class="h5">₹<%= order.totalPrice %></b></dd>
-                                                        </dl>
-                                                        <dl class="dlist">
-                                                            <dt class="text-muted">Status:</dt>
-                                                            <dd>
-                                                                <span class="badge rounded-pill alert-success text-success">Payment <%= order.paymentInfo.status %></span>
-                                                            </dd>
-                                                        </dl>
-                                                    </article>
-                                                </td>
-                                            </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="row mt-2 pt-2 align-items-center">
+                                    <div class="col-lg-4">
+                                        <div class="box shadow-sm bg-light">
+                                            <h6 class="mb-15">Payment info</h6>
+                                            <p>
+                                                <img src="/assets/imgs/card-brands/2.png" class="border" height="20" /> Master Card **** **** 4768 <br />
+                                                Business name: Grand Market LLC <br />
+                                                Phone: +1 (800) 555-154-52
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4"></div>
+                                    <div class="col-lg-4">
+                                        <article class="float-end">
+                                            <dl class="dlist">
+                                                <dt>Subtotal:</dt>
+                                                <dd>₹<%= order.totalPrice %></dd>
+                                            </dl>
+                                            <dl class="dlist">
+                                                <dt>Shipping cost:</dt>
+                                                <dd>0.00</dd>
+                                            </dl>
+                                            <dl class="dlist">
+                                                <dt>Grand total:</dt>
+                                                <dd><b class="h5">₹<%= order.totalPrice %></b></dd>
+                                            </dl>
+                                            <dl class="dlist">
+                                                <dt class="text-muted">Status:</dt>
+                                                <dd>
+                                                    <span class="badge rounded-pill alert-success text-success">Payment <%= order.paymentInfo.status %></span>
+                                                </dd>
+                                            </dl>
+                                        </article>
+                                    </div>
                                 </div>
                                 <!-- table-responsive// -->
                             </div>
                             <!-- col// -->
-                            <div class="col-lg-1"></div>
-                            <div class="col-lg-4">
-                                <div class="box shadow-sm bg-light">
-                                    <h6 class="mb-15">Payment info</h6>
-                                    <p>
-                                        <img src="/assets/imgs/card-brands/2.png" class="border" height="20" /> Master Card **** **** 4768 <br />
-                                        Business name: Grand Market LLC <br />
-                                        Phone: +1 (800) 555-154-52
-                                    </p>
-                                </div>
-                                <!-- <div class="h-25 pt-4">
-                                    <div class="mb-3">
-                                        <label>Notes</label>
-                                        <textarea class="form-control" name="notes" id="notes" placeholder="Type some note"></textarea>
-                                    </div>
-                                    <button class="btn btn-primary">Save note</button>
-                                </div> -->
-                            </div>
                             <!-- col// -->
                         </div>
                     </div>
@@ -208,6 +263,117 @@
                 </div>
                 <!-- card end// -->
             </section>
+
+            <div class="toast" id="admin-order-details-page-toast" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; bottom: 2rem; right: 1rem; z-index: 1055; width: 350px;">
+                <div class="toast-header bg-dark text-white justify-content-center" id="toast-header">
+
+                    <div class="d-flex p-2">
+                        
+                        <svg id="success-toast" class="d-none toast-icon" fill="#28a745" width="24px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <title>checkmark</title>
+                            <path d="M16 3c-7.18 0-13 5.82-13 13s5.82 13 13 13 13-5.82 13-13-5.82-13-13-13zM23.258 12.307l-9.486 9.485c-0.238 0.237-0.623 0.237-0.861 0l-0.191-0.191-0.001 0.001-5.219-5.256c-0.238-0.238-0.238-0.624 0-0.862l1.294-1.293c0.238-0.238 0.624-0.238 0.862 0l3.689 3.716 7.756-7.756c0.238-0.238 0.624-0.238 0.862 0l1.294 1.294c0.239 0.237 0.239 0.623 0.001 0.862z"></path>
+                        </svg>
+
+                        <svg id="warning-toast" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--emojione d-none toast-icon" width="24px" preserveAspectRatio="xMidYMid meet" fill="#000000" transform="rotate(0)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M5.9 62c-3.3 0-4.8-2.4-3.3-5.3L29.3 4.2c1.5-2.9 3.9-2.9 5.4 0l26.7 52.5c1.5 2.9 0 5.3-3.3 5.3H5.9z" fill="#ffce31"> </path> <g fill="#231f20"> <path d="M27.8 23.6l2.8 18.5c.3 1.8 2.6 1.8 2.9 0l2.7-18.5c.5-7.2-8.9-7.2-8.4 0"> </path> <circle cx="32" cy="49.6" r="4.2"> </circle> </g> </g></svg>
+
+
+                        <svg id="failure-toast" class="d-none toast-icon" version="1.1"  fill="#DC3545" width="24px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                        viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
+                            <g>
+                                <g>
+                                    <path d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0z M327.115,365.904
+                                        L256,294.789l-71.115,71.115l-38.789-38.789L217.211,256l-71.115-71.115l38.789-38.789L256,217.211l71.115-71.115l38.789,38.789
+                                        L294.789,256l71.115,71.115L327.115,365.904z"/>
+                                </g>
+                            </g>
+                        </svg>
+
+                        <span class="ms-2" id="toast-title" style="font-size: 14px;">Notification</span>
+
+                    </div>
+
+                    <!-- <button type="button" class="ms-2 mb-1 btn btn-outline-secondary" data-dismiss="toast" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button> -->
+                </div>
+            </div>
+
+            <div class="modal fade" id="return-order-modal" tabindex="-1" role="dialog" aria-labelledby="returnOrderModal" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header m-3 mb-0">
+                            <h5 class="modal-title" id="return-order-header">
+                                The user have raised a return request
+                            </h5>
+                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                    </div>
+                    <div class="modal-body my-3">
+                        <div class="m-4 ms-5">
+                            <div class="form-check d-flex align-items-center mb-1">
+                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason1" value="broken">
+                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason1">
+                                    Received broken/damaged item
+                                </label>
+                            </div>
+        
+                            <div class="form-check d-flex align-items-center mb-1">
+                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason2" value="wrong">
+                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason2">
+                                    Received wrong item
+                                </label>
+                            </div>
+        
+                            <div class="form-check d-flex align-items-center mb-1">
+                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason3" value="defective">
+                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason3">
+                                    The product received is defective
+                                </label>
+                            </div>
+        
+                            <div class="form-check d-flex align-items-center mb-1">
+                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason4" value="missing">
+                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason4">
+                                    The product is missing in the package
+                                </label>
+                            </div>
+        
+                            <div class="form-check d-flex align-items-center mb-1">
+                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason5" value="other">
+                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason5">
+                                    Other (specify)
+                                </label>
+                            </div>
+                            
+                            <div class="form-group d-none" id="returnReasonTextarea-div">
+                                <label for="returnReasonTextarea" class="ms-1 font-weight-normal">Reason</label>
+                                <textarea class="form-control" id="returnReasonTextarea" rows="4"></textarea>
+                                <div class="invalid-feedback">
+                                    Feedback message
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <form id="change-order-status-form-<%# item._id %>" class="change-order-status-form d-flex justify-content-start gap-1" data-order-id="<%# order._id %>" data-item-id="<%# item._id %>">
+                            <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
+                                <option hidden disabled selected value>Change Return Status</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="refunded">Refunded</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary" href="#">Save</button>
+                        </form>
+<!--                         
+                        <form action="#" id="confirm-return-order" data-orderId="<%# order[0]._id %>" data-itemId="<%# order[0].orderItems._id %>" data-action="<%#allowedAction%>">
+                            <button type="submit" class="btn btn-danger"><%# allowedAction %> Order</button>
+                        </form> -->
+                    </div>
+                </div>
+                </div>
+            </div>
             <!-- content-main end// -->
             <footer class="main-footer font-xs">
                 <div class="row pb-30 pt-15">
@@ -224,45 +390,48 @@
             </footer>
         </main>
 
-        <script>
+        <script type="module">
+            import {triggerToast} from '/assets/js/fetch/validationHelpers.js'
 
-            const form = document.getElementById("change-order-status-form");
-            form.addEventListener("submit", async function(e){
+            const forms = document.querySelectorAll(".change-order-status-form");
+            forms.forEach(form => {
+                form.addEventListener("submit", async function(e){
+    
+                    e.preventDefault();
+                    const orderId = this.getAttribute("data-order-id");
+                    const itemId = this.getAttribute("data-item-id");
+                    const status = this.querySelector("select").value;
+                    console.log(orderId, itemId, status);
+                    const response = await fetch(`/api/admin/orders/${orderId}/item/${itemId}`, {
+                        method: "PATCH",
+                        headers: {"Content-Type" : "application/json"},
+                        body: JSON.stringify({status})
+                    })
+    
+                    const data = await response.json();
+    
+                    if (!data.success){
+                        triggerToast('failure', data.error || "soemthing went wrong");
+                        // document.getElementById("order-details-alert").textContent = data.error;
+                        // document.getElementById("order-details-alert").className = "alert alert-danger";
+                        // document.getElementById("order-details-alert").style.display = "block";
+                                    
+                    } else {
 
-                e.preventDefault();
-                const orderId = this.getAttribute("data-id");
-                let formData = new FormData(this);
-                const payload = Object.fromEntries(formData);
-                console.log(payload, orderId);
-
-                const response = await fetch(`/api/admin/orders/${orderId}/change-status`, {
-                    method: "PATCH",
-                    headers: {"Content-Type" : "application/json"},
-                    body: JSON.stringify(payload)
-                })
-
-                const data = await response.json();
-
-                if (!data.success){
-                    
-                    document.getElementById("order-details-alert").textContent = data.error;
-                    document.getElementById("order-details-alert").className = "alert alert-danger";
-                    document.getElementById("order-details-alert").style.display = "block";
-                                
-                }else{
-        
-                    if (data.orderStatus == "cancelled"){
-                        document.getElementById("order-status").className = "badge rounded-pill alert-danger text-danger";
-                    }else{
-                        document.getElementById("order-status").className = "badge rounded-pill alert-success text-success";
+                        if (data.orderStatus == "cancelled"){
+                            document.getElementById(`order-status-${itemId}`).className = "badge rounded-pill alert-danger";
+                        } else {
+                            document.getElementById(`order-status-${itemId}`).className = "badge rounded-pill alert-success";
+                        }
+    
+                        document.getElementById(`order-status-${itemId}`).textContent = data.orderStatus.toUpperCase();
+                        triggerToast('success', `${data.message} to ${data.orderStatus.toUpperCase()} ` || "Operation successful!");
+                        // document.getElementById("order-details-alert").textContent = data.message;
+                        // document.getElementById("order-details-alert").className = "alert alert-success";
+                        // document.getElementById("order-details-alert").style.display = "block";
                     }
-
-                    document.getElementById("order-status").textContent = data.orderStatus;
-                    document.getElementById("order-details-alert").textContent = data.message;
-                    document.getElementById("order-details-alert").className = "alert alert-success";
-                    document.getElementById("order-details-alert").style.display = "block";
-                }
-
+    
+                })
             })
         </script>
         <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>

@@ -19,6 +19,10 @@ const orderItemSchema = new Schema({
         required: true
     },
 
+    subtotal: {
+        type: Number
+    },
+
     status: {
         type: String,
         enum: [
@@ -39,16 +43,23 @@ const orderItemSchema = new Schema({
 
     returnStatus: {
         type: String,
-        enum: ['none', 'requested', 'approved', 'rejected', 'refunded'],
+        enum: [
+            'none',
+            'requested',
+            'approved',
+            'rejected',
+            'refunded'
+        ],
         default: 'none'
     },
 
-    refundedAmount: { 
-        type: Number,
-        default: 0
-    },
+    returnReason: { type: String },
 
     refundInfo: {
+        refundedAmount: { 
+            type: Number,
+            default: 0
+        },
         refundPaymentId: { type: String },
         refundReason: { type: String },
         refundedAt: { type: Date }
@@ -74,33 +85,55 @@ const orderSchema = new Schema({
         default: 0
     },
 
+    pricing: {
+        itemsTotal: {
+            type: Number,
+            required: true,
+            default: 0
+        },
+
+        discount: {
+            type: Number,
+            default: 0
+        },
+
+        shipping: {
+            type: Number,
+            default: 0
+        },
+
+        tax: {
+            type: Number,
+            default: 0
+        },
+
+        grandTotal: {
+            type: Number,
+            required: true,
+            default: 0
+        }
+    },
+
     discountedPrice: {
         type: Number,
         default: 0
     },
 
     paymentInfo : {
-
         type : {
-
             status: {
-
                 type: String,
                 enum: ["pending", "completed", "failed", "refunded"],
                 required: true
-
             },
 
             mode: {
-
                 type: String,
                 enum: ["razorpay", "cash-on-delivery", "wallet"],
                 required: true
-
             },
 
             razorpayInfo : {
-                
                 type: {
                     razorpayOrderId: "string",
                     razorpayPaymentId: "string",
@@ -147,7 +180,7 @@ const orderSchema = new Schema({
     address: {
         type: Schema.Types.ObjectId,
         ref: "Address",
-        required: true 
+        required: true  
     },
 
     couponInfo: {
@@ -161,23 +194,51 @@ const orderSchema = new Schema({
         discount: {
             type: Number
         }
+    },
+
+    offerInfo: {
+        offerId: {
+            type: Schema.Types.ObjectId,
+            ref: "Offer"
+        },
+        discount: {
+            type: Number
+        }
     }
 
 }, {timestamps : true})
 
 
-orderSchema.pre("save", function(next) {
+orderItemSchema.pre('save', function(next) {
+    this.subtotal = this.price * this.quantity;
+    next();
+});
 
-    this.totalPrice = this.orderItems.reduce((total, item) => total + (item.price * item.quantity),0);
+
+orderSchema.pre("save", function(next) {
+    //obsolete but needed
+    let totalPrice = this.orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    this.totalPrice = totalPrice;
+
+    let itemsTotal = this.orderItems.reduce((total, item) => total+item.subtotal, 0);
+    this.pricing.itemsTotal = itemsTotal;
 
     if(this.couponInfo && typeof this.couponInfo.discount === 'number'){
-        this.totalPrice = this.orderItems.reduce((total, item) => total + (item.price * item.quantity), 0) - this.couponInfo.discount;
-    } else {
-        this.totalPrice = this.orderItems.reduce((total, item) => total + (item.price * item.quantity),0);
-    }
-    
-    next();
+        this.pricing.discount = this.couponInfo.discount;
+        this.grandTotal = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
+        this.totalPrice = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
 
+    } else if (this.offerInfo && typeof this.offerInfo.discount === 'number') {
+        this.pricing.discount = this.offerInfo.discount;
+        this.grandTotal = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
+        this.totalPrice = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
+
+    } else {
+        this.grandTotal = itemsTotal - this.pricing.shipping - this.pricing.tax;
+        this.totalPrice = itemsTotal - this.pricing.shipping - this.pricing.tax;
+    }
+
+    next();
 })
 
 export const Order = model("Order", orderSchema);

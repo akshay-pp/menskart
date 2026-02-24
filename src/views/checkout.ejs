@@ -791,7 +791,6 @@
                             </ul>
                             <div class="tab-content" id="tab-content-5">
                                 <div class="tab-pane fade show active" id="apply-coupon" role="tabpanel" aria-labelledby="apply-coupon-tab">
-
                                     <form action="#" id="check-coupon-form">
                                         <div class="alert alert-danger" style="display: none" id="apply-coupon-error" role="alert">
                                             Coupon alert
@@ -837,7 +836,7 @@
 
                 <div class="p-5 mx-5 d-flex justify-content-between align-items-center">
 
-                    <span class="w-50"><p class="font-weight-normal">Maximum Savings: </p><h6 class="mb-0" id="maximum-savings">₹<%=usableCoupons[0]?.discount %></h6></span>
+                    <span class="w-50"><p class="font-weight-normal">Maximum Savings: </p><h6 class="mb-0" id="maximum-savings">₹<%=usableCoupons[0]?.discount || "0" %></h6></span>
                     <a href="#" id="apply-coupon-btn" class="btn btn-primary w-50">Apply</a>
 
                 </div>
@@ -887,7 +886,7 @@
     <script type="module">
 
         import {showAlert, setError, setSuccess} from "/assets/js/fetch/validationHelpers.js";
-
+        let paymentMethod, address, coupon;
         
 
         //show more address on click
@@ -902,10 +901,6 @@
 
             this.classList.add("d-none");
         })
-
-
-
-        let paymentMethod, address, coupon;
 
 
 
@@ -1139,7 +1134,6 @@
                 $("#coupon-applied-toast").toast('show');
 
             } else {
-
                 document.getElementById("toast-title").textContent = "1 Coupon Applied";
                 document.getElementById("apply").classList.remove("d-none");
                 document.getElementById("remove").classList.add("d-none");
@@ -1151,19 +1145,12 @@
                 document.querySelector(`#coupon-info-text`).textContent = `You saved ₹${coupon.dataset.discount}`;
                 document.querySelector(`#coupon-info-text`).classList.remove(`d-none`);
                 document.querySelector(`#coupon-modal-btn`).textContent = `EDIT`;
-                
                 $(`#apply-coupon-modal`).modal(`hide`);
-
                 document.getElementById('discountedAmount').textContent = `- ₹${coupon.dataset.discount}`
-
                 let subTotal = Number(document.getElementById('subTotal').textContent.replace("₹", ""));
-
                 document.getElementById('totalPrice').textContent = `₹${subTotal - coupon.dataset.discount}`
                 document.getElementById('couponDiscount').classList.remove('d-none');
-
-
                 sessionStorage.setItem('appliedCoupon', JSON.stringify({id: coupon.id, code: coupon.value, discount: coupon.dataset.discount}));
-
             }
 
         })
@@ -1223,17 +1210,13 @@
             const addressField = document.querySelector("input[type='radio'][name='shippingAddress']:checked");
 
             if (addressField) {
-
                 address = addressField.value;
                 console.log({address});
-
             } else {
-
                 document.getElementById("checkout-error").innerHTML = "Please choose an address to proceed";
                 document.getElementById("checkout-error").className = "alert alert-danger";
                 document.getElementById("checkout-error").style.display = "block";
                 return;
-
             }
 
 
@@ -1242,13 +1225,11 @@
             paymentMethod = document.querySelector('input[type="radio"][name="payment-method"]:checked')?.value;
             console.log({paymentMethod});
             if (!paymentMethod) {
-
                 console.log("no payment method")
                 document.getElementById("checkout-error").innerHTML = "Please choose a payment method to proceed";
                 document.getElementById("checkout-error").className = "alert alert-danger";
                 document.getElementById("checkout-error").style.display = "block";
                 return;
-
             }
 
 
@@ -1263,20 +1244,15 @@
             const data = await response.json();
 
             if (!data.success) {
-
                 if (response.status === 500) {
-
                     window.location.href = `/api/user/order-confirmation?status=error`;
                     return;
-
                 }
 
                 if (data.error) {
-
                     document.getElementById("checkout-error").innerHTML = data.error;
                     document.getElementById("checkout-error").className = "alert alert-danger";
                     document.getElementById("checkout-error").style.display = "block";
-
                 }
 
                 let errorList = '';
@@ -1290,18 +1266,14 @@
                 document.getElementById("checkout-error").style.display = "block";
             
             } else if (data.success && data.redirectUrl) {
-                
                 //if cash on delivery or wallet
                 sessionStorage.removeItem("appliedCoupon");
                 window.location.href = data.redirectUrl;
-
             } else if (data.success && data.razorpayOrder) {
-
                 //if razorpay
                 console.log(data.razorpayOrder);
 
                 const options = {
-
                     "key": data.key, // Enter the Key ID generated from the Dashboard
                     "amount": data.razorpayOrder.amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
                     "currency": "INR",
@@ -1309,15 +1281,11 @@
                     "description": "Test Transaction",
                     "image": "https://example.com/your_logo",
                     "order_id": data.razorpayOrder.id , //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
-                    
                     "handler": async function (response) {
-                        
                         const verifyResponse = await fetch('/api/user/verify-razorpay-payment', {
-
                             method: "POST",
                             headers: {"Content-Type" : "application/json"},
                             body: JSON.stringify(response)
-
                         });
 
                         const verifyData = await verifyResponse.json();

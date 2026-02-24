@@ -96,8 +96,8 @@
                                     <% } %>
 
                                     </div>
-                                    <div class="col-lg-1 col-sm-2 col-4 col-date">
-                                        <span><%= new Date(product.createdAt).toLocaleString("en-IN", { 
+                                    <!-- <div class="col-lg-1 col-sm-2 col-4 col-date">
+                                        <span><%# new Date(product.createdAt).toLocaleString("en-IN", { 
                                             day: "numeric", 
                                             month: "short", 
                                             year: "numeric", 
@@ -105,14 +105,16 @@
                                             minute: "numeric", 
                                             hour12: true 
                                         }).replace(" at", ", ") %></span>
-                                    </div>
-                                    <div class="col-lg-2 col-sm-2 col-4 col-action text-end">
-                                        <a href="/api/admin/p/edit/<%= product._id %>" class="btn btn-sm font-sm btn-light rounded"> <i class="material-icons md-edit"></i> Edit </a>
+                                    </div> -->
+                                    <div class="col-lg-4 col-sm-2 col-4 col-action d-flex justify-content-center">
+                                        <a href="#" id="add-product-offer" data-bs-toggle="modal" data-bs-target="#product-offer-modal" data-product="<%= product._id%>" class="mx-1 btn btn-sm font-sm rounded btn-warning"> <i class="px-1 icon material-icons md-redeem"></i>Add Offer</a>
+
+                                        <a href="/api/admin/p/edit/<%= product._id %>" class="mx-1 btn btn-sm font-sm btn-light rounded"> <i class="material-icons md-edit"></i> Edit </a>
                                         
                                         <% if(product.isUnListed) { %>
-                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="btn btn-sm font-sm rounded btn-brand"> <i class="material-icons md-delete_forever"></i>List</a>
+                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="mx-1 btn btn-sm font-sm rounded btn-brand"> <i class="material-icons md-delete_forever"></i>List</a>
                                         <% } else {%>
-                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="btn btn-sm font-sm rounded btn-danger"> <i class="material-icons md-delete_forever"></i>Unlist</a>
+                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="mx-1 btn btn-sm font-sm rounded btn-danger"> <i class="material-icons md-delete_forever"></i>Unlist</a>
                                         <% } %>
                                         
                                     </div>
@@ -175,6 +177,95 @@
                     </nav>
                 </div>
             </section>
+
+            <div class="modal fade" id="product-offer-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Add a product offer</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 card" id ="delete-modal-content"> 
+                            <div class="col-md-12">
+                                <form id="addProductOfferForm">
+                                    <div class="mb-4">
+                                        <label for="productOfferName" class="form-label">Name</label>
+                                        <input type="text" name="productOfferName" placeholder="Type here" class="form-control" id="productOfferName"/>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center align-items-center">
+                                        <div class="mb-0 col-6">
+                                            <label class="form-label" for="productOfferIsPercentage">isPercentage? : </label>
+                                            <input type="checkbox" name="productOfferIsPercentage" id="productOfferIsPercentage" class="form-check-input" checked>
+                                        </div>
+
+                                        <div class="mb-4 col-6" id= 'productOffer-maxDiscount-div'>
+                                            <label class="form-label" for="productOfferMaxDiscount">Maximum Discount</label>
+                                            <input type="number" id="productOfferMaxDiscount" name="productOfferMaxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="productOfferAmount">Discount Amount</label>
+                                            <input type="number" id="productOfferAmount" name="productOfferAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+    
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="productOfferMinimumValue">Minimum Product Value</label>
+                                            <input type="number" id="productOfferMinimumValue" name="productOfferMinimumValue" placeholder="Type here" min="1" class="form-control form-field">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="productOfferStartDate">Valid from: </label>
+                                            <input type="date" name="productOfferStartDate" id="productOfferStartDate" class="form-control form-field">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+    
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="productOfferExpiryDate">Expires on: </label>
+                                            <input type="date" name="productOfferExpiryDate" id="productOfferExpiryDate" class="form-control form-field">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="productOfferDescription">Description</label>
+                                        <textarea placeholder="Type here" class="form-control form-field" id="productOfferDescription" name="productOfferDescription"></textarea>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary" type="submit">Apply Changes</button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- content-main end// -->
             <footer class="main-footer font-xs">
                 <div class="row pb-30 pt-15">
@@ -191,8 +282,178 @@
             </footer>
         </main>
 
-        <script>
+        <script type="module">
 
+            import {
+                emptyFieldCheck,
+                hasMinimumLength,
+                hasMaximumLength,
+                setError,
+                setSuccess,
+                isEmpty,
+                triggerToast
+            } from "/assets/js/fetch/validationHelpers.js"
+
+            document.addEventListener('DOMContentLoaded', addProductOffer());
+
+
+
+            function addProductOffer() {
+                const addProductModal = document.getElementById('product-offer-modal');
+                let productId;
+                const fields = {
+                    offerName: document.getElementById("productOfferName"),
+                    isPercentage: document.getElementById("productOfferIsPercentage"),
+                    offerAmount: document.getElementById("productOfferAmount"),
+                    maxDiscount: document.getElementById("productOfferMaxDiscount"),
+                    minimumValue: document.getElementById("productOfferMinimumValue"),
+                    offerStartDate: document.getElementById("productOfferStartDate"),
+                    offerExpiryDate: document.getElementById("productOfferExpiryDate"),
+                    offerDescription: document.getElementById("productOfferDescription")
+                }
+                
+                addProductModal.addEventListener('show.bs.modal', function(e) {
+                    const button = e.relatedTarget;
+                    productId = button.dataset.product;
+                })
+
+
+                fields.isPercentage.addEventListener('change', function () {
+
+                    if (this.checked) {
+                        document.getElementById('productOffer-maxDiscount-div').classList.remove('d-none')
+                    } else {
+                        document.getElementById('productOffer-maxDiscount-div').classList.add('d-none')
+                    }
+
+                });
+
+                fields.offerStartDate.min = new Date().toISOString().split('T')[0];
+                fields.offerExpiryDate.min = new Date().toISOString().split('T')[0];
+
+                
+                
+                //==================== blur validations ====================//
+
+                // validation for empty field
+                emptyFieldCheck("blur", ...document.querySelectorAll(".form-field"));
+
+
+                //minimum maximum length validation
+                fields.offerName.addEventListener("blur", function() {
+                    if (isEmpty(this)) {
+                        return setError(this, "field cant be empty");
+                    }
+                    
+                    if (!hasMinimumLength(this, 6)){
+                        return setError(this, "minimum 6 characters");
+                    }
+                    
+                    if (!hasMaximumLength(this, 30)){
+                        return setError(this, "maximum 30 characters");
+                    }
+                })
+                
+
+                fields.offerExpiryDate.addEventListener("blur", function() {
+                    if (fields.offerStartDate.value && this.value < fields.offerStartDate.value) {
+                        return setError(this, "select a higher date than start date");
+                    }
+                })
+
+
+                fields.offerStartDate.addEventListener("blur", function() {
+                    if (fields.offerExpiryDate.value && this.value > fields.offerExpiryDate.value) {
+                        return setError(this, "select a lower date than expiry date");
+                    }
+                })
+
+
+                //cross field validations
+                fields.offerAmount.addEventListener("blur", function(){
+                    
+                    if (fields.isPercentage.checked) {
+                        if(this.value.trim() > 100 || this.value.trim() < 0){
+                            setError(this, "Invalid percentage value");
+                            return;
+                        }
+                    } else {
+                        if (this.value.trim() <= fields.minimumValue.value.trim()) {
+                            setError(this, "Discount amount should be less than cart value");
+                            return;
+                        }
+                    }
+
+                });
+
+
+                fields.maxDiscount.addEventListener('blur', function() {
+
+                    if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
+                        setError(this, "not that much discount Mr Admin!");
+                        return;
+                    }
+
+                });
+
+
+                fields.minimumValue.addEventListener('blur', function() {
+
+                    if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
+                        setError(this, "higher cart value please!");
+                        return false;
+                    }
+
+                });
+
+                document.getElementById("addProductOfferForm").addEventListener("submit", async function(e){
+
+                    e.preventDefault();
+
+                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field"))){
+                        return;
+                    }
+
+                    
+                    function submitValidations(fields) {
+
+                        if (isEmpty(this)) {
+                            return setError(this, "field cant be empty");
+                        }
+                        
+                        if (!hasMinimumLength(this, 6)){
+                            return setError(this, "minimum 6 characters");
+                        }
+                        
+                        if (!hasMaximumLength(this, 30)){
+                            return setError(this, "maximum 30 characters");
+                        }
+                        
+                        setSuccess(this);
+
+                    }
+
+                    const formData = new FormData(this);
+
+                    const payload = Object.fromEntries(formData);
+                    payload.type = 'product';
+                    payload.productId = productId;
+                    console.log({payload});
+
+                    const response = await fetch("/api/admin/offers", {
+                        method: "POST",
+                        headers: {"Content-Type" : "application/json"},
+                        body: JSON.stringify(payload)
+                    })
+
+                    const data = await response.json();
+                    location.reload();
+                    console.log(data);
+
+                })
+            }
+
+            // unlist product
             const unlistProductBtn = document.querySelectorAll("#unlist-product-btn");
             unlistProductBtn.forEach((button) => {
 
@@ -258,6 +519,12 @@
 
         </script>
         <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
+        <script>
+            $('#product-offer-modal').on('hidden.bs.modal', function () {
+                const modal = $(this);
+                modal.find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            });
+        </script>
         <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
         <script src="/assets/js/vendors/select2.min.js"></script>
         <script src="/assets/js/vendors/perfect-scrollbar.js"></script>

@@ -26,7 +26,9 @@ import {getAdmin,
     createCoupon,
     getOffers,
     createOffer,
-    changeOfferStat}
+    editOffer,
+    changeOfferStat,
+    getReturns}
 from "../controllers/admin.controllers.js";
 
 router.route("/dashboard").get(getAdmin);
@@ -45,9 +47,10 @@ router.route("/p/edit/:pId/:action?").post(unlistProduct);
 router.route("/image/delete").patch(deleteImage);
 router.route("/orders").get(getOrders);
 router.route("/orders/:orderId").get(getOrderDetails);
-router.route("/orders/:orderId/change-status").patch(changeOrderStatus);
-router.route('/offers').get(getOffers).post(createOffer);
+router.route("/orders/:orderId/item/:itemId").patch(changeOrderStatus);
+router.route('/offers').get(getOffers).post(createOffer).patch(editOffer);
 router.route("/offers/unlist/:offerId").post(changeOfferStat);
+router.route("/returns").get(getReturns);
 
 
 export default router;

@@ -36,7 +36,8 @@ import {getHome,
         returnOrder,
         getOrder,
         isCouponValid,
-        verifyRazorpay}
+        verifyRazorpay,
+        generateInvoice}
 from "../controllers/user.controllers.js";
 
 import { userVerify } from "../middlewares/authVerify.js";
@@ -60,7 +61,7 @@ router.route("/products").get(getProducts);
 router.route("/products/:pId").get(getProductPage);
 
 //user profile routes
-router.route("/profile").get(userVerify, getProfile);
+router.route("/profile/:tab?").get(userVerify, getProfile);
 router.route("/profile/edit/name").patch(editProfileName);
 router.route("/profile/edit/phone").patch(editPhone);
 router.route("/profile/edit/email").post(editEmail);
@@ -80,10 +81,14 @@ router.route("/wishlist/:productId").post(userVerify, addToWishlist).delete(user
 router.patch("/order/:orderId/item/:itemId/cancel", userVerify, cancelOrder);
 router.patch("/order/:orderId/item/:itemId/return", userVerify, returnOrder);
 router.route("/order/:orderId/item/:itemId").get(userVerify, getOrder);
+router.get("/order/:orderId/item/:itemId/invoice", generateInvoice);
 router.get("/order-confirmation", orderStatus);
 // router.post('/apply-coupon', applyCoupon);
 router.post('/coupon/is-valid', isCouponValid);
 router.post('/verify-razorpay-payment', verifyRazorpay)
 
+
+
+// router.get(`/invoice`, generateInvoice);
 
 export default router
