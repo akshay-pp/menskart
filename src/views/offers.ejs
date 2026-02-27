@@ -14,6 +14,13 @@
         <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
         <!-- Template CSS -->
         <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+        <style>
+            .disabled-div {
+                pointer-events: none; /* Blocks all mouse interactions */
+                opacity: 0.6;         /* Visually dims the content */
+                cursor: not-allowed;  /* Optional: Changes cursor to indicate disabled state */
+            }
+        </style>
     </head>
 
     <body>
@@ -43,7 +50,7 @@
                                     
                                     <div class="mb-4">
                                         <label for="offerName" class="form-label">Name</label>
-                                        <input type="text" name="offerName" placeholder="Type here" class="form-control" id="offerName"/>
+                                        <input type="text" name="offerName" placeholder="Type here" class="form-control form-field create-offer" id="offerName"/>
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -400,7 +407,13 @@
                     fields.offerStartDate.valueAsDate = new Date(offer.validFrom);
                     fields.offerExpiryDate.valueAsDate = new Date(offer.expiry);
                     fields.offerDescription.value = offer.description;
-    
+                    
+                    if (fields.isPercentage.checked) {
+                        document.getElementById('edit-maxDiscount-div').classList.remove('disabled-div');
+                    } else {
+                        document.getElementById('edit-maxDiscount-div').classList.add('disabled-div');
+                    }
+
                     document.querySelectorAll('input[type="checkbox"][name="editAppliesTo"]').forEach(checkbox => {
                         checkbox.checked = false;
                     });
@@ -410,16 +423,32 @@
                     })
                 })
 
+
+
+
+                //remove validation errors when closing modal
+                editOfferModal.addEventListener('hidden.bs.modal', function() {
+                    const elements = editOfferModal.querySelectorAll('.is-valid, .is-invalid');
+                    elements.forEach(el => {
+                        el.classList.remove('is-valid', 'is-invalid');
+                    });
+                })
+
+
+
+
                 // toggle max discount wrt isPercentage
                 fields.isPercentage.addEventListener('change', function () {
 
                     if (this.checked) {
-                        document.getElementById('edit-maxDiscount-div').classList.remove('d-none')
+                        document.getElementById('edit-maxDiscount-div').classList.remove('disabled-div')
                     } else {
-                        document.getElementById('edit-maxDiscount-div').classList.add('d-none')
+                        document.getElementById('edit-maxDiscount-div').classList.add('disabled-div')
                     }
 
                 })
+
+
 
 
                 //disable previous dates
@@ -432,7 +461,7 @@
 
                 
                 // validation for empty field
-                emptyFieldCheck("blur", ...document.querySelectorAll(".form-field edit-offer"));
+                emptyFieldCheck("blur", ...document.querySelectorAll(".form-field.edit-offer"));
 
 
                 //minimum maximum length validation
@@ -507,27 +536,22 @@
 
                     e.preventDefault();
 
-                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field edit-offer"))){
+                    if (fields.isPercentage.checked){
+                        if(!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.edit-offer"))){
+                            return;
+                        };
+                    } else {
+                        if(!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.edit-offer:not(#editMaxDiscount)"))){
+                            return;
+                        };
+                    };
+
+
+                    let isValid = submitValidations(fields);
+
+                    if (!isValid) {
+                        document.querySelector('.is-invalid')?.focus();
                         return;
-                    }
-
-                    
-                    function submitValidations(fields) {
-
-                        if (isEmpty(this)) {
-                            return setError(this, "field cant be empty");
-                        }
-                        
-                        if (!hasMinimumLength(this, 6)){
-                            return setError(this, "minimum 6 characters");
-                        }
-                        
-                        if (!hasMaximumLength(this, 30)){
-                            return setError(this, "maximum 30 characters");
-                        }
-                        
-                        setSuccess(this);
-
                     }
 
 
@@ -646,9 +670,9 @@
             fields.isPercentage.addEventListener('change', function () {
 
                 if (this.checked) {
-                    document.getElementById('maxDiscount-div').classList.remove('d-none')
+                    document.getElementById('maxDiscount-div').classList.remove('disabled-div')
                 } else {
-                    document.getElementById('maxDiscount-div').classList.add('d-none')
+                    document.getElementById('maxDiscount-div').classList.add('disabled-div')
                 }
 
             })
@@ -708,8 +732,8 @@
                         return;
                     }
                 } else {
-                    if (this.value.trim() <= fields.minimumValue.value.trim()) {
-                        setError(this, "Discount amount should be less than cart value");
+                    if (this.value.trim() >= fields.minimumValue.value.trim()) {
+                        setError(this, "Discount amount should be less than product price");
                         return;
                     }
                 }
@@ -718,12 +742,10 @@
 
 
             fields.maxDiscount.addEventListener('blur', function() {
-
                 if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
-                    setError(this, "not that much discount Mr Admin!");
+                    setError(this, "Max discount must be less than product price!");
                     return;
                 }
-
             });
 
 
@@ -741,27 +763,24 @@
 
                 e.preventDefault();
 
-                if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field create-offer"))){
-                    return;
+
+                if (fields.isPercentage.checked){
+                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.create-offer"))) {
+                        document.querySelector('.is-invalid')?.focus();
+                        return;
+                    }
+                } else {
+                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.create-offer:not(#maxDiscount)"))) {
+                        document.querySelector('.is-invalid')?.focus();
+                        return;
+                    }
                 }
 
-                
-                function submitValidations(fields) {
+                let isValid = submitValidations(fields);
 
-                    if (isEmpty(this)) {
-                        return setError(this, "field cant be empty");
-                    }
-                    
-                    if (!hasMinimumLength(this, 6)){
-                        return setError(this, "minimum 6 characters");
-                    }
-                    
-                    if (!hasMaximumLength(this, 30)){
-                        return setError(this, "maximum 30 characters");
-                    }
-                    
-                    setSuccess(this);
-
+                if (!isValid) {
+                    document.querySelector('.is-invalid')?.focus();
+                    return;
                 }
 
 
@@ -789,6 +808,60 @@
                 console.log(data);
 
             })
+
+
+
+
+
+            function submitValidations(fields) {
+                let isValid = true;
+
+                [fields.offerName].forEach(field => {
+                
+                    if (isEmpty(field)) {
+                        setError(field, "field cant be empty");
+                        isValid = false;
+                    } else if (!hasMinimumLength(field, 6)) {
+                        setError(field, "minimum 6 characters");
+                        isValid = false;
+                    } else if (!hasMaximumLength(field, 15)) {
+                        setError(field, "maximum 15 characters");
+                        isValid = false;
+                    }
+
+                });
+
+
+                if (fields.isPercentage.checked) {
+                
+                    if (fields.offerAmount.value.trim() > 100 || fields.offerAmount.value.trim() < 0) {
+                        setError(fields.offerAmount, "Invalid percentage value");
+                        isValid = false;
+                    }
+
+                    if (fields.minimumValue.value && fields.maxDiscount.value && Number(fields.minimumValue.value.trim()) <= Number(fields.maxDiscount.value.trim())) {
+                        setError(fields.maxDiscount, "Discount cant be higher than cart value");
+                        isValid = false;
+                    }
+
+                } else {
+
+                    if (fields.offerAmount.value && fields.minimumValue.value && Number(fields.offerAmount.value.trim()) >= Number(fields.minimumValue.value.trim())) {
+                        setError(fields.offerAmount, "Discount amount should be less than cart value");
+                        isValid = false;
+                    }
+
+                }
+
+
+                if (fields.offerExpiryDate.value < fields.offerStartDate.value) {
+                    setError(fields.offerExpiryDate, "select a higher date than start date")
+                    isValid = false;
+                }
+
+                return isValid
+                
+            };
 
 
         </script>

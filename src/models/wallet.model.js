@@ -20,8 +20,13 @@ const walletHistorySchema = new Schema({
     },
 
     relatedOrder: {
-        type: Schema.Types.ObjectId,
-        ref: "Order"
+        orderId: {
+            type: Schema.Types.ObjectId,
+            ref: "Order"
+        },
+        itemId: {
+            type: Schema.Types.ObjectId
+        }
     },
 
     refundType: {

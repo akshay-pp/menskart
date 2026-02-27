@@ -100,52 +100,44 @@
                                 
 	                			<div class="cart-bottom">
                                     <div class="cart-discount">
-                                        <a data-toggle="modal" data-target="#return-order-modal" class="btn btn-danger px-4 text-white <%= allowedAction ? "" : "disabled" %>" ><span><%= allowedAction ? `${allowedAction} Order` : `Order ${order[0].orderItems.status}`%></span><i class="icon-close"></i></a>
+                                        <a data-toggle="modal" id="return-button" data-target="#return-order-modal" data-action="<%= allowedAction %>" class="btn btn-danger px-4 text-white <%= allowedAction ? "" : "d-none" %>" ><span class="text-uppercase"><%= allowedAction ? `${allowedAction} Order` : `Order ${order[0].orderItems.status}`%></span><i class="icon-close"></i></a>
 			            			</div><!-- End .cart-discount -->
                                     
 			            			<a href="#" class="btn btn-outline-dark-2"><span>UPDATE CART</span><i class="icon-refresh"></i></a>
 		            			</div><!-- End .cart-bottom -->
                                 
-                                <div class="mt-2">
-                                    <h6>Other items in this order</h6>
-                                    <div class="form-check border rounded col-sm-12 mb-1 address">
-                                        <table class="table table-cart table-mobile">
-                                            <!-- <thead>
-                                                <tr>
-                                                    <th>Product</th>
-                                                    <th>Price</th>
-                                                    <th>Quantity</th>
-                                                    <th>Total</th>
-                                                    <th></th>
-                                                </tr>
-                                            </thead> -->
-        
-                                            <tbody>
-                                                <% otherItemsInOrder.forEach(item => { %>
-                                                    <tr>
-                                                        <td class="product-col py-4">
-                                                            <div class="product d-flex ">
-                                                                <div>
-                                                                    <figure class="product-media">
-                                                                        <a href="/api/user/order/<%= item._id %>/item/<%= item.itemId %>">
-                                                                            <img src="/<%= item.productImage %>" alt="Product image">
-                                                                        </a>
-                                                                    </figure>
-                                                                </div>
-                                                                
-                                                                <div>
-                                                                    <h3 class="product-title">
-                                                                        <a href="/api/user/order/<%= item._id %>/item/<%= item.itemId %>"> <%= item.productName %> </a>
-                                                                    </h3><!-- End .product-title -->
-                                                                </div>
-                                                            </div><!-- End .product -->
-                                                        </td>
-                                                    </tr>
-                                                <% }) %>
-                                            </tbody>
-                                        </table><!-- End .table table-wishlist -->
+                                <% if (otherItemsInOrder.length) { %>
+                                    <div class="mt-2">
+                                        <h6>Other items in this order</h6>
+                                        <div class="form-check border rounded col-sm-12 mb-1 address">
+                                            <table class="table table-cart table-mobile">
+                                                <tbody>
+                                                    <% otherItemsInOrder.forEach(item => { %>
+                                                        <tr>
+                                                            <td class="product-col py-4">
+                                                                <div class="product d-flex ">
+                                                                    <div>
+                                                                        <figure class="product-media">
+                                                                            <a href="/api/user/order/<%= item._id %>/item/<%= item.itemId %>">
+                                                                                <img src="/<%= item.productImage %>" alt="Product image">
+                                                                            </a>
+                                                                        </figure>
+                                                                    </div>
+                                                                    
+                                                                    <div>
+                                                                        <h3 class="product-title">
+                                                                            <a href="/api/user/order/<%= item._id %>/item/<%= item.itemId %>"> <%= item.productName %> </a>
+                                                                        </h3><!-- End .product-title -->
+                                                                    </div>
+                                                                </div><!-- End .product -->
+                                                            </td>
+                                                        </tr>
+                                                    <% }) %>
+                                                </tbody>
+                                            </table><!-- End .table table-wishlist -->
+                                        </div>
                                     </div>
-                                </div>
+                                <% } %>
 	                		</div><!-- End .col-lg-9 -->
 	                		<aside class="col-lg-3">
 	                			<div class="summary summary-cart">
@@ -234,15 +226,21 @@
         <div class="modal fade" id="return-order-modal" tabindex="-1" role="dialog" aria-labelledby="returnOrderModal" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
-                    <div class="modal-header m-3 mb-0">
-                        <h5 class="modal-title" id="return-order-header">
+                    <div class="modal-header bg-dark p-3 mb-0">
+                        <h5 class="modal-title text-white" id="return-order-header">
                             <%=allowedAction%> this order?</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                 </div>
-                <div class="modal-body my-3">
-                    <div class="m-4 ml-5">
+                <div class="modal-body my-4">
+
+                    <div class="m-4 <%= allowedAction == "return" ? "d-none" : "" %>">
+                        <div class="d-flex align-items-center mb-1">
+                            <p class="h6 mb-0">Are you sure you want to cancel this order?</p>
+                        </div>
+                    </div>
+                    <div class="m-4 ml-5 <%= allowedAction == "cancel" ? "d-none" : "" %>">
                         <div class="form-check d-flex align-items-center mb-1">
                             <input class="form-check-input" type="radio" name="returnReason" id="returnReason1" value="broken">
                             <label class="form-check-label ml-3 font-weight-normal" for="returnReason1">
@@ -289,9 +287,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn bg-dark text-white" data-dismiss="modal">Close</button>
                     <form action="#" id="confirm-return-order" data-orderId="<%= order[0]._id %>" data-itemId="<%= order[0].orderItems._id %>" data-action="<%=allowedAction%>">
-                        <button type="submit" class="btn btn-danger"><%= allowedAction %> Order</button>
+                        <button type="submit" class="btn text-danger"><%= allowedAction %> Order</button>
                     </form>
                 </div>
               </div>
@@ -518,6 +516,7 @@
         //remove from wishlist
         import {emptyFieldCheck, showAlert, triggerToast} from "/assets/js/fetch/validationHelpers.js"
 
+        
         document.getElementById("confirm-return-order").addEventListener("submit", async function(e){
 
             e.preventDefault();
@@ -552,7 +551,7 @@
             // showAlert(data, document.getElementById("order-alert"));
 
             setTimeout(() => {
-                location.href = `/api/user/profile/order/${orderId}/item/${itemId}`;
+                location.href = `/api/user/order/${orderId}/item/${itemId}`;
             }, 500)
 
         })      

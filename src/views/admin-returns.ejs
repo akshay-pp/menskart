@@ -65,46 +65,36 @@
                                 <thead>
                                     <tr>
                                         <th>#ID</th>
-                                        <th scope="col">Date</th>
+                                        <th scope="col">Product</th>
+                                        <!-- <th scope="col">Date</th> -->
                                         <th scope="col">Customer</th>
-                                        <th scope="col">Location</th>
-                                        <th scope="col">Amount</th>
-                                        <th scope="col">Order Status</th>
+                                        <th scope="col">Reason for return</th>
+                                        <th scope="col">Price</th>
                                         <th scope="col" class="text-end">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <% ordersInReturnRequests.forEach(order => { %>
-                                        <tr>
+                                        <tr class="border-bottom">
                                             <td><%= order.orderItems._id.toString().slice(12) %></td>
-                                            <td><b><%= new Date(order.createdAt).toLocaleString("en-IN", { 
-                                                day: "numeric", 
-                                                month: "short", 
-                                                year: "numeric", 
-                                                hour: "numeric", 
-                                                minute: "numeric", 
-                                                hour12: true 
-                                            }).replace(" at", ", ") %></b></td>
-                                            <td><%= order.addressData.name %></td>
-                                            <td><%= order.addressData.city %>, <%= order.addressData.state %></td>
-                                            <td>₹ <%= order.orderItems.price %></td>
-                                            <td>
-
-                                                <% if (order.orderStatus == "created"){ %>
-                                                    <span class="badge rounded-pill alert-dark">Created</span>
-                                                <% } else if (order.orderStatus == "confirmed") { %>
-                                                    <span class="badge rounded-pill alert-warning">Confirmed</span>
-                                                <% } else if (order.orderStatus == "processing") { %>
-                                                    <span class="badge rounded-pill alert-warning">Processing</span>
-                                                <% } else if (order.orderStatus == "shipped") { %>
-                                                    <span class="badge rounded-pill alert-info">Shipped</span>
-                                                <% } else if (order.orderStatus == "delivered") { %>
-                                                    <span class="badge rounded-pill alert-success">Delivered</span>
-                                                <% } else if (order.orderStatus == "cancelled") { %>
-                                                    <span class="badge rounded-pill alert-danger">Cancelled</span>
-                                                <% } %>
-
+                                            <td class="p-4">
+                                                <a class="itemside" href="#">
+                                                    <div class="left">
+                                                        <img src="/<%= order.productData.thumbnail %>" width="80" height="80" class="img-xs" alt="Item" />
+                                                    </div>
+                                                    <div class="ms-3">
+                                                        <div class="h6 mb-0"><%= order.productData.productname %></div>
+                                                        <span class="small text-secondary">Quantity: <%= order.orderItems.quantity %></span>
+                                                    </div>
+                                                </a>
                                             </td>
+                                            <td><%= order.username.fullname %></td>
+                                            <td>
+                                                <% const states = {broken:"Product Broken", wrong: "Wrong Product", defective: "Defective Product", missing: "Product Missing"} %>
+                                                <%= states[order.orderItems.returnReason] || "Other" %>
+                                            </td>
+                                            <td class="h6 text-secondary">₹ <%= order.orderItems.price %></td>
+                                            
                                             <td class="text-end">
                                                 <a href="/api/admin/orders/<%= order._id %>" class="btn btn-md rounded font-sm">Detail</a>
                                                 <div class="dropdown">

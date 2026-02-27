@@ -56,7 +56,7 @@
                                 }).replace(" at", ", ") %></b> </span> <br />
                                 <small class="text-muted">Order ID: <%= order._id.toString().slice(12) %></small>
                             </div>
-                            <div class="col-lg-6 col-md-6 ms-auto text-md-end">
+                            <div class="d-none col-lg-6 col-md-6 ms-auto text-md-end">
                                 <form id="change-order-status-form" data-id="<%= order._id %>">
                                     <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
                                         <option hidden disabled selected value>Change Order Status</option>
@@ -136,28 +136,22 @@
                             <div class="col-lg-12">
                                 <div class="table-responsive">
                                     <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th width="30%">Product</th>
-                                                <th width="10%">Status</th>
-                                                <th width="10%">Unit Price</th>
-                                                <th width="10%">Quantity</th>
-                                                <th width="30%">Actions</th>
-                                                <th width="10%" class="text-end">Total</th>
-                                            </tr>
-                                        </thead>
                                         <tbody>
                                             <% order.orderItems.forEach(item => { %>
-                                                <tr class="border-bottom">
-                                                    <td class="py-4">
+                                                <tr class="border">
+                                                    <td class="p-4">
                                                         <a class="itemside" href="#">
                                                             <div class="left">
-                                                                <img src="/<%= item.product.images[0] %>" width="40" height="40" class="img-xs" alt="Item" />
+                                                                <img src="/<%= item.product.images[0] %>" width="60" height="60" class="img-s" alt="Item" />
                                                             </div>
-                                                            <div class="info"><%= item.product.productname %></div>
+                                                            <div class="ms-3">
+                                                                <div class="h6 mb-0"><%= item.product.productname %></div>
+                                                                <span class="small text-secondary">Quantity: <%= item.quantity %></span>
+                                                            </div>
                                                         </a>
                                                     </td>
-                                                    <td>
+                                                    <td class="h6 px-4" >₹<%= item.price * item.quantity %></td>
+                                                    <td class="px-4">
                                                         <%
                                                             const statusMap = {
                                                                 created: {text: "CREATED", class: "alert-warning"},
@@ -181,24 +175,15 @@
 
                                                         %>
 
-                                                        <p id="order-status-<%= item._id %>" class="badge rounded-pill <%= statusData.class %>"><%= statusData.text %></p>
-                                                        <a data-bs-toggle="modal" data-bs-target="#return-order-modal" class=" <%# allowedAction ? "" : "disabled" %>" >
-                                                            <p id="return-status-<%= item._id %>" class="badge rounded-pill <%= returnData.class %>" data-return-reason="<%=item.returnReason ?? ""%>"><%= returnData.text %></p>
-                                                        </a>
-                                                        <!-- <%# if (item.returnStatus != "none"){ %>
-                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-danger">Return <%# item.returnStatus%></p>
-                                                        <%# } else if (item.status == "cancelled") { %>
-                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-danger">CANCELLED</p>
-                                                        <%# } else if (item.status == "delivered") { %>
-                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-success">DELIVERED</p>
-                                                        <%# } else { %>
-                                                            <p id="order-status-<%# item._id %>" class="badge rounded-pill alert-warning"><%# item.status.toUpperCase() %></p>
-                                                        <%# } %>  -->
+                                                        <div>
+                                                            <p id="order-status-<%= item._id %>" class="badge rounded-pill <%= statusData.class %>"><%= statusData.text %></p>
+                                                            <a data-bs-toggle="modal" data-bs-target="#return-order-modal" data-orderid="<%= order._id %>" data-itemid="<%= item._id %>"data-returnReason="<%=item.returnReason || "Other"%>" class=" <%# allowedAction ? "" : "disabled" %>" >
+                                                                <p id="return-status-<%= item._id %>" class="badge rounded-pill <%= returnData.class %>"><%= returnData.text %></p>
+                                                            </a>
+                                                        </div>
                                                     </td>
-                                                    <td>₹<%= item.price %></td>
-                                                    <td><%= item.quantity %></td>
                                                     <td>
-                                                        <div class="<%= item.status === "delivered" ? "disabled-div" : "" %>">
+                                                        <div class="<%= item.status === "delivered" ? "d-none" : "" %>">
                                                             <form id="change-order-status-form-<%= item._id %>" class="change-order-status-form d-flex justify-content-start gap-1" data-order-id="<%= order._id %>" data-item-id="<%= item._id %>">
                                                                 <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
                                                                     <option hidden disabled selected value>Change Order Status</option>
@@ -212,7 +197,7 @@
                                                             </form>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end">₹<%= item.price * item.quantity %></td>
+                                                    <!-- <td class="text-end">₹<%# item.price * item.quantity %></td> -->
                                                 </tr>
                                             <% }) %>
                                         </tbody>
@@ -301,64 +286,24 @@
             <div class="modal fade" id="return-order-modal" tabindex="-1" role="dialog" aria-labelledby="returnOrderModal" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
-                        <div class="modal-header m-3 mb-0">
+                        <div class="modal-header alert-success p-2 ps-4 mb-0">
                             <h5 class="modal-title" id="return-order-header">
                                 The user have raised a return request
                             </h5>
-                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                            <button type="button" class="btn close" data-bs-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                     </div>
-                    <div class="modal-body my-3">
-                        <div class="m-4 ms-5">
-                            <div class="form-check d-flex align-items-center mb-1">
-                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason1" value="broken">
-                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason1">
-                                    Received broken/damaged item
-                                </label>
+                    <div class="modal-body">
+                        <div class="m-4">
+                            <div class="d-flex align-items-center mb-1">
+                                <p id="returnReasonModalBody" class="">A well-known quote, contained in a blockquote element.</p>
                             </div>
-        
-                            <div class="form-check d-flex align-items-center mb-1">
-                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason2" value="wrong">
-                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason2">
-                                    Received wrong item
-                                </label>
-                            </div>
-        
-                            <div class="form-check d-flex align-items-center mb-1">
-                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason3" value="defective">
-                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason3">
-                                    The product received is defective
-                                </label>
-                            </div>
-        
-                            <div class="form-check d-flex align-items-center mb-1">
-                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason4" value="missing">
-                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason4">
-                                    The product is missing in the package
-                                </label>
-                            </div>
-        
-                            <div class="form-check d-flex align-items-center mb-1">
-                                <input class="form-check-input" type="radio" name="returnReason" id="returnReason5" value="other">
-                                <label class="form-check-label ms-3 font-weight-normal" for="returnReason5">
-                                    Other (specify)
-                                </label>
-                            </div>
-                            
-                            <div class="form-group d-none" id="returnReasonTextarea-div">
-                                <label for="returnReasonTextarea" class="ms-1 font-weight-normal">Reason</label>
-                                <textarea class="form-control" id="returnReasonTextarea" rows="4"></textarea>
-                                <div class="invalid-feedback">
-                                    Feedback message
-                                </div>
-                            </div>
-
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <form id="change-order-status-form-<%# item._id %>" class="change-order-status-form d-flex justify-content-start gap-1" data-order-id="<%# order._id %>" data-item-id="<%# item._id %>">
-                            <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
+                        <form id="change-return-status-form" class="change-return-status-form d-flex justify-content-start gap-1">
+                            <select name="returnStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
                                 <option hidden disabled selected value>Change Return Status</option>
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
@@ -366,10 +311,6 @@
                             </select>
                             <button type="submit" class="btn btn-primary" href="#">Save</button>
                         </form>
-<!--                         
-                        <form action="#" id="confirm-return-order" data-orderId="<%# order[0]._id %>" data-itemId="<%# order[0].orderItems._id %>" data-action="<%#allowedAction%>">
-                            <button type="submit" class="btn btn-danger"><%# allowedAction %> Order</button>
-                        </form> -->
                     </div>
                 </div>
                 </div>
@@ -391,7 +332,7 @@
         </main>
 
         <script type="module">
-            import {triggerToast} from '/assets/js/fetch/validationHelpers.js'
+            import {triggerToast, setError} from '/assets/js/fetch/validationHelpers.js'
 
             const forms = document.querySelectorAll(".change-order-status-form");
             forms.forEach(form => {
@@ -433,6 +374,38 @@
     
                 })
             })
+
+
+            const returnStatusModal = document.getElementById('return-order-modal');
+            let reason, orderId, itemId;
+            returnStatusModal.addEventListener('show.bs.modal', function(e){
+                const states = {broken:"Received broken/damaged item", wrong: "Received wrong item", defective: "The product received is defective", missing: "The product is missing in the package"};
+                const button = e.relatedTarget;
+                reason = states[button.dataset.returnreason] || button.dataset.returnreason;
+                orderId = button.dataset.orderid;
+                itemId = button.dataset.itemid;
+                document.getElementById('returnReasonModalBody').textContent = reason;
+            });
+
+            document.getElementById('change-return-status-form').addEventListener('submit', async function(e){
+                e.preventDefault();
+                const formData = Object.fromEntries(new FormData(this));
+                console.log(formData);
+
+                if(!formData.returnStatus){
+                    setError(document.querySelector('[name="returnStatus"]'), 'Save');
+                    return;
+                };
+
+                const response = await fetch(`/api/admin/orders/${orderId}/item/${itemId}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type' : 'application/json'},
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+            });
+
         </script>
         <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
         <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>

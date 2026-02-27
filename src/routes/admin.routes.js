@@ -28,7 +28,8 @@ import {getAdmin,
     createOffer,
     editOffer,
     changeOfferStat,
-    getReturns}
+    getReturns,
+    exprApi}
 from "../controllers/admin.controllers.js";
 
 router.route("/dashboard").get(getAdmin);
@@ -51,6 +52,8 @@ router.route("/orders/:orderId/item/:itemId").patch(changeOrderStatus);
 router.route('/offers').get(getOffers).post(createOffer).patch(editOffer);
 router.route("/offers/unlist/:offerId").post(changeOfferStat);
 router.route("/returns").get(getReturns);
+
+router.route('/expr').get(exprApi);
 
 
 export default router;

@@ -16,6 +16,7 @@ import puppeteer from 'puppeteer';
 import ejs from 'ejs';
 import path from 'path';
 import {fileURLToPath} from 'url';
+import {findBestPrice} from '../utils/calculateOfferPrice.js';
 
 //homepage
 export const getHome = async (req,res)=> {
@@ -1263,7 +1264,7 @@ export const cancelOrder = async (req,res) => {
         }
 
         if (findAllowedAction(item.status) != 'cancel') {
-            return res.status(400).json({success: false, error: 'cancellation not possible for this order'});
+            return res.status(400).json({success: false, error: 'cancellation not possible at this stage'});
         }
 
         item.status = 'cancelled';
@@ -1428,9 +1429,7 @@ export const getOrder = async (req,res) => {
         });
 
     } catch (error) {
-        
         return res.status(500).json({success: false, error : error.message});
-
     }
 
 }
@@ -1440,8 +1439,7 @@ export const getOrder = async (req,res) => {
 
 export const generateInvoice = async (req, res) => {
 
-    // const {orderId, itemId} = req.params;
-    const [orderId, itemId] = ['6990bdd713cc8ed227be8c05', '6990bdd713cc8ed227be8c06'];
+    const {orderId, itemId} = req.params;
     let invoiceData = {};
     const order = await Order.findById(orderId).populate('orderItems.product', 'productname').populate('address');
     const item = order.orderItems.id(itemId);
@@ -1812,11 +1810,12 @@ export const getProducts = async(req,res) => {
         const sortBy = sortOptions[sort] || sortOptions.default;
 
         let productdata = await Product.find(filter)
-                                            .populate("category", "name")
+                                            .populate("category", "name _id")
                                             .collation({ locale: 'en', strength: 2 })
                                             .sort(sortBy)
                                             .skip((page-1)*limit)
-                                            .limit(limit);
+                                            .limit(limit)
+                                            .lean();
         
 
         
@@ -1846,30 +1845,9 @@ export const getProducts = async(req,res) => {
         ]);
 
         // console.log('category query success ✅')
+
         
-        // ------------- offer fetching and calculations 
-
-        const now = new Date();
-        const offers = await Offer.find({
-            isActive: true,
-            validFrom: {$lte: now},
-            expiry: {$gte: now}
-        }).lean();
-
-        const offerData = offers.flatMap(offer => {
-            
-            return offer.appliesTo.map(categ => ({
-                offer: offer.name,
-                category: categ.categName,
-                isPercent: offer.isPercent,
-                offerAmount: offer.offerAmount,
-                minValue: offer.minimumValue
-            }))
-
-        })
-
-        // console.log('offer data query success ✅')
-
+        
         let wishlist, wishlistSet; 
         if (req.session?.user?._id) {
             wishlist = await Wishlist.findOne({owner: req.session.user._id}).lean();
@@ -1878,33 +1856,69 @@ export const getProducts = async(req,res) => {
 
         // console.log('wishlist query done ✅')
 
-        const finalProductData = productdata.map(product => {
 
-            let offerPrice;
-            const offer = offerData.find(offer => offer.category.toLowerCase() == product.category.name.toLowerCase());
 
+        
+        // ------------- offer fetching and calculations 
+        const productDataWithOffer = await findBestPrice(...productdata);
+
+        const finalProductData = productDataWithOffer.map(product => {
             const isWishlisted = wishlist ? wishlistSet.has(product._id.toString()) : false;
-            
-            if (offer && product.price >= offer.minValue){
-
-                if (offer.isPercent) {
-                    offerPrice = product.price - (product.price * offer.offerAmount/100);
-                } else {
-                    offerPrice = product.price - offer.offerAmount;
-                }
-
-            } else {
-                offerPrice = product.price;
-            }
-
-            return {
-                ...product.toObject(),
-                offerPrice: parseFloat(Math.max(0, offerPrice).toFixed(2)),
-                offer: offer?.offer,
-                isWishlisted
-            }
-
+            return {...product, isWishlisted};
         })
+
+        console.log({finalProductData});
+
+
+        // const now = new Date();
+        // const offers = await Offer.find({
+        //     isActive: true,
+        //     validFrom: {$lte: now},
+        //     expiry: {$gte: now}
+        // }).lean();
+
+        // const offerData = offers.flatMap(offer => {
+            
+        //     return offer.appliesTo.map(categ => ({
+        //         offer: offer.name,
+        //         category: categ.categName,
+        //         isPercent: offer.isPercent,
+        //         offerAmount: offer.offerAmount,
+        //         minValue: offer.minimumValue
+        //     }))
+
+        // })
+
+        // console.log('offer data query success ✅')
+
+
+        // const finalProductData = productdata.map(product => {
+
+        //     let offerPrice;
+        //     const offer = offerData.find(offer => offer.category.toLowerCase() == product.category.name.toLowerCase());
+
+        //     const isWishlisted = wishlist ? wishlistSet.has(product._id.toString()) : false;
+            
+        //     if (offer && product.price >= offer.minValue){
+
+        //         if (offer.isPercent) {
+        //             offerPrice = product.price - (product.price * offer.offerAmount/100);
+        //         } else {
+        //             offerPrice = product.price - offer.offerAmount;
+        //         }
+
+        //     } else {
+        //         offerPrice = product.price;
+        //     }
+
+            // return {
+            //     ...product.toObject(),
+            //     offerPrice: parseFloat(Math.max(0, offerPrice).toFixed(2)),
+            //     offer: offer?.offer,
+            //     isWishlisted
+            // }
+
+        // })
 
         // console.log('finalProductData success ✅')
 

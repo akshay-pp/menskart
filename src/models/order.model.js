@@ -12,6 +12,19 @@ const orderItemSchema = new Schema({
         type: Number,
         required: true
     },
+
+    offerInfo: {
+        offerId: {
+            type: Schema.Types.ObjectId,
+            ref: "Offer"
+        },
+        discount: {
+            type: Number
+        }
+    },
+
+    couponDiscount: {type: Number},
+    finalPrice: {type: Number},
     
     quantity: {
         type: Number,
@@ -63,7 +76,15 @@ const orderItemSchema = new Schema({
         refundPaymentId: { type: String },
         refundReason: { type: String },
         refundedAt: { type: Date }
-    }
+    },
+
+    trackRecords: [
+        {
+            _id: false,
+            status: {type: String},
+            date: {type: Date}
+        }
+    ]
 
 }, {timestamps: true});
 
@@ -194,22 +215,16 @@ const orderSchema = new Schema({
         discount: {
             type: Number
         }
-    },
-
-    offerInfo: {
-        offerId: {
-            type: Schema.Types.ObjectId,
-            ref: "Offer"
-        },
-        discount: {
-            type: Number
-        }
     }
 
 }, {timestamps : true})
 
 
 orderItemSchema.pre('save', function(next) {
+
+    if (this.offerInfo && typeof this.offerInfo.discount === 'number'){
+        
+    }
     this.subtotal = this.price * this.quantity;
     next();
 });
@@ -225,16 +240,16 @@ orderSchema.pre("save", function(next) {
 
     if(this.couponInfo && typeof this.couponInfo.discount === 'number'){
         this.pricing.discount = this.couponInfo.discount;
-        this.grandTotal = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
+        this.pricing.grandTotal = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
         this.totalPrice = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
 
     } else if (this.offerInfo && typeof this.offerInfo.discount === 'number') {
         this.pricing.discount = this.offerInfo.discount;
-        this.grandTotal = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
+        this.pricing.grandTotal = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
         this.totalPrice = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
 
     } else {
-        this.grandTotal = itemsTotal - this.pricing.shipping - this.pricing.tax;
+        this.pricing.grandTotal = itemsTotal - this.pricing.shipping - this.pricing.tax;
         this.totalPrice = itemsTotal - this.pricing.shipping - this.pricing.tax;
     }
 

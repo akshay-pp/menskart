@@ -1,4 +1,4 @@
-import {emptyFieldCheck} from "./validationHelpers.js"
+import {emptyFieldCheck, setError, setSuccess} from "./validationHelpers.js"
 
 
 
@@ -142,15 +142,35 @@ const subcategory = document.getElementById("subcategory");
 const brand = document.getElementById("brand");
 const description = document.getElementById("description");
 const price = document.getElementById("price");
+const maxQuantity = document.getElementById("max-quantity");
+const returnPeriod = document.getElementById("return-period");
 
-emptyFieldCheck("blur", productName, stock, category, subcategory, brand, description, price);
+emptyFieldCheck("blur", productName, stock, category, subcategory, brand, description, price, maxQuantity, returnPeriod);
+
+price.addEventListener('blur', function() {
+    if(this.value <= 0) {
+        return setError(this, 'Input a valid price');
+    }
+});
+
+maxQuantity.addEventListener('blur', function() {
+    if(this.value > 20) {
+        return setError(this, 'Maximum quantity per order must not be 20+');
+    }
+});
+
+returnPeriod.addEventListener('blur', function() {
+    if(this.value > 45) {
+        return setError(this, 'Maximum allowed return period is 45 days');
+    }
+});
 
 document.getElementById("image-input").addEventListener("blur", () => {
     if (fileMap.size < 3) {
         document.getElementById("file-feedback").textContent = "Choose atleast 3 files";
         document.getElementById("image-input").classList.add("is-invalid");
         document.getElementById("image-input").classList.remove("is-valid");
-    }else{
+    } else {
         document.getElementById("image-input").classList.add("is-valid");
         document.getElementById("image-input").classList.remove("is-invalid");
     }
@@ -166,7 +186,11 @@ form.addEventListener("submit", async (e) => {
         
         let isValid = true;
 
-        if (!emptyFieldCheck("submit", productName, stock, category, subcategory, brand, description, price)){
+        if (!emptyFieldCheck("submit", productName, stock, category, subcategory, brand, description, price, maxQuantity, returnPeriod)){
+            isValid = false;
+        }
+
+        if(price <= 0 ) {
             isValid = false;
         }
     

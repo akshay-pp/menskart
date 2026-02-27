@@ -4,6 +4,7 @@ import {Product} from "../models/product.model.js";
 import {Order} from "../models/order.model.js";
 import {Coupon} from "../models/coupon.model.js";
 import { Offer } from "../models/offer.model.js";
+import {findBestPrice} from '../utils/calculateOfferPrice.js';
 // import {Brand} from "../models/brand.model.js";
 
 
@@ -242,7 +243,7 @@ export const createCateogry = async(req,res) => {
             return res.status(400).json({ success: false, error: "All fields are required" });
         }
 
-        const existingCategory = await Category.find({name:categoryName});
+        const existingCategory = await Category.find({name:categoryName}).collation({locale: 'en', strength: 2});
         if(existingCategory.length > 0){
             return res.status(400).json({success:false, error: "Category with that name already exists"});
         }
@@ -279,7 +280,7 @@ export const editCateogry = async(req,res) => {
 
         try {
             
-            const existingCategory = await Category.find({name:editCategoryName});
+            const existingCategory = await Category.find({name:editCategoryName}).collation({locale: 'en', strength: 2});
 
             if(existingCategory.length > 0){
                 return res.status(400).json({success:false, error: "Category with that name already exists"});
@@ -344,7 +345,7 @@ export const unListcategory = async(req,res) => {
         }
 
         
-    }else{
+    } else {
         res.redirect("/");
     }
 }
@@ -411,15 +412,61 @@ export const changeOrderStatus = async (req, res) => {
         
         const order = await Order.findById(orderId);
         const item = order.orderItems.id(itemId);
+        let updateObject = {};
+        let trackRecord = {};
         console.log({order, item, status: item.status});
 
-        if (item.status === "delivered"){
-            return res.status(400).json({success: false, error: "Item already delivered. cannot change status"});
+        if (req.body.returnStatus) {
+
+            trackRecord = {
+                'orderItems.$.trackRecords' : {
+                    status: `Return ${req.body.returnStatus}`,
+                    date: new Date()
+                }
+            };
+
+            updateObject = {
+                'orderItems.$.returnStatus' : req.body.returnStatus
+            };
+
+            console.log(trackRecord, updateObject);
+
+            if (req.body.returnStatus == "refunded") {
+                
+            }
+            return;
         };
+
+        
+        if(req.body.status) {
+
+            if (item.status === "delivered"){
+                return res.status(400).json({success: false, error: "Item already delivered. cannot change status"});
+            };
+
+            trackRecord = {
+                'orderItems.$.trackRecords' : {
+                    status: req.body.status,
+                    date: new Date()
+                }
+            };
+
+            if (req.body.status === 'delivered'){
+                updateObject = {
+                    'orderItems.$.status': req.body.status, 
+                    'orderItems.$.deliveredAt' : new Date()
+                }
+            } else {
+                updateObject = {
+                    'orderItems.$.status': req.body.status
+                };
+            }
+        }
+
 
         const result = await Order.updateOne(
             {_id: orderId, 'orderItems._id': itemId},
-            {$set: {'orderItems.$.status': req.body.status}}
+            {$set: updateObject, $push: trackRecord}
         );
 
         if(result.matchedCount === 0) {
@@ -433,6 +480,11 @@ export const changeOrderStatus = async (req, res) => {
     } catch (error) {
         return res.status(500).json({success: false, error: error.message});
     }
+};
+
+
+export const changeReturnStatus = async(req, res) => {
+
 }
 
 
@@ -910,20 +962,63 @@ export const getReturns = async (req,res) => {
             {$unwind: "$orderItems"},
             {$match: {"orderItems.returnStatus" : "requested"}},
             {$lookup: {
-                from: "addresses",
-                localField: "address",
-                foreignField: "_id",
-                as: "addressData",
+                from: "users",
+                let: {userId:'$owner'},
+                pipeline: [
+                    {$match: {
+                        $expr: {$eq: ['$_id', '$$userId']}
+                    }},
+                    {$project: {
+                        _id:0,
+                        fullname: 1
+                    }}
+                ],
+                as: "username"
             }},
-            {$unwind: "$addressData"}
+
+            {$lookup: {
+                from: "products",
+                let: {productId: '$orderItems.product'},
+                pipeline: [
+                    {$match: {
+                        $expr: {$eq: ['$_id', '$$productId']}
+                    }},
+                    {$project: {
+                        _id:0,
+                        productname: 1,
+                        thumbnail: {$arrayElemAt: ['$images', 0]}
+                    }}
+                ],
+                as: 'productData'
+            }},
+            {$unwind: "$productData"},
+            {$unwind: "$username"},
+            {$project: {
+                username: 1, productData: 1, orderItems: 1, 
+            }},
+            {$sort: {'orderItems.deliveredAt': -1}}
         ])
 
-        console.log({ordersInReturnRequests, sample: ordersInReturnRequests[0].orderItems});
+        console.log({sampleFullOrder: ordersInReturnRequests[0], sampleOrderItem: ordersInReturnRequests[0].orderItems, username: ordersInReturnRequests[0].username, productData: ordersInReturnRequests[0].productData });
         return res.status(200).render("admin-returns", {ordersInReturnRequests});
 
 
     } catch (error) {
         return res.status(500).json({success: false, error});
+    }
+
+}
+
+
+export const exprApi = async (req, res) => {
+
+    try {
+        const products = await Product.find({}).limit(5).lean();
+        // console.log(products);
+        const productsWithOfferApplied = findBestPrice(...products);
+        return res.status(200).json(productsWithOfferApplied);
+    } catch (err) {
+        return res.status(500).json({success: false, error: err.message});
     }
 
 }

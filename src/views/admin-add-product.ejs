@@ -47,7 +47,7 @@
                             <div class="content-header">
                                 <h2 class="content-title">Add New Product</h2>
                                 <div>
-                                    <button class="btn btn-light rounded font-sm mr-5 text-body hover-up" id="draft-button" >Save to draft</button>
+                                    <button class="d-none btn btn-light rounded font-sm mr-5 text-body hover-up" id="draft-button" >Save to draft</button>
                                     <button class="btn btn-md rounded font-sm hover-up" type="submit" id="add-product-btn">Publish</button>
                                 </div>
                             </div>
@@ -68,7 +68,7 @@
                                     <div class="row gx-3">
                                         <div class="col-md-4 mb-3">
                                             <label for="product_sku" class="form-label">Stock</label>
-                                            <input type="text" placeholder="Type here" class="form-control" id="stock" name="stock" />
+                                            <input type="number" placeholder="Type here" class="form-control" id="stock" name="stock" />
                                             <div class="invalid-feedback">
                                                 Feedback message
                                             </div>
@@ -76,6 +76,7 @@
                                         <div class="col-md-4 mb-3">
                                             <label for="product_color" class="form-label">Category</label>
                                             <select class="form-select" name="category" id="category">
+                                                <option hidden disabled selected value>Chose a category</option>
                                                 <% categdata.forEach(category => { %>
                                                     <option value="<%= category._id %>"><%= category.name %></option>
                                                 <% }); %>
@@ -87,6 +88,7 @@
                                         <div class="col-md-4 mb-3">
                                             <label for="product_size" class="form-label">Subcategory</label>
                                             <select class="form-select" id="subcategory" name="subcategory">
+                                                <option hidden disabled selected value>Chose a sub category</option>
                                                 <% categdata.forEach(category => { %>
                                                     <option value="<%= category._id %>"><%= category.name %></option>
                                                 <% }); %>
@@ -96,7 +98,7 @@
                                             </div> -->
                                         </div>
                                     </div>
-                                    <div class="mb-4">
+                                    <div class="mb-4 d-none">
                                         <label for="product_brand" class="form-label">Brand</label>
                                         <select class="form-select" id="brand" name="brand">
                                             <% categdata.forEach(category => { %>
@@ -149,46 +151,55 @@
                                         </div>
                                     </div>
                                     <div class="mb-4">
-                                        <label class="form-label">Status</label>
-                                        <select class="form-select">
-                                            <option>Published</option>
-                                            <option>Draft</option>
-                                        </select>
+                                        <label for="max-quantity" class="form-label">Maximum quantity per order</label>
+                                        <input type="number" placeholder="Type here" class="form-control" id="max-quantity" name="maxQuantity" />
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
                                     </div>
+
                                     <div class="mb-4">
+                                        <label for="return-period" class="form-label">Return Period in days</label>
+                                        <input type="number" placeholder="Type here" class="form-control" id="return-period" name="returnPeriod" />
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-none mb-4">
                                         <label class="form-label">Tags</label>
                                         <input type="text" placeholder="Type here" class="form-control" />
                                     </div>
-                                    <a href="#" class="font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Tech</a>
-                                    <a href="#" class="font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Mobile</a>
-                                    <a href="#" class="font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Apple</a>
+                                    <a href="#" class="d-none font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Tech</a>
+                                    <a href="#" class="d-none font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Mobile</a>
+                                    <a href="#" class="d-none font-xs hover-up mr-15"><i class="font-xs material-icons md-close text-body"></i> Apple</a>
                                     <hr />
-                                    <h5 class="mb-3">Categories</h5>
-                                    <div class="form-check">
+                                    <h5 class="d-none mb-3">Categories</h5>
+                                    <div class="d-none form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="product-cat" />
                                         <label class="form-check-label" for="product-cat"> Shirt </label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="d-none form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="product-cat-1" />
                                         <label class="form-check-label" for="product-cat-1"> T-Shirt </label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="d-none form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="product-cat-2" />
                                         <label class="form-check-label" for="product-cat-2"> Sneakers </label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="d-none form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="product-cat-3" />
                                         <label class="form-check-label" for="product-cat-3"> Joggers </label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="d-none form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="product-cat-4" />
                                         <label class="form-check-label" for="product-cat-4"> Vests </label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="d-none form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="product-cat-5" />
                                         <label class="form-check-label" for="product-cat-5"> Knitwear </label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="d-none form-check">
                                         <input class="form-check-input" type="checkbox" value="" id="product-cat-8" />
                                         <label class="form-check-label" for="product-cat-8"> Shorts </label>
                                     </div>
@@ -232,7 +243,50 @@
                 </div>
             </footer>
         </main>
-        <script type="module" src="/assets/js/fetch/admin-add-product.js"></script>
+        <script type="module">
+            import {
+                emptyFieldCheck,
+                hasMinimumLength,
+                hasMaximumLength,
+                setError,
+                setSuccess,
+                isEmpty,
+                triggerToast
+            } from "/assets/js/fetch/validationHelpers.js"
+
+
+            const productName = document.getElementById("productname");
+            const stock = document.getElementById("stock");
+            const category = document.getElementById("category");
+            const subcategory = document.getElementById("subcategory");
+            const brand = document.getElementById("brand");
+            const description = document.getElementById("description");
+            const price = document.getElementById("price");
+            const maxQuantity = document.getElementById("max-quantity");
+            const returnPeriod = document.getElementById("return-period");
+
+            emptyFieldCheck("blur", productName, stock, category, subcategory, brand, description, price, maxQuantity, returnPeriod);
+
+            price.addEventListener('blur', function() {
+                if(this.value <= 0) {
+                    return setError(this, 'Input a valid price');
+                }
+            });
+
+            maxQuantity.addEventListener('blur', function() {
+                if(this.value > 20 ) {
+                    return setError(this, 'Maximum quantity per order must not be 20+');
+                }
+            });
+
+            returnPeriod.addEventListener('blur', function() {
+                if(this.value > 45) {
+                    return setError(this, 'Maximum allowed return period is 45 days');
+                }
+            });
+
+        </script>
+        <!-- <script type="module" src="/assets/js/fetch/admin-add-product.js"></script> -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/2.0.0-alpha.2/cropper.min.js"></script>
         <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
         <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>
