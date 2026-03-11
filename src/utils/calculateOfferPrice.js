@@ -2,6 +2,9 @@ import {Offer} from "../models/offer.model.js"
 
 export const findBestPrice = async (...products) => {
 
+    // if product has no offer, return as it is.
+    // else, attach a coupon object to the product doc.
+
     const productIds = products.map(p => p._id);
     const categoryIds = [...new Set(products.map(p => p.category))];
     console.log({pNos: productIds.length, cNos: categoryIds.length}, '✅');
@@ -15,10 +18,13 @@ export const findBestPrice = async (...products) => {
             {productIds: {$in: productIds}},
             {'appliesTo.categId': {$in: categoryIds}}
         ]
-    });
+    })
 
     console.log(`no. of offers: ${offers.length}`);
 
+    if (!offers.length) {
+        return products;
+    };
 
     // console.log('========== offers =============');
     // console.log({offers}, '✅');
@@ -68,7 +74,7 @@ export const findBestPrice = async (...products) => {
 
     for (const product of products){
         
-        let bestOffer = null, bestPrice = product.price;
+        let bestOffer = null, bestPrice = product.price, discount = 0;
         let productOfferPrice;
         
         const productOffer = productOfferMap.get(product._id.toString());
@@ -85,38 +91,39 @@ export const findBestPrice = async (...products) => {
         let categoryOffers = productCategoryOfferMap.get(product._id.toString());
         // console.log({product: product._id, offer: categoryOffers});
         if (!categoryOffers?.length){
-            product.offerPrice = Math.round(bestPrice);
-            product.Offer = bestOffer;
             continue;
-        }
+        };
 
         //loop through each offer
         for (const offer of categoryOffers) {
 
             if (product.price < offer.minimumValue) {
                 continue;
-            }
+            };
             //calculate final price after applying offer
-            let priceAfterOffer = calculateFinalPrice(offer, product.price);
+            let offerAppliedData = calculateFinalPrice(offer, product.price);
 
             //check if currentPrice < bestPrice
-            if(priceAfterOffer < bestPrice) {
+            if(offerAppliedData.offerPrice < bestPrice) {
                 // if yes, reassign bestPrice and bestOffer
-                bestPrice = priceAfterOffer;
+                bestPrice = offerAppliedData.offerPrice;
                 bestOffer = offer;
+                discount = offerAppliedData.discount;
             }
 
             //debugging purpose
             if (!pIdToOfferPrices.has(product.productname)){
                 pIdToOfferPrices.set(product.productname, []);
             }
-            pIdToOfferPrices.get(product.productname).push({listPrice: product.price, offer: offer.offerAmount, priceAfterOffer, bestPrice});
+            pIdToOfferPrices.get(product.productname).push({listPrice: product.price, offer: offer.offerAmount, priceAfterOffer: offerAppliedData.offerPrice, discount:offerAppliedData.discount, bestPrice});
         
         }
 
         product.offerPrice = Math.round(bestPrice);
+        product.appliedDiscount = discount;
         product.offer = bestOffer;
 
+        // console.log({product: product.productname, bestPrice, discount, bestOffer});
 
         //debugging purpose
         bestPriceAndOffer.set(product._id, {name: product.productname, bestPrice: Math.round(bestPrice), bestOffer});
@@ -125,14 +132,13 @@ export const findBestPrice = async (...products) => {
     }
     
     // console.log({productsWithOfferPrices: products});
-    return products;
-
     // console.log('========= pId to offer prices =========');
     // console.log(pIdToOfferPrices);
-
+    
     // console.log('========= best Price And Offer =========');
     // console.log(bestPriceAndOffer);
-
+    return products;
+    
 }
 
 
@@ -141,23 +147,11 @@ const calculateFinalPrice = function (offer, price) {
 
     if (offer.isPercent) {
         let discount = Math.min(offer.maxDiscount ?? Infinity, (price * offer.offerAmount) / 100);
-        return Math.max(1, price - discount);
+        return {offerPrice: Math.max(1, price - discount), discount};
     } else {
-        return Math.max(1, price - offer.offerAmount);
+        return {offerPrice: Math.max(1, price - offer.offerAmount), discount: offer.offerAmount};
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

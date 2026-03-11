@@ -166,13 +166,22 @@
                                                                             </h3><!-- End .product-title -->
                                                                         </div><!-- End .product -->
                                                                     </td>
-                                                                    <td class="price-col">₹<%= item.product.price %></td>
+                                                                    <td class="price-col">
+                                                                        <div class="product-price">
+                                                                            <% if (item.offerPrice) { %>     
+                                                                                ₹ <%= item.offerPrice %>
+                                                                                <small class="text-secondary px-2"><s>₹ <%= item.price %></s></small>
+                                                                            <% } else { %>
+                                                                                ₹ <%= item.price %>
+                                                                            <% } %>
+                                                                        </div>
+                                                                    </td>
                                                                     <td class="quantity-col">
                                                                         <div class="cart-product-quantity">
                                                                             <input type="number" class="form-control" value="<%= item.quantity %>" min="1" max="10" step="1" data-decimals="0" required disabled>
                                                                         </div><!-- End .cart-product-quantity -->
                                                                     </td>
-                                                                    <td class="total-col">₹<%= item.product.price * item.quantity %></td>
+                                                                    <td class="total-col">₹<%= item.offerPrice ?? item.price * item.quantity %></td>
                                                                     <td class="remove-col"><button class="btn-remove remove-from-cart" data-id="<%= item._id %>" data-toggle="modal" data-target="#remove-from-cart-modal"><i class="icon-close"></i></button></td>
                                                                 </tr>
                                                             <% }) %>
@@ -1238,7 +1247,7 @@
             const response = await fetch("/api/user/checkout", {
                 method: "POST",
                 headers: {"Content-Type" : "application/json"},
-                body: JSON.stringify({paymentMethod, address, coupon: sessionStorage.getItem(`appliedCoupon`)})
+                body: JSON.stringify({paymentMethod, address, coupon: JSON.parse(sessionStorage.getItem(`appliedCoupon`))})
             })
 
             const data = await response.json();
@@ -1282,7 +1291,7 @@
                     "image": "https://example.com/your_logo",
                     "order_id": data.razorpayOrder.id , //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
                     "handler": async function (response) {
-                        const verifyResponse = await fetch('/api/user/verify-razorpay-payment', {
+                        const verifyResponse = await fetch('/api/user/payments/razorpay/verify', {
                             method: "POST",
                             headers: {"Content-Type" : "application/json"},
                             body: JSON.stringify(response)
@@ -1315,19 +1324,25 @@
                 };
 
                 const rzp = new Razorpay(options);
+
+                rzp.on('payment.failed', async function (response){
+
+                    const failureResponse = await fetch('/api/user/payments/razorpay/failure', {
+                        method: 'POST',
+                        headers: {'Content-Type' : 'application/json'},
+                        body: JSON.stringify({response})
+                    });
+
+                    // alert(response.error.code);
+                    // alert(response.error.description);
+                    // alert(response.error.source);
+                    // alert(response.error.step);
+                    // alert(response.error.reason);
+                    // alert(response.error.metadata.order_id);
+                    // alert(response.error.metadata.payment_id);
+                });
+
                 rzp.open();
-                // rzp1.on('payment.failed', function (response){
-                //         alert(response.error.code);
-                //         alert(response.error.description);
-                //         alert(response.error.source);
-                //         alert(response.error.step);
-                //         alert(response.error.reason);
-                //         alert(response.error.metadata.order_id);
-                //         alert(response.error.metadata.payment_id);
-                // });
-
-
-
             }
 
 

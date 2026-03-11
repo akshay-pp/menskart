@@ -101,13 +101,23 @@
                                                             </h3><!-- End .product-title -->
                                                         </div><!-- End .product -->
                                                     </td>
-                                                    <td class="price-col" id="product-price">₹<%= item.product.price %></td>
+                                                    <td class="price-col" id="product-price">
+                                                        <div class="product-price">
+                                                            <% if (item.offerPrice) { %> 
+                                                                ₹ <%= item.offerPrice %>
+                                                                <small class="text-secondary px-2"><s>₹ <%= item.price %></s></small>
+                                                            <% } else { %>
+                                                                ₹ <%= item.price %>
+                                                            <% } %>
+                                                        </div>
+                                                        <!-- ₹<%# item.price %> -->
+                                                    </td>
                                                     <td class="quantity-col">
                                                         <div class="cart-product-quantity">
                                                             <input type="number" id="item-quantity-<%=item._id%>" class="item-quantity form-control" value="<%= item.quantity %>" min="1" max="<%= Math.min(item.product.maxQuantity, item.product.stock) %>" step="1" data-decimals="0" data-maxStock="<%= item.product.stock %>" data-id="<%= item._id %>" required>
                                                         </div><!-- End .cart-product-quantity -->
                                                     </td>
-                                                    <td class="total-col" id="total-per-product">₹<%= item.product.price * item.quantity %></td>
+                                                    <td class="total-col" id="total-per-product">₹<%= (item.offerPrice ?? item.price)  * item.quantity %></td>
                                                     <td class="remove-col"><button class="btn-remove remove-from-cart" data-id="<%= item._id %>" data-toggle="modal" data-target="#remove-from-cart-modal"><i class="icon-close"></i></button></td>
                                                 </tr>
                                                 <% }) %>

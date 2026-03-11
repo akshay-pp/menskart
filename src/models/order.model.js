@@ -1,7 +1,7 @@
 import {Schema, model} from "mongoose";
 
 const orderItemSchema = new Schema({
-    
+
     product: {
         type: Schema.Types.ObjectId,
         ref: "Product",
@@ -23,9 +23,6 @@ const orderItemSchema = new Schema({
         }
     },
 
-    couponDiscount: {type: Number},
-    finalPrice: {type: Number},
-    
     quantity: {
         type: Number,
         default: 1,
@@ -35,6 +32,24 @@ const orderItemSchema = new Schema({
     subtotal: {
         type: Number
     },
+
+    couponInfo: {
+        couponId: {
+            type: Schema.Types.ObjectId,
+            ref: "Coupon"
+        },
+        couponCode: {
+            type: String
+        },
+        discount: {
+            type: Number
+        },
+        itemDiscount: {
+            type: Number
+        }
+    },
+
+    finalPrice: {type: Number},
 
     status: {
         type: String,
@@ -98,6 +113,12 @@ const orderSchema = new Schema({
         required: true
     },
 
+    orderId: {
+        type: String,
+        required: true,
+        unique: true
+    },
+
     orderItems : [orderItemSchema],
 
     totalPrice: {
@@ -120,7 +141,7 @@ const orderSchema = new Schema({
 
         shipping: {
             type: Number,
-            default: 0
+            default: 40
         },
 
         tax: {
@@ -145,7 +166,8 @@ const orderSchema = new Schema({
             status: {
                 type: String,
                 enum: ["pending", "completed", "failed", "refunded"],
-                required: true
+                required: true,
+                default: 'pending'
             },
 
             mode: {
@@ -165,7 +187,7 @@ const orderSchema = new Schema({
                     return this.paymentInfo?.mode === "razorpay"
                 },
 
-                default: {}
+                default: () => ({})
 
             }
 
@@ -220,40 +242,40 @@ const orderSchema = new Schema({
 }, {timestamps : true})
 
 
-orderItemSchema.pre('save', function(next) {
+// orderItemSchema.pre('save', function(next) {
 
-    if (this.offerInfo && typeof this.offerInfo.discount === 'number'){
+//     if (this.offerInfo && typeof this.offerInfo.discount === 'number'){
         
-    }
-    this.subtotal = this.price * this.quantity;
-    next();
-});
+//     }
+//     this.subtotal = this.price * this.quantity;
+//     next();
+// });
 
 
-orderSchema.pre("save", function(next) {
-    //obsolete but needed
-    let totalPrice = this.orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-    this.totalPrice = totalPrice;
+// orderSchema.pre("save", function(next) {
+//     //obsolete but needed
+//     let totalPrice = this.orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+//     this.totalPrice = totalPrice;
 
-    let itemsTotal = this.orderItems.reduce((total, item) => total+item.subtotal, 0);
-    this.pricing.itemsTotal = itemsTotal;
+//     let itemsTotal = this.orderItems.reduce((total, item) => total+item.subtotal, 0);
+//     this.pricing.itemsTotal = itemsTotal;
 
-    if(this.couponInfo && typeof this.couponInfo.discount === 'number'){
-        this.pricing.discount = this.couponInfo.discount;
-        this.pricing.grandTotal = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
-        this.totalPrice = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
+//     if(this.couponInfo && typeof this.couponInfo.discount === 'number'){
+//         this.pricing.discount = this.couponInfo.discount;
+//         this.pricing.grandTotal = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
+//         this.totalPrice = itemsTotal - this.couponInfo.discount - this.pricing.shipping - this.pricing.tax;
 
-    } else if (this.offerInfo && typeof this.offerInfo.discount === 'number') {
-        this.pricing.discount = this.offerInfo.discount;
-        this.pricing.grandTotal = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
-        this.totalPrice = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
+//     } else if (this.offerInfo && typeof this.offerInfo.discount === 'number') {
+//         this.pricing.discount = this.offerInfo.discount;
+//         this.pricing.grandTotal = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
+//         this.totalPrice = itemsTotal - this.offerInfo.discount - this.pricing.shipping - this.pricing.tax;
 
-    } else {
-        this.pricing.grandTotal = itemsTotal - this.pricing.shipping - this.pricing.tax;
-        this.totalPrice = itemsTotal - this.pricing.shipping - this.pricing.tax;
-    }
+//     } else {
+//         this.pricing.grandTotal = itemsTotal - this.pricing.shipping - this.pricing.tax;
+//         this.totalPrice = itemsTotal - this.pricing.shipping - this.pricing.tax;
+//     }
 
-    next();
-})
+//     next();
+// })
 
 export const Order = model("Order", orderSchema);

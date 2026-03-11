@@ -18,6 +18,7 @@
     <link rel="manifest" href="/assets/images/icons/site.html">
     <link rel="mask-icon" href="/assets/images/icons/safari-pinned-tab.svg" color="#666666">
     <link rel="shortcut icon" href="/assets/images/icons/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <meta name="apple-mobile-web-app-title" content="Molla">
     <meta name="application-name" content="Molla">
     <meta name="msapplication-TileColor" content="#cc9966">
@@ -27,6 +28,69 @@
     <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
     <!-- Main CSS File -->
     <link rel="stylesheet" href="/assets/css/style.css">
+    <style>
+        .border-bottom-dashed {
+            border-bottom: .1rem dashed #ccc !important;
+        }
+
+        .delivery-stepper {
+            display: flex;
+            align-items: center;
+        }
+
+        .step {
+            position: relative;
+            flex: 1;
+            text-align: center;
+        }
+
+        .step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 12px;          /* vertically center with circle */
+            left: calc(50% + 20px); /* start right edge of circle */
+            width: calc(100% - 40px); /* distance to next circle */
+            height: 2px;
+            background: #e9ecef;
+        }
+
+        .step.completed:not(:last-child)::after {
+            background: #28a745;
+        }
+
+        .circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #dee2e6;
+            color: #fff;
+            line-height: 40px;
+            margin: 0 auto;
+            position: relative;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .label {
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .step.completed .circle {
+            background: #28a745;
+        }
+
+        .step.completed .circle.red {
+            background: #ae1515;
+        }
+
+        /* .step.completed ~ .step .circle {
+            background: #dee2e6;
+        } */
+
+    </style>
 </head>
 
 <body>
@@ -58,8 +122,51 @@
 	                <div class="container">
 	                	<div class="row">
 	                		<div class="col-lg-9">
-	                			<table class="table table-cart table-mobile">
-									<thead>
+                                <div class="border rounded col-sm-12 mb-2 py-4 pt-3" style="border: 1px dashed #ccc !important">
+                                    <!-- shipping content -->
+                                    <div class="">
+                                        <div class="delivery-stepper d-flex justify-content-between align-items-center">
+                                            <div class="step <%= orderView.orderItem.statusCode >= 0 ? 'completed' : '' %>">
+                                                <div class="circle"><i class="fa fa-check"></i></div>
+                                                <p class="label">Order Placed</p>
+                                            </div>
+
+                                            <div class="step <%= orderView.orderItem.statusCode >= 1 ? 'completed' : '' %>">
+                                                <div class="circle"><i class="fa fa-check"></i></div>
+                                                <p class="label">Order Confirmed</p>
+                                            </div>
+
+                                            <div class="step <%= orderView.orderItem.statusCode  >= 2 ? 'completed' : '' %>">
+                                                <div class="circle"><i class="fa fa-check"></i></div>
+                                                <p class="label">Processing</p>
+                                            </div>
+
+                                            <div class="step <%= orderView.orderItem.statusCode  >= 3 ? 'completed' : '' %>">
+                                                <div class="circle"><i class="fa fa-check"></i></div>
+                                                <p class="label">Shipped</p>
+                                            </div>
+
+                                            <div class="step <%= orderView.orderItem.statusCode  >= 4 ? 'completed' : '' %>">
+                                                <div class="circle"><i class="fa fa-check"></i></div>
+                                                <p class="label">Delivered</p>
+                                            </div>
+                                            <% if (orderView.orderItem.statusCode  == 5) { %>
+                                                <div class="step completed">
+                                                    <div class="circle red"><i class="fa-solid fa-xmark"></i></div>
+                                                    <p class="label">Cancelled</p>
+                                                </div>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- fa fa-truck - shipped
+                                fa fa-shipping-fast - out for delivery 
+                                fa fa-home - delivered -->
+
+
+	                			<table class="table border table-cart table-mobile">
+									<!-- <thead>
 										<tr>
 											<th>Product</th>
 											<th>Price</th>
@@ -67,27 +174,29 @@
 											<th>Total</th>
 											<th></th>
 										</tr>
-									</thead>
+									</thead> -->
 
 									<tbody>
                                         
                                             <tr>
-                                                <td class="product-col">
+                                                <td class="product-col border-0 pl-5">
                                                     <div class="product">
                                                         <figure class="product-media">
-                                                            <a href="/api/user/products/<%= order[0].orderItems.product%>">
-                                                                <img src="/<%= order[0].productData.images[0] %>" alt="Product image">
+                                                            <a href="/api/user/products/<%= orderView.orderItem.productId %>">
+                                                                <img src="/<%= orderView.orderItem.thumbnail %>" alt="Product image">
                                                             </a>
                                                         </figure>
 
                                                         <h3 class="product-title">
-                                                            <a href="/api/user/products//<%= order[0].orderItems.product%>"><%= order[0].productData.productname %></a>
+                                                            <a href="/api/user/products/<%= orderView.orderItem.productId %>"><%= orderView.orderItem.productName %></a>
                                                         </h3><!-- End .product-title -->
                                                     </div><!-- End .product -->
                                                 </td>
-                                                <td class="price-col">₹<%= order[0].orderItems.price%></td>
-                                                <td class="price-col"><%= order[0].orderItems.quantity%></td>
-                                                <td class="total-col">₹<%= order[0].orderItems.price * order[0].orderItems.quantity %></td>
+                                                <td class="border-0 font-weight-normal">Order created on 12 March 2026</td>
+                                                <td class="total-col border-0">₹<%= orderView.pricing.grandTotal%></td>
+                                                <!-- <td class="price-col">₹<%# order[0].orderItems.price%></td>
+                                                <td class="price-col"><%# order[0].orderItems.quantity%></td>
+                                                <td class="total-col">₹<%# order[0].orderItems.price * order[0].orderItems.quantity %></td> -->
                                                 <%# if (order.orderStatus == "delivered") { %>
                                                     <!-- <td><button class="btn-remove text-danger">return</button></td> -->
                                                 <%# } else { %>
@@ -100,26 +209,24 @@
                                 
 	                			<div class="cart-bottom">
                                     <div class="cart-discount">
-                                        <a data-toggle="modal" id="return-button" data-target="#return-order-modal" data-action="<%= allowedAction %>" class="btn btn-danger px-4 text-white <%= allowedAction ? "" : "d-none" %>" ><span class="text-uppercase"><%= allowedAction ? `${allowedAction} Order` : `Order ${order[0].orderItems.status}`%></span><i class="icon-close"></i></a>
+                                        <a data-toggle="modal" id="return-button" data-target="#return-order-modal" data-action="<%= orderView.allowedActionForItem.action %>" class="btn btn-danger px-4 text-white <%= orderView.allowedActionForItem.action ? "" : "d-none" %>" ><span class="text-uppercase"><%=orderView.allowedActionForItem.label%></span><i class="icon-close"></i></a>
 			            			</div><!-- End .cart-discount -->
-                                    
-			            			<a href="#" class="btn btn-outline-dark-2"><span>UPDATE CART</span><i class="icon-refresh"></i></a>
 		            			</div><!-- End .cart-bottom -->
                                 
-                                <% if (otherItemsInOrder.length) { %>
+                                <% if (orderView.otherItemsInOrder.length) { %>
                                     <div class="mt-2">
                                         <h6>Other items in this order</h6>
                                         <div class="form-check border rounded col-sm-12 mb-1 address">
                                             <table class="table table-cart table-mobile">
                                                 <tbody>
-                                                    <% otherItemsInOrder.forEach(item => { %>
+                                                    <% orderView.otherItemsInOrder.forEach(item => { %>
                                                         <tr>
                                                             <td class="product-col py-4">
-                                                                <div class="product d-flex ">
+                                                                <div class="product d-flex">
                                                                     <div>
                                                                         <figure class="product-media">
                                                                             <a href="/api/user/order/<%= item._id %>/item/<%= item.itemId %>">
-                                                                                <img src="/<%= item.productImage %>" alt="Product image">
+                                                                                <img src="/<%= item.thumbnail %>" alt="Product image">
                                                                             </a>
                                                                         </figure>
                                                                     </div>
@@ -140,77 +247,76 @@
                                 <% } %>
 	                		</div><!-- End .col-lg-9 -->
 	                		<aside class="col-lg-3">
+                                <div class="card card-dashboard">
+                                    <div class="card-body p-4">
+                                        <h6>Shipping Details</h6>
+                                        <p><%= orderView.shipping.name%> - <%= orderView.shipping.phone%><br>
+                                            <%= orderView.shipping.address%><br>
+                                            <%= orderView.shipping.city%>, <%= orderView.shipping.state%>, <%= orderView.shipping.pin%><br>
+                                        </p>
+                                    </div><!-- End .card-body -->
+                                </div><!-- End .card-dashboard --> 
+
 	                			<div class="summary summary-cart">
-	                				<h3 class="summary-title">Cart Total</h3><!-- End .summary-title -->
+	                				<h3 class="pb-1 mb-2 border-bottom-dashed summary-title">Price Details</h3><!-- End .summary-title -->
 
 	                				<table class="table table-summary">
 	                					<tbody>
-	                						<tr class="summary-subtotal">
+
+                                            <tr class="summary-shipping-row">
+	                							<td>
+                                                    Listing Price :
+	                							</td>
+	                							<td>₹<%= orderView.pricing.listingPrice %></td>
+	                						</tr>
+
+                                            
+                                            <tr class="summary-shipping-row">
+                                                <td>
+                                                    Quantity :
+                                                </td>
+                                                <td><%= orderView.pricing.quantity %></td>
+                                            </tr>
+	                						
+                                            <tr class="summary-shipping">
 	                							<td>Subtotal:</td>
-	                							<td>₹<%= order[0].orderItems.price %></td>
-	                						</tr><!-- End .summary-subtotal -->
-	                						<!-- <tr class="summary-shipping">
-	                							<td>Shipping:</td>
-	                							<td>&nbsp;</td>
-	                						</tr> -->
-
-	                						<!-- <tr class="summary-shipping-row">
-	                							<td>
-													<div class="custom-control custom-radio">
-														<input type="radio" id="free-shipping" name="shipping" class="custom-control-input">
-														<label class="custom-control-label" for="free-shipping">Free Shipping</label>
-													</div>
-	                							</td>
-	                							<td>$0.00</td>
-	                						</tr> -->
-
-	                						<!-- <tr class="summary-shipping-row">
-	                							<td>
-	                								<div class="custom-control custom-radio">
-														<input type="radio" id="standart-shipping" name="shipping" class="custom-control-input">
-														<label class="custom-control-label" for="standart-shipping">Standart:</label>
-													</div>
-	                							</td>
-	                							<td>$10.00</td>
+	                							<td>₹<%= orderView.pricing.subTotal %></td>
 	                						</tr>
 
-	                						<tr class="summary-shipping-row">
-	                							<td>
-	                								<div class="custom-control custom-radio">
-														<input type="radio" id="express-shipping" name="shipping" class="custom-control-input">
-														<label class="custom-control-label" for="express-shipping">Express:</label>
-													</div>
-	                							</td>
-	                							<td>$20.00</td>
-	                						</tr>
+                                            <% if (orderView.pricing.offerDiscount) { %>
+                                                <tr class="summary-shipping-row">
+                                                    <td>Offer Discount: </td>
+                                                    <td>- ₹<%= orderView.pricing.offerDiscount %></td>
+                                                </tr>
+                                            <% } %>
 
-	                						<tr class="summary-shipping-estimate">
-	                							<td>Estimate for Your Country<br> <a href="dashboard.html">Change address</a></td>
-	                							<td>&nbsp;</td>
-	                						</tr> -->
+                                            <% if (orderView.pricing.couponDiscount) { %>
+                                                <tr class="summary-shipping-row">
+                                                    <td>Coupon Discount: </td>
+                                                    <td>- ₹<%= orderView.pricing.couponDiscount %></td>
+                                                </tr>
+                                            <% } %>
+
+                                            <% if (orderView.pricing.shippingFee) { %>
+                                                <tr class="summary-shipping-row">
+                                                    <td class="pb-1 border-bottom-dashed">Shipping: </td>
+                                                    <td class="pb-1 border-bottom-dashed">+ ₹<%= orderView.pricing.shippingFee %></td>
+                                                </tr>
+                                            <% } %>
 
 	                						<tr class="summary-total">
 	                							<td>Total:</td>
-	                							<td>₹<%= order[0].orderItems.price %></td>
-	                						</tr><!-- End .summary-total -->
+	                							<td>₹<%=orderView.pricing.grandTotal%></td>
+	                						</tr>
+
 	                					</tbody>
 	                				</table><!-- End .table table-summary -->
 
-	                				<a href='/api/user/order/<%= orderData._id %>/item/<%= orderData.orderItems._id %>/invoice' class="btn btn-outline-primary-2 btn-order btn-block">PRINT INVOICE</a>
-	                			</div><!-- End .summary -->
-
-                            <div class="card card-dashboard">
-                                <div class="card-body">
-                                    <h6>Shipping Details</h6>
-                                    <p><%= orderData.addressData.name%>  <br>
-                                        <%= orderData.addressData.phone%> <br>
-                                        <%= orderData.addressData.address%><br>
-                                        <%= orderData.addressData.phone%><br>
-                                        <%= orderData.addressData.city%><br>
-                                        <%= orderData.addressData.state%><br>
-                                    </p>
-                                </div><!-- End .card-body -->
-                            </div><!-- End .card-dashboard -->    
+	                				<div class="bg-white border p-2 mb-2 text-center" style="border: 1px dashed #ccc !important;">
+                                        Payment Method: <%=orderView.paymentMode%>
+                                    </div>
+	                				<a href='/api/user/order/<%= orderView._id %>/item/<%= orderView.orderItem._id %>/invoice' class="btn btn-outline-primary-2 btn-order btn-block">PRINT INVOICE</a>
+	                			</div><!-- End .summary -->   
 
 		            			<a href="/api/user/products" class="btn btn-outline-dark-2 btn-block mb-3"><span>CONTINUE SHOPPING</span><i class="icon-refresh"></i></a>
 	                		</aside><!-- End .col-lg-3 -->
@@ -228,19 +334,19 @@
                 <div class="modal-content">
                     <div class="modal-header bg-dark p-3 mb-0">
                         <h5 class="modal-title text-white" id="return-order-header">
-                            <%=allowedAction%> this order?</h5>
+                            <%=orderView.allowedActionForItem.action%> this order?</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                 </div>
                 <div class="modal-body my-4">
 
-                    <div class="m-4 <%= allowedAction == "return" ? "d-none" : "" %>">
+                    <div class="m-4 <%= orderView.allowedActionForItem.action == "return" ? "d-none" : "" %>">
                         <div class="d-flex align-items-center mb-1">
                             <p class="h6 mb-0">Are you sure you want to cancel this order?</p>
                         </div>
                     </div>
-                    <div class="m-4 ml-5 <%= allowedAction == "cancel" ? "d-none" : "" %>">
+                    <div class="m-4 ml-5 <%= orderView.allowedActionForItem.action == "cancel" ? "d-none" : "" %>">
                         <div class="form-check d-flex align-items-center mb-1">
                             <input class="form-check-input" type="radio" name="returnReason" id="returnReason1" value="broken">
                             <label class="form-check-label ml-3 font-weight-normal" for="returnReason1">
@@ -288,8 +394,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn bg-dark text-white" data-dismiss="modal">Close</button>
-                    <form action="#" id="confirm-return-order" data-orderId="<%= order[0]._id %>" data-itemId="<%= order[0].orderItems._id %>" data-action="<%=allowedAction%>">
-                        <button type="submit" class="btn text-danger"><%= allowedAction %> Order</button>
+                    <form action="#" id="confirm-return-order" data-orderId="<%= orderView._id %>" data-itemId="<%= orderView.orderItem._id %>" data-action="<%=orderView.allowedActionForItem.action%>">
+                        <button type="submit" class="btn text-danger"><%= orderView.allowedActionForItem.action %> Order</button>
                     </form>
                 </div>
               </div>

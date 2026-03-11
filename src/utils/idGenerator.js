@@ -1,3 +1,5 @@
+import {nanoid} from "nanoid";
+
 export const generateInvoiceNumber = (orderItemId) => {
     const now = new Date();
     const date = `${now.getDate()}${now.getMonth()+1}${now.getFullYear()}`;
@@ -7,10 +9,10 @@ export const generateInvoiceNumber = (orderItemId) => {
 };
 
 
-export const generateOrderId = (orderId) => {
-    const now = new Date();
-    const date = `${now.getDate()}${now.getMonth()+1}${now.getFullYear()}`;
-    const oid = String(orderItemId).slice(-6).toUpperCase();
+export const generateOrderId = () => {
+    return `ORD-${nanoid(12)}`;
+}
 
-    return `INV-${date}-${oid}`;
+export const generateCheckoutSessionId = () => {
+    return `CHK-${nanoid(12)}`;
 }

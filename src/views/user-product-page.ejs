@@ -68,7 +68,7 @@
                                 <div class="product-gallery product-gallery-vertical">
                                     <div class="row">
                                         <figure class="product-main-image">
-                                            <img id="product-zoom" src="/<%= product.images[0] %>" data-zoom-image="/<%= product.images[0] %>" alt="product image">
+                                            <img id="product-zoom" src="/<%= finalProductData.images[0] %>" data-zoom-image="/<%= finalProductData.images[0] %>" alt="product image">
 
                                             <a href="#" id="btn-product-gallery" class="btn-product-gallery">
                                                 <i class="icon-arrows"></i>
@@ -76,16 +76,16 @@
                                         </figure><!-- End .product-main-image -->
 
                                         <div id="product-zoom-gallery" class="product-image-gallery">
-                                            <a class="product-gallery-item active" href="#" data-image="/<%= product.images[0] %>" data-zoom-image="/<%= product.images[0] %>">
-                                                <img src="/<%= product.images[0] %>" alt="product side">
+                                            <a class="product-gallery-item active" href="#" data-image="/<%= finalProductData.images[0] %>" data-zoom-image="/<%= finalProductData.images[0] %>">
+                                                <img src="/<%= finalProductData.images[0] %>" alt="product side">
                                             </a>
 
-                                            <a class="product-gallery-item" href="#" data-image="/<%= product.images[1] %>" data-zoom-image="/<%= product.images[1] %>">
-                                                <img src="/<%= product.images[1] %>" alt="product cross">
+                                            <a class="product-gallery-item" href="#" data-image="/<%= finalProductData.images[1] %>" data-zoom-image="/<%= finalProductData.images[1] %>">
+                                                <img src="/<%= finalProductData.images[1] %>" alt="product cross">
                                             </a>
 
-                                            <a class="product-gallery-item" href="#" data-image="/<%= product.images[2] %>" data-zoom-image="/<%= product.images[2] %>">
-                                                <img src="/<%= product.images[2] %>" alt="product with model">
+                                            <a class="product-gallery-item" href="#" data-image="/<%= finalProductData.images[2] %>" data-zoom-image="/<%= finalProductData.images[2] %>">
+                                                <img src="/<%= finalProductData.images[2] %>" alt="product with model">
                                             </a>
 
                                             <!-- <a class="product-gallery-item" href="#" data-image="/assets/images/products/single/centered/4.jpg" data-zoom-image="/assets/images/products/single/centered/4-big.jpg">
@@ -98,7 +98,7 @@
 
                             <div class="col-md-6">
                                 <div class="product-details product-details-centered">
-                                    <h1 class="product-title"><%= product.productname %></h1><!-- End .product-title -->
+                                    <h1 class="product-title"><%= finalProductData.productname %></h1><!-- End .product-title -->
 
                                     <div class="ratings-container">
                                         <div class="ratings">
@@ -108,19 +108,19 @@
                                     </div><!-- End .rating-container -->
 
                                     <div class="product-price">
-                                        <% if (product.offer) { %>
+                                        <% if (finalProductData.offer) { %>
                                                             
-                                            ₹ <%= product.offerPrice %>
-                                            <small class="text-secondary px-2"><s>₹ <%= product.price %></s></small>
+                                            ₹ <%= finalProductData.offerPrice %>
+                                            <small class="text-secondary px-2"><s>₹ <%= finalProductData.price %></s></small>
                                         <% } else { %>
-                                            ₹ <%= product.price %>
+                                            ₹ <%= finalProductData.price %>
                                         <% } %>
                                     </div><!-- End .product-price -->
 
-                                    <% if (product.offer) { %>
+                                    <% if (finalProductData.offer) { %>
                                            
                                         <div class="product-cat">
-                                            <p class="text-primary p-2"><i class="icon-gift px-2"></i><%= product.offer %></p>
+                                            <p class="text-primary p-2"><i class="icon-gift px-2"></i><%= finalProductData.offer.name %></p>
                                         </div><!-- End .product-content -->
                                         
                                     <%# } else { %>
@@ -128,7 +128,7 @@
                                     <% } %>
 
                                     <div class="product-content">
-                                        <p><%= product.description %>.</p>
+                                        <p><%= finalProductData.description %>.</p>
                                     </div><!-- End .product-content -->
 
                                     <div class="details-filter-row details-row-size">
@@ -160,10 +160,10 @@
                                         <form action="#" id="add-to-cart-form">
                                             <div class="details-action-col">
                                                 <div class="product-details-quantity">
-                                                    <input type="number" id="quantity" name="quantity" class="form-control" value="1" min="1" max="<%= product.maxQuantity %>" step="1" data-decimals="0" required>
+                                                    <input type="number" id="quantity" name="quantity" class="form-control" value="1" min="1" max="<%= finalProductData.maxQuantity %>" step="1" data-decimals="0" required>
                                                 </div><!-- End .product-details-quantity -->
 
-                                                <input type="hidden" name="productId" value="<%= product._id %>">
+                                                <input type="hidden" name="productId" value="<%= finalProductData._id %>">
                                                 <input type="hidden" name="referer" value="productPage">
                                                 <button type="submit" class="btn btn-product btn-cart"><span>add to cart</span></button>
                                             </div><!-- End .details-action-col -->
@@ -172,7 +172,7 @@
                                         <div class="details-action-wrapper">
                                             <form action="" id="add-to-wishlist-form">
                                                     
-                                                <input type="hidden" name="productId" value="<%= product._id %>">
+                                                <input type="hidden" name="productId" value="<%= finalProductData._id %>">
                                                 <button type="submit" id="add-to-wishlist-btn" class="btn btn-product" data-iswishlisted="<%= isWishlisted %>">
                                                     <i class="<%= isWishlisted ? 'icon-heart' : "icon-heart-o" %>"></i>
                                                     <span><%= isWishlisted ? 'Wishlisted' : 'Add to wishlist' %></span>
@@ -187,8 +187,8 @@
                                     <div class="product-details-footer">
                                         <div class="product-cat">
                                             <span>Category:</span>
-                                            <a href="#"><%= product.category.name %></a>,
-                                            <a href="#"><%= product.subcategory.name %></a>,
+                                            <a href="#"><%= finalProductData.category.name %></a>,
+                                            <a href="#"><%= finalProductData.subcategory.name %></a>,
                                             <a href="#">Yellow</a>
                                         </div><!-- End .product-cat -->
 

@@ -36,7 +36,8 @@ import {getHome,
         returnOrder,
         getOrder,
         isCouponValid,
-        verifyRazorpay,
+        verifyRazorpayPayment,
+        handleRazorpayPaymentFailure,
         generateInvoice}
 from "../controllers/user.controllers.js";
 
@@ -85,7 +86,8 @@ router.get("/order/:orderId/item/:itemId/invoice", generateInvoice);
 router.get("/order-confirmation", orderStatus);
 // router.post('/apply-coupon', applyCoupon);
 router.post('/coupon/is-valid', isCouponValid);
-router.post('/verify-razorpay-payment', verifyRazorpay)
+router.post('/payments/razorpay/verify', verifyRazorpayPayment);
+router.post('/payments/razorpay/failure', handleRazorpayPaymentFailure);
 
 
 
