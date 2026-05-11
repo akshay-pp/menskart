@@ -1,5 +1,6 @@
 import { User } from "../models/user.model.js";
 import { Coupon } from "../models/coupon.model.js";
+import{ pricingBreakdown } from "./pricing.js";
 
 
 
@@ -12,22 +13,17 @@ export const getApplicableCoupons = async function(userId, couponsUsed, cart) {
 
 
 
-
-export const applyCouponToCart = async function(coupon = null, cart = {}, userId) {
+export const applyCouponToCart = async function(coupon, cart, userId) {
     // console.log({coupon, cart});
-    // if (!coupon || !cart) {
-    //     return 
-    // }
 
 
     // verifyCoupon
-    // console.log({coupon, totalPrice: cart.totalPrice});
-    const {success: isCouponValid, coupon: verifiedCoupon} = await verifyCoupon(coupon, cart.totalPrice, userId);
+    const {success: isCouponValid, coupon: verifiedCoupon, error} = await verifyCoupon(coupon, cart.totalPrice, userId);
     // console.log({isCouponValid});
 
     if (!isCouponValid) {
-        return {isCouponValid, verifiedCoupon};
-    }
+        return {isCouponValid, error};
+    };
 
 
     
@@ -55,6 +51,7 @@ export const applyCouponToCart = async function(coupon = null, cart = {}, userId
 
 
     const cartWithCouponDistribution = distributeCouponDiscount (couponDiscount, cart);
+    cartWithCouponDistribution.pricing = pricingBreakdown(cartWithCouponDistribution);
     // console.log(cartWithCouponDistribution);
 
     return cartWithCouponDistribution;
@@ -66,8 +63,9 @@ export const applyCouponToCart = async function(coupon = null, cart = {}, userId
 // verify a specific coupon 
 export const verifyCoupon = async function(couponInfo, cartValue, userId) {
     
-    // @param couponInfo = {code, id}
-    // @param cartValue = cart.totalPrice
+    // @param {Object} couponInfo = {code, id}
+    // @param {Number} cartValue = cart.totalPrice - total cart value
+    // @param {String} userId = req.session.user._id - ID of the user
     
     try {
         
@@ -76,14 +74,14 @@ export const verifyCoupon = async function(couponInfo, cartValue, userId) {
             {couponsUsed: 1, _id: 0}
         );
 
-        const couponsUsed = user.couponsUsed.map(item => item.coupon);
-        // console.log({couponsUsed});
         
         const hasUsedCoupon = user.couponsUsed.some(item => {
             if (item.coupon) {
-                return (item.coupon == couponInfo.code) && (item.couponId == couponInfo.id);
+                return (item.coupon == couponInfo.code) && (item.couponId == couponInfo.id); //new couponsUsed
             }
-            return item.couponId == couponInfo.id;
+            return item.couponId == couponInfo.id; //older couponsUsed
+
+            //in earlier version there was only couponId and no coupon code inside couponsUsed
         });
         // console.log({hasUsedCoupon});
 
@@ -91,11 +89,12 @@ export const verifyCoupon = async function(couponInfo, cartValue, userId) {
             return {success: false, error: "Coupon already used"};
         }
     
+        const regexedCode = new RegExp(`^${couponInfo.code}$`, "i"); 
         const verifiedCoupon = await Coupon.findOne(
             {
                 $and: [
                         {_id: couponInfo.id},
-                        {code: couponInfo.code},
+                        {code: regexedCode},
                         {couponActive: true},
                         {validFrom: {$lte: new Date()}},
                         {expiry: {$gte: new Date()}},
@@ -136,8 +135,6 @@ export const calculateCouponDiscount = function(verifiedCoupon, cartValue) {
     } else {
         discount = verifiedCoupon.couponAmount;
     }
-
-    // const finalPrice = Math.max(1, Math.round(cartValue - discount));
 
     return discount;
 

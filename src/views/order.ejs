@@ -120,7 +120,8 @@
                 </div>
             	<div class="cart">
 	                <div class="container">
-	                	<div class="row">
+                        <span class="border px-3 py-2">Order Id: <strong><%= orderView.orderId || orderView._id %></strong></span>
+	                	<div class="row mt-2">
 	                		<div class="col-lg-9">
                                 <div class="border rounded col-sm-12 mb-2 py-4 pt-3" style="border: 1px dashed #ccc !important">
                                     <!-- shipping content -->
@@ -177,7 +178,6 @@
 									</thead> -->
 
 									<tbody>
-                                        
                                             <tr>
                                                 <td class="product-col border-0 pl-5">
                                                     <div class="product">
@@ -206,12 +206,16 @@
                                         
 									</tbody>
 								</table><!-- End .table table-wishlist -->
-                                
-	                			<div class="cart-bottom">
-                                    <div class="cart-discount">
-                                        <a data-toggle="modal" id="return-button" data-target="#return-order-modal" data-action="<%= orderView.allowedActionForItem.action %>" class="btn btn-danger px-4 text-white <%= orderView.allowedActionForItem.action ? "" : "d-none" %>" ><span class="text-uppercase"><%=orderView.allowedActionForItem.label%></span><i class="icon-close"></i></a>
-			            			</div><!-- End .cart-discount -->
-		            			</div><!-- End .cart-bottom -->
+                                <% if (orderView.allowedActionForItem) { %>
+                                    <div class="cart-bottom">
+                                        <div class="cart-discount">
+                                            <a data-toggle="modal" id="return-button" data-target="#return-order-modal" data-action="<%= orderView.allowedActionForItem?.action %>" class="btn btn-danger px-4 text-white <%= orderView.allowedActionForItem?.action ? "" : "d-none" %>" >
+                                                <span class="text-uppercase"><%=orderView.allowedActionForItem?.label%></span>
+                                                <i class="icon-close"></i>
+                                            </a>
+                                        </div><!-- End .cart-discount -->
+                                    </div><!-- End .cart-bottom -->
+                                <% } %>
                                 
                                 <% if (orderView.otherItemsInOrder.length) { %>
                                     <div class="mt-2">
@@ -257,66 +261,70 @@
                                     </div><!-- End .card-body -->
                                 </div><!-- End .card-dashboard --> 
 
-	                			<div class="summary summary-cart">
-	                				<h3 class="pb-1 mb-2 border-bottom-dashed summary-title">Price Details</h3><!-- End .summary-title -->
-
-	                				<table class="table table-summary">
-	                					<tbody>
-
-                                            <tr class="summary-shipping-row">
-	                							<td>
-                                                    Listing Price :
-	                							</td>
-	                							<td>₹<%= orderView.pricing.listingPrice %></td>
-	                						</tr>
-
-                                            
-                                            <tr class="summary-shipping-row">
-                                                <td>
-                                                    Quantity :
-                                                </td>
-                                                <td><%= orderView.pricing.quantity %></td>
-                                            </tr>
-	                						
-                                            <tr class="summary-shipping">
-	                							<td>Subtotal:</td>
-	                							<td>₹<%= orderView.pricing.subTotal %></td>
-	                						</tr>
-
-                                            <% if (orderView.pricing.offerDiscount) { %>
+                                <% if (orderView.paymentMode == 'razorpay' && (orderView.paymentStatus == 'pending' || orderView.paymentStatus == 'failed')) { %>
+                                    <a class="w-100 pb-1 mb-2 btn btn-warning summary-title" id="retryPaymentBtn" data-id="<%=orderView._id%>">Retry Payment</a>
+                                <% } else { %>
+                                    <div class="summary summary-cart">
+                                        <h3 class="pb-1 mb-2 border-bottom-dashed summary-title">Price Details</h3><!-- End .summary-title -->
+    
+                                        <table class="table table-summary">
+                                            <tbody>
+    
                                                 <tr class="summary-shipping-row">
-                                                    <td>Offer Discount: </td>
-                                                    <td>- ₹<%= orderView.pricing.offerDiscount %></td>
+                                                    <td>
+                                                        Listing Price :
+                                                    </td>
+                                                    <td>₹<%= orderView.pricing.listingPrice %></td>
                                                 </tr>
-                                            <% } %>
-
-                                            <% if (orderView.pricing.couponDiscount) { %>
+    
+                                                
                                                 <tr class="summary-shipping-row">
-                                                    <td>Coupon Discount: </td>
-                                                    <td>- ₹<%= orderView.pricing.couponDiscount %></td>
+                                                    <td>
+                                                        Quantity :
+                                                    </td>
+                                                    <td><%= orderView.pricing.quantity %></td>
                                                 </tr>
-                                            <% } %>
-
-                                            <% if (orderView.pricing.shippingFee) { %>
+                                                
+                                                <tr class="summary-shipping">
+                                                    <td>Subtotal:</td>
+                                                    <td>₹<%= orderView.pricing.subTotal %></td>
+                                                </tr>
+    
+                                                <% if (orderView.pricing.offerDiscount) { %>
+                                                    <tr class="summary-shipping-row">
+                                                        <td>Offer Discount: </td>
+                                                        <td>- ₹<%= orderView.pricing.offerDiscount %></td>
+                                                    </tr>
+                                                <% } %>
+    
+                                                <% if (orderView.pricing.couponDiscount) { %>
+                                                    <tr class="summary-shipping-row">
+                                                        <td>Coupon Discount: </td>
+                                                        <td>- ₹<%= orderView.pricing.couponDiscount %></td>
+                                                    </tr>
+                                                <% } %>
+    
                                                 <tr class="summary-shipping-row">
                                                     <td class="pb-1 border-bottom-dashed">Shipping: </td>
-                                                    <td class="pb-1 border-bottom-dashed">+ ₹<%= orderView.pricing.shippingFee %></td>
+                                                    <td class="pb-1 border-bottom-dashed">
+                                                        <%= orderView.pricing?.shippingFee ? `+ ₹${orderView.pricing?.shippingFee}` : "Free Shipping" %>
+                                                    </td>
                                                 </tr>
-                                            <% } %>
-
-	                						<tr class="summary-total">
-	                							<td>Total:</td>
-	                							<td>₹<%=orderView.pricing.grandTotal%></td>
-	                						</tr>
-
-	                					</tbody>
-	                				</table><!-- End .table table-summary -->
-
-	                				<div class="bg-white border p-2 mb-2 text-center" style="border: 1px dashed #ccc !important;">
-                                        Payment Method: <%=orderView.paymentMode%>
-                                    </div>
-	                				<a href='/api/user/order/<%= orderView._id %>/item/<%= orderView.orderItem._id %>/invoice' class="btn btn-outline-primary-2 btn-order btn-block">PRINT INVOICE</a>
-	                			</div><!-- End .summary -->   
+    
+                                                <tr class="summary-total">
+                                                    <td>Total:</td>
+                                                    <td>₹<%=orderView.pricing.grandTotal%></td>
+                                                </tr>
+    
+                                            </tbody>
+                                        </table><!-- End .table table-summary -->
+    
+                                        <div class="bg-white border p-2 mb-2 text-center" style="border: 1px dashed #ccc !important;">
+                                            Payment Method: <%=orderView.paymentMode%>
+                                        </div>
+                                        <a href='/api/user/order/<%= orderView._id %>/item/<%= orderView.orderItem._id %>/invoice' class="btn btn-outline-primary-2 btn-order btn-block">PRINT INVOICE</a>
+                                    </div><!-- End .summary -->   
+                                <% } %>
 
 		            			<a href="/api/user/products" class="btn btn-outline-dark-2 btn-block mb-3"><span>CONTINUE SHOPPING</span><i class="icon-refresh"></i></a>
 	                		</aside><!-- End .col-lg-3 -->
@@ -334,19 +342,19 @@
                 <div class="modal-content">
                     <div class="modal-header bg-dark p-3 mb-0">
                         <h5 class="modal-title text-white" id="return-order-header">
-                            <%=orderView.allowedActionForItem.action%> this order?</h5>
+                            <%=orderView.allowedActionForItem?.action%> this order?</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                 </div>
                 <div class="modal-body my-4">
 
-                    <div class="m-4 <%= orderView.allowedActionForItem.action == "return" ? "d-none" : "" %>">
+                    <div class="m-4 <%= orderView.allowedActionForItem?.action == "return" ? "d-none" : "" %>">
                         <div class="d-flex align-items-center mb-1">
                             <p class="h6 mb-0">Are you sure you want to cancel this order?</p>
                         </div>
                     </div>
-                    <div class="m-4 ml-5 <%= orderView.allowedActionForItem.action == "cancel" ? "d-none" : "" %>">
+                    <div class="m-4 ml-5 <%= orderView.allowedActionForItem?.action == "cancel" ? "d-none" : "" %>">
                         <div class="form-check d-flex align-items-center mb-1">
                             <input class="form-check-input" type="radio" name="returnReason" id="returnReason1" value="broken">
                             <label class="form-check-label ml-3 font-weight-normal" for="returnReason1">
@@ -393,9 +401,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn bg-dark text-white" data-dismiss="modal">Close</button>
-                    <form action="#" id="confirm-return-order" data-orderId="<%= orderView._id %>" data-itemId="<%= orderView.orderItem._id %>" data-action="<%=orderView.allowedActionForItem.action%>">
-                        <button type="submit" class="btn text-danger"><%= orderView.allowedActionForItem.action %> Order</button>
+                    <button type="button" class="btn bg-dark text-white" data-dismiss="modal">No, Thanks</button>
+                    <form action="#" id="confirm-return-order" data-orderId="<%= orderView._id %>" data-itemId="<%= orderView.orderItem._id %>" data-action="<%=orderView.allowedActionForItem?.action%>">
+                        <button type="submit" class="btn text-danger"><%= orderView.allowedActionForItem?.action %> Order</button>
                     </form>
                 </div>
               </div>
@@ -617,6 +625,7 @@
     <%- include("./partials/user/auth-modal") %>
 
     <!-- Plugins JS File -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="module">
         
         //remove from wishlist
@@ -660,6 +669,114 @@
                 location.href = `/api/user/order/${orderId}/item/${itemId}`;
             }, 500)
 
+        });
+
+
+        document.getElementById('retryPaymentBtn').addEventListener('click', async function(e) {
+            e.preventDefault();
+            const orderId = this.dataset.id;
+            const response = await fetch('/api/user/payments/razorpay/retry', {
+                method: "POST",
+                headers: {"Content-Type" : "application/json"},
+                body: JSON.stringify({orderId})
+            });
+
+            const data = await response.json();
+            console.log(data);
+
+            if (!data.success) {
+                if (response.status === 500) {
+                    window.location.href = `/api/user/order-confirmation?status=error`;
+                    return;
+                }
+
+                if (data.error) {
+                    triggerToast('failure', data.error || 'Something wrong happened');
+                    // document.getElementById("checkout-error").innerHTML = data.error;
+                    // document.getElementById("checkout-error").className = "alert alert-danger";
+                    // document.getElementById("checkout-error").style.display = "block";
+                }
+
+                // let errorList = '';
+                // data.errors.forEach(error => {
+                //     errorList += `<li>${error}</li>`;
+                // });
+
+                console.log(errorList);
+                // document.getElementById("checkout-error").innerHTML = errorList;
+                // document.getElementById("checkout-error").className = "alert alert-danger";
+                // document.getElementById("checkout-error").style.display = "block";
+            
+            } else if (data.success && data.redirectUrl) {
+                //if cash on delivery or wallet
+                sessionStorage.removeItem("appliedCoupon");
+                window.location.href = data.redirectUrl;
+            } else if (data.success && data.razorpayOrder) {
+                //if razorpay
+                console.log(data.razorpayOrder);
+
+                const options = {
+                    "key": data.key, // Enter the Key ID generated from the Dashboard
+                    "amount": data.razorpayOrder.amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+                    "currency": "INR",
+                    "name": "Menskart INC",
+                    "description": "Test Transaction",
+                    "image": "https://example.com/your_logo",
+                    "order_id": data.razorpayOrder.id , //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+                    "handler": async function (response) {
+                        const verifyResponse = await fetch('/api/user/payments/razorpay/verify', {
+                            method: "POST",
+                            headers: {"Content-Type" : "application/json"},
+                            body: JSON.stringify(response)
+                        });
+
+                        const verifyData = await verifyResponse.json();
+                        window.location.href = verifyData.redirectUrl;
+
+                    },
+
+                    "modal": {
+                        "ondismiss": function() {
+                            window.location.href = `/api/user/order-confirmation?status=error`;
+                        }
+                    },
+
+                    "prefill": {
+                        "name": data.prefill.name,
+                        "email": data.prefill.email,
+                        "contact": data.prefill.contact
+                    },
+
+                    "notes": {
+                        "address": "Razorpay Corporate Office"
+                    },
+
+                    "theme": {
+                        "color": "#0a0a0a"
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+
+                rzp.on('payment.failed', async function (response){
+
+                    const failureResponse = await fetch('/api/user/payments/razorpay/failure', {
+                        method: 'POST',
+                        headers: {'Content-Type' : 'application/json'},
+                        body: JSON.stringify({response})
+                    });
+
+                    // alert(response.error.code);
+                    // alert(response.error.description);
+                    // alert(response.error.source);
+                    // alert(response.error.step);
+                    // alert(response.error.reason);
+                    // alert(response.error.metadata.order_id);
+                    // alert(response.error.metadata.payment_id);
+                });
+
+                rzp.open();
+            }
         })      
         
 

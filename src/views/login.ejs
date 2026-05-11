@@ -565,6 +565,7 @@
 
         document.addEventListener("DOMContentLoaded", function () {
 
+            document.getElementById('login-email').focus();
             const url = new URL(window.location);
             const error = url.searchParams.get('error');
             console.log(error);

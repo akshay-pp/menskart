@@ -48,6 +48,11 @@ const productSchema = new Schema(
             default: null,
         },
 
+        categoryName: {
+            type: String,
+            trim: true
+        },
+
         subcategory: {
             type: Schema.Types.ObjectId,
             ref: "Category",
@@ -92,6 +97,20 @@ const productSchema = new Schema(
     {timestamps: true}
 )
 
+productSchema.index(
+    {
+        productname: 'text',
+        description: 'text',
+        categoryName: 'text'
+    },
+    {
+        weights:{
+            productname: 5,
+            categoryName: 3,
+            description: 1
+        }
+    }
+);
 
 
 export const Product = model("Product", productSchema);

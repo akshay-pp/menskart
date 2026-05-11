@@ -3,7 +3,7 @@ import { verifyGoogleToken } from "../utils/verifyGoogleToken.js";
 import { User } from "../models/user.model.js";
 import { sendOtp, sendOrderConfirmation } from "../utils/nodemailer.js";
 import {razorpay, verifySign} from "../utils/razorpay.js";
-import {generateInvoiceNumber} from "../utils/idGenerator.js";
+import {generateInvoiceNumber, generateOrderId, generateReferralCode, generateCheckoutSessionId} from "../utils/idGenerator.js";
 import { Product } from "../models/product.model.js";
 import {Category} from "../models/category.model.js";
 import { Address } from "../models/address.model.js";
@@ -11,29 +11,36 @@ import { Cart } from "../models/cart.model.js";
 import { Order } from "../models/order.model.js";
 import { Wishlist } from "../models/wishlist.model.js";
 import {Coupon} from "../models/coupon.model.js";
+import {Wallet} from "../models/wallet.model.js";
 import {Offer} from "../models/offer.model.js";
 import puppeteer from 'puppeteer';
 import ejs from 'ejs';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {findBestPrice} from '../utils/calculateOfferPrice.js';
+import {applyOfferPricesToCart, pricingBreakdown} from '../utils/pricing.js';
+import {applyCouponToCart} from '../utils/couponServices.js';
+import {formatDate} from '../utils/formatDate.js';
+import {paginate} from '../utils/paginate.js';
+import {STATUS_CODES} from '../utils/constants/statusCodes.js';
+import { PAGINATION_CONFIG } from "../utils/constants/config.js";
+
+
 
 //homepage
 export const getHome = async (req,res)=> {
 
     const user = req.session.user || null;
-    const newArrivals = await Product.find({}).populate("category", "name").populate("subcategory", "name").sort({createdAt: -1}).limit(5);
-    const bestSellers = await Product.find({}).populate("category", "name").populate("subcategory", "name").sort({stock: 1}).limit(10);
-    res.status(200).render('index', {user, newArrivals, bestSellers});
+    const newArrivals = await Product.find({}).populate("category", "name").populate("subcategory", "name").sort({createdAt: -1}).limit(PAGINATION_CONFIG.DEFAULT_LIMIT);
+    const bestSellers = await Product.find({}).populate("category", "name").populate("subcategory", "name").sort({stock: 1}).limit(PAGINATION_CONFIG.DEFAULT_LIMIT);
+    res.status(STATUS_CODES.SUCCESS).render('index', {user, newArrivals, bestSellers});
 
 }
 
 
 
 export const getLogin = async (req,res) => {
-
-    res.status(200).render("login");
-
+    res.status(STATUS_CODES.SUCCESS).render("login");
 }
 
 //user login
@@ -44,33 +51,48 @@ export const loginUser = async (req, res) => {
     console.log(req.body);
 
     if(!email || !password){
-        return res.status(400).json({ success: false, error: "all fields are required" });
-    }else {
+        return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "all fields are required" });
+    } else {
 
         try {
 
             const user = await User.findOne({ email });
       
             if (!user) {
-                return res.status(400).json({ success: false, error: "No user found for the email" });
+                return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "No user found for the email" });
             }
 
             if(user?.isBlocked){
-                return res.status(403).json({ success: false, error: "You're blocked from accessing the website" });
+                return res.status(STATUS_CODES.FORBIDDEN).json({ success: false, error: "You're blocked from accessing the website" });
             }
       
             const isPasswordValid = await user.verifyPassword(password);
       
             if (!isPasswordValid) {
-                return res.status(400).json({ success: false, error: "Incorrect password" });
+                return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "Incorrect password" });
             }
             
             req.session.user = user;
-            return res.status(200).json({ success: true, message: "Logging you in.." });
+            const wallet = await Wallet.findOneAndUpdate(
+                {owner: user._id},
+                {$setOnInsert: {balance: 0, transaction: []}},
+                {upsert: true, new: true}
+            );
+
+            const referralCode = generateReferralCode(req.session.user.fullname);
+            await User.findOneAndUpdate(
+                { _id: user._id, referralCode: { $exists: false } },
+                {$set: {referralCode, referrals: []}},
+                {new: true}
+            );
+
+            console.log(wallet);
+
+            return res.status(STATUS_CODES.SUCCESS).json({ success: true, message: "Logging you in.." });
             
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ success: false, error: error.message });
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: error.message });
         }
     }
   
@@ -82,38 +104,47 @@ export const loginUser = async (req, res) => {
 //register new user
 export const registerUser = async(req,res) => {
 
-    const {fullname, email, password, confirmPassword} = req.body;
+    const {fullname, email, password, confirmPassword, referralInput} = req.body;
     console.log(req.body);
     let isEmpty = [fullname, email, password, confirmPassword].some(item => item?.trim() === "")
 
+
     if (isEmpty){
-        return res.status(400).json({ success: false, error: "All fields are required" });
-    }else if (password != confirmPassword){
-        return res.status(400).json({ success: false, error: "passwords doesn't match" });
+        return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "All fields are required" });
+    } else if (password != confirmPassword){
+        return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "passwords doesn't match" });
     }
-    else{
+    else {
 
         try {
             
             const existingUser = await User.findOne({email});
 
             if(existingUser){
-                return res.status(400).json({ success: false, error: "User with email already exists"});
-            }else{
+                return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "User with email already exists"});
+            } else {
 
-                const user = {fullname, email, password};
+                let referredBy;
+                if (referralInput) {
+                    referredBy = await User.findOne({referralCode: referralInput}, {_id: 1});
+                    if (!referredBy){
+                        return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "Invalid Referral Code"});
+                    };
+                };
+
+                const user = {fullname, email, password, referredBy: referredBy?._id || null};
                 req.session.temp = user;
                 const otp = await sendOtp(email);
-                const expiry = Date.now()+(30*1000);
+                const expiry = Date.now()+(60*1000);
                 console.log(req.session.temp);     //for debugging
                 req.session.otp = {otp, expiry};
                 console.log(req.session.otp);     //for debugging
-                return res.status(200).json({ success: true, message: "otp sent successfully"});
+                return res.status(STATUS_CODES.SUCCESS).json({ success: true, message: "otp sent successfully"});
                 
             }
 
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message});
+            res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: error.message});
         }
 
     }
@@ -128,28 +159,65 @@ export const verifyRegistration = async (req,res) => {
     if(req.session.otp.otp && req.session.otp.otp == otp){
 
         if (req.session.otp.expiry < Date.now()){
-            return res.status(403).json({ success: false, error: "Otp Expired"});
+            return res.status(STATUS_CODES.FORBIDDEN).json({ success: false, error: "Otp Expired"});
         }
         
-        const {fullname, email, password} = req.session.temp;
+        const {fullname, email, password, referredBy} = req.session.temp;
         try {
 
-            const user = await User.create({fullname, email, password});
+            const referralCode = generateReferralCode(fullname);
+            const user = await User.create({fullname, email, password, referralCode, referredBy});
             const newUser = await User.findById(user._id);
             
-            if(!newUser){
-                return res.status(500).json({ success: false, error: "error creating user"})
-            }else{
+            if (!newUser){
+                return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: "error creating user"})
+            } else {
                 req.session.user = newUser;
-                return res.json({ success:true, message: "otp verified. redirecting...", url: "/"});
+                await Wallet.create({owner: user._id, balance: 0, transactions: []});
+
+                if (referredBy) {
+                    await User.findByIdAndUpdate(referredBy, {$addToSet: {referrals: user._id }});
+                    
+                    const newTransactionReferredBy = {
+                        amount: 200,
+                        direction: 'Credit',
+                        source: 'referral',
+                        referee: user._id,
+                        status: 'success'
+                    };
+        
+                    await Wallet.findOneAndUpdate(
+                        {owner: referredBy}, 
+                        {
+                            $push: {transactions: newTransactionReferredBy},
+                            $inc: {balance: 200}
+                        }
+                    );
+
+                    const newTransactionReferee = {
+                        amount: 200,
+                        direction: 'Credit',
+                        source: 'referral',
+                        status: 'success'
+                    };
+
+                    await Wallet.findOneAndUpdate(
+                        {owner: user._id}, 
+                        {
+                            $push: {transactions: newTransactionReferee},
+                            $inc: {balance: 200}
+                        }
+                    );
+                }
+                return res.status(STATUS_CODES.SUCCESS).json({ success:true, message: "otp verified. redirecting...", url: "/"});
 
             }
 
         } catch (error) {
-            return res.status(500).json({ success: false, error: error.message})
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: error.message})
         }
     }else{
-        return res.status(400).json({ success: false, error: "Incorrect otp"});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "Incorrect otp"});
     }
 
 }
@@ -159,23 +227,24 @@ export const verifyRegistration = async (req,res) => {
 //user registration resend otp
 export const resendOtp = async(req,res) => {
     try {
-        if(!req.session.temp){
-            return res.status(400).json({success: false, error:"unauthorized"});
+        if(!req.session.temp && !req.session.email){
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error:"unauthorized"});
         
         }else if(req.session?.otp?.expiry > Date.now()) {
-            return res.status(400).json({success: false, error:"Please wait for a while..."});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error:"Please wait for a while..."});
         
         }else{
-            const otp = await sendOtp(req.session.temp.email);
-            const expiry = Date.now()+(30*1000); 
+            const email = req.session?.temp?.email ?? req.session?.email
+            const otp = await sendOtp(email);
+            const expiry = Date.now()+(60*1000); 
             req.session.otp = {otp, expiry};
 
             console.log(`Generated otp : ${otp}`)     //for debugging
 
-            return res.status(200).json({ success: true, message: "Otp resent successfully" });
+            return res.status(STATUS_CODES.SUCCESS).json({ success: true, message: "Otp resent successfully" });
         }
     } catch (error) {
-        return res.status(500).json({ success: false, error:error.message });
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error:error.message });
     }
 }
 
@@ -194,16 +263,28 @@ export const getProfile = async (req,res) => {
             }
 
             if (tab === "orders"){
+                
                 const page = parseInt(req.query.page) || 1;
-                const limit = 10;
+                const limit = PAGINATION_CONFIG.DEFAULT_LIMIT;
                 const skip = (page-1) * limit;
-    
-                const totalOrders = await Order.countDocuments();
-                const totalPages = Math.ceil(totalOrders/limit);
-    
+
+                const totalDocs = await Order.countDocuments({
+                    owner: req.session.user._id,
+                    $nor: [{
+                        'paymentInfo.mode': 'razorpay',
+                        'paymentInfo.status': {$in: ['pending', 'failed']}
+                    }]
+                });
+
                 const orders = await Order.aggregate ([
                     
-                    {$match: {owner: req.session.user._id}},
+                    {$match:{
+                        owner: req.session.user._id,
+                        $nor: [{
+                            'paymentInfo.mode': 'razorpay',
+                            'paymentInfo.status': {$in: ['pending', 'failed']}
+                        }]
+                    }},
                     {$sort: {createdAt: -1}},
                     {$unwind: "$orderItems"},
                     {$sort: {createdAt: -1}},
@@ -219,29 +300,88 @@ export const getProfile = async (req,res) => {
     
                 ]);
 
+                const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                const pendingOrders = await Order.aggregate ([
+                    
+                    {$match:{
+                        owner: req.session.user._id,
+                        'paymentInfo.mode': 'razorpay',
+                        'paymentInfo.status': {$in: ['pending', 'failed']},
+                        createdAt: {$gte: fifteenMinutesAgo}
+                    }},
+                    {$sort: {createdAt: -1}},
+                    {$unwind: "$orderItems"},
+                    {$sort: {createdAt: -1}},
+                    {$lookup: {
+                        from: "products",
+                        localField: "orderItems.product",
+                        foreignField: "_id",
+                        as: "orderItems.productData"
+                    }},
+                    {$unwind: "$orderItems.productData"},
+                    {$limit: 2}
+    
+                ]);
+
+                console.log(pendingOrders);
+
+                const totalPages = Math.ceil(totalDocs/limit);
+    
                 data.page = page;
+                data.totalDocs = totalDocs;
                 data.totalPages = totalPages;
                 data.orders = orders;
+                data.pendingOrders = pendingOrders || [];
                 
             };
 
             if (tab === "wallet") {
+                const wallet = await Wallet.findOneAndUpdate(
+                    {owner: req.session.user._id},
+                    {$setOnInsert: {balance: 0, transactions: []}},
+                    {new: true, upsert: true}
+                ).lean();
 
+                const walletUiData = {
+                    Credit: {
+                        badgeClass: "bg-secondary",
+                        amountPrefix: `+ ₹`,
+                        amountClass: 'text-success',
+                        sources: {
+                            refund: 'Refund for: ',
+                            referral: 'Referal reward'
+                        }
+                    },
+
+                    Debit: {
+                        badgeClass: "bg-danger",
+                        amountPrefix: `- ₹`,
+                        amountClass: 'text-danger',
+                        sources: 'Paid for order'
+                    }
+                };
+
+                wallet.transactions?.forEach(item => {
+                    const ui = walletUiData[item.direction];
+                    item.badgeClass = ui.badgeClass;
+                    item.date = formatDate(item.createdAt);
+                    item.amountText = `${ui.amountPrefix}${item.amount}`;
+                    item.amountClass = ui.amountClass;
+                    item.description = typeof ui.sources === 'object' ? ui.sources[item.source] : ui.sources;
+                });
+
+                wallet.transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                data.wallet = wallet;
             };
-
-
-
-            return res.render("profile", {activeTab: tab, ...data });
+            console.log(data);
+            return res.status(STATUS_CODES.SUCCESS).render("profile", {activeTab: tab, ...data });
         
         } catch (error) {
-    
-            return res.status(500).json({success: false, error: error.message});
-        
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
 
-    // }
-
-}
+};
 
 
 
@@ -259,7 +399,7 @@ export const forgotPassword = async(req,res) => {
         const user = await User.findOne({email});
         
         if(!user){
-            return res.status(400).json({success:false, error: "no account associated with this email"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success:false, error: "no account associated with this email"});
         }
 
         const otp = await sendOtp(email);
@@ -268,11 +408,11 @@ export const forgotPassword = async(req,res) => {
         req.session.otp = {otp, expiry};
         console.log(req.session.otp);
 
-        return res.status(200).json({success:true, message: "otp sent successfully"})
+        return res.status(STATUS_CODES.SUCCESS).json({success:true, message: "otp sent successfully"})
 
 
     } catch (error) {
-        return res.status(500).json({success:false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success:false, error: error.message});
     }
 
 }
@@ -282,15 +422,15 @@ export const forgotPassword = async(req,res) => {
 export const verifyForgotOtp = async (req,res) => {
 
     if (req.session?.otp?.otp != req.body.otp){
-        return res.status(400).json({success:false, error: "incorrrect otp"});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({success:false, error: "incorrrect otp"});
     }
 
     if (req.session?.otp?.expiry < Date.now()){
-        return res.status(400).json({success:false, error: "otp expired"});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({success:false, error: "otp expired", otpExpired: true});
     }
 
     if (req.session?.otp?.otp == req.body.otp){
-        return res.status(200).json({success:true, message: "otp verified"});
+        return res.status(STATUS_CODES.SUCCESS).json({success:true, message: "otp verified"});
     }
 
 
@@ -304,7 +444,7 @@ export const resetPassword = async (req,res) => {
     console.log(req.body);
     
     if (newPassword != confirmPassword){
-        return res.status(400).json({success: false, error: "passwrods doesn't match"});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "passwrods doesn't match"});
     }
 
     const user = await User.findOne({email:req.session.email});
@@ -312,9 +452,9 @@ export const resetPassword = async (req,res) => {
 
     try {
         await user.save();
-        return res.status(200).json({success: true, message: "password updated successfully"});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "password updated successfully"});
     } catch (error) {
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
     
 }
@@ -332,7 +472,42 @@ export const resetPassword = async (req,res) => {
 export const getCart = async (req,res) => {
 
     const cart = await Cart.findOne({owner: req.session.user._id}).populate('items.product', 'productname price images stock maxQuantity');
-    return res.render("cart", {cart});
+
+    if (!cart || cart.items.length == 0){
+        return res.render("cart", {cart, isEmpty: true});
+    }
+    const cartWithOffersApplied = await applyOfferPricesToCart(cart);
+    // const productIds = cart.items.map(item => item.product._id);
+    // // console.log({productIds})
+
+    // const products = await Product.find({_id: {$in: productIds}}).lean();
+    // // console.log({products});
+
+    // const finalProductData = await findBestPrice(...products);
+    // // console.log({finalProductData});
+
+    // const priceMap = new Map();
+    // finalProductData.forEach(product => {
+    //     priceMap.set(product._id.toString(), product.offerPrice);
+    // });
+    // // console.log(priceMap);
+
+    // cart.items.forEach(item => {
+    //     // console.log({price: priceMap.get(item.product._id.toString())});
+    //     const currentPrice = priceMap.get(item.product._id.toString());
+    //     if (currentPrice <= item.price) {
+    //         item.offerPrice = currentPrice;
+    //     }
+    // })
+
+    // cart.totalPrice = cart.items.reduce((total, item) => {
+    //     let currentPrice = item.offerPrice ?? item.price;
+    //     return  total + (currentPrice * item.quantity);
+    // },0)
+
+    console.log(cartWithOffersApplied);
+
+    return res.render("cart", {cart: cartWithOffersApplied, isEmpty: false});
 
 }
 
@@ -343,7 +518,6 @@ export const addToCart = async (req,res) => {
     const productId = req.body.productId;
     const quantity = req.body.quantity || 1;
 
-    
     try {
 
         const product = await Product.findById(productId);
@@ -351,19 +525,19 @@ export const addToCart = async (req,res) => {
         // validations
 
         if(!product){
-            return res.status(500).json({success: false, error: "error fetching product"});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: "error fetching product"});
         }
 
         if(quantity > product.maxQuantity){
-            return res.status(400).json({success: false, error: `Maximum quantity for ${product.productname} is ${product.maxQuantity}`});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: `Maximum quantity for ${product.productname} is ${product.maxQuantity}`});
         }
 
         if(quantity > product.stock){
-            return res.status(400).json({success: false, error: `Sorry! Not enough stock`});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: `Sorry! Not enough stock`});
         }
 
         if(product.stock <= 0){
-            return res.status(500).json({success: false, error: "Product out of stock"});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: "Product out of stock"});
         }
 
         // validations - end
@@ -371,12 +545,10 @@ export const addToCart = async (req,res) => {
 
         let cart;
         try {
-
             cart = await Cart.findOne({owner: req.session.user._id});
-
         } catch (error) {
 
-            return res.status(500).json({success: false, error: error.message});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
 
         }
 
@@ -405,17 +577,12 @@ export const addToCart = async (req,res) => {
         
 
         // if product is already in cart
-
         const existingProduct = cart.items.find(item => item.product.toString() == productId)
         if (existingProduct) {
-            
-            return res.status(200).json({success: false, error: "Item already in cart"});
-        
+            return res.status(STATUS_CODES.SUCCESS).json({success: false, error: "Item already in cart"});
         } else {
-        
             const cartItem = {product: productId, price: product.price, quantity};
             cart.items.push(cartItem);
-        
         }
 
 
@@ -427,24 +594,19 @@ export const addToCart = async (req,res) => {
         if (req.body.referer == "wishlist") {
 
             try {
-
                 const wishlist = await Wishlist.findOne({owner: req.session.user._id});
                 wishlist.products = wishlist.products.filter(item => item.toString() != productId);
                 await wishlist.save();
-
             } catch (error) {
-
-                return res.status(500).json({success: false, error: error.message});
-
+                return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
             }
         }
 
-
-        return res.status(200).json({success: true, message: `${product.productname} has been added to the cart`, cart});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: `${product.productname} has been added to the cart`, cart});
         
         
     } catch (error) {
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
 
 }
@@ -457,37 +619,32 @@ export const removeFromCart = async(req,res) => {
     try {
         
         const cart = await Cart.findOne({owner: req.session.user._id});
+        console.log(cart);
+
         if(!cart){
-
-            return res.status(400).json({success: false, error: "Cart not found"});
-
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Cart not found"});
         }
 
         if (cart.items.find(item => item._id.toString() == cartItemId)){
-
             try {
                 cart.items = cart.items.filter(item => item._id.toString() != cartItemId);
                 await cart.save();
-                return res.status(200).json({success: true, message: "Product successfully removed from cart", total:cart.totalPrice});
+                const cartWithOffersApplied = await applyOfferPricesToCart(cart);
 
+                return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Product successfully removed from cart", total: cartWithOffersApplied.totalPrice});
             } catch (error) {
                 console.log({cartItemId, itemId: item._id})
-                return res.status(500).json({success: false, error: error.message});
-
+                return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
             }
-
-        }else{
-
-            return res.status(400).json({success: false, error: "Cart item not found"});
-
+        } else {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Cart item not found"});
         }
     } catch (error) {
-
-        return res.status(500).json({success:false, error : error.message});
-
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success:false, error : error.message});
     }
 
 }
+
 
 //update quantity
 export const updateQuantity = async(req,res) => {
@@ -502,21 +659,21 @@ export const updateQuantity = async(req,res) => {
         console.log(item);
 
         if (item.product.stock < quantity) {
-            return res.status(400).json({success: false, error: "Not enough stock" });
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Not enough stock" });
         }
 
         if (quantity > item.product.maxQuantity) {
-            return res.status(400).json({success: false, error: `limited to ${product.maxQuantity} per user`});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: `limited to ${item.product.maxQuantity} per user`});
         }
          
         item.quantity = quantity;
         let lastUpdatedQuantity = Math.min(quantity, item.product.stock)
         await cart.save();
-        return res.status(200).json({success: true, message: "Quantity updated", lastUpdatedQuantity})
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Quantity updated", lastUpdatedQuantity})
 
     } catch (error) {
 
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     
     }
 
@@ -545,9 +702,9 @@ export const getWishlist = async(req,res) => {
         return res.render("wishlist", {wishlist, isEmpty: false});
 
     } catch (error) {
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
-}
+};
 
 
 
@@ -564,7 +721,7 @@ export const addToWishlist = async(req,res) => {
         console.log('product query success ✅');
 
         if (!product){
-            return res.status(400).json({success: false, error: "Product doesn't exist"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Product doesn't exist"});
         }
 
         let wishlist = await Wishlist.findOne({owner: req.session.user._id});
@@ -577,22 +734,22 @@ export const addToWishlist = async(req,res) => {
         }
 
         if (wishlist.products.find(item => item.toString() == productId)){
-            return res.status(400).json({success: false, error: "Product already exists in wishlist"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Product already exists in wishlist"});
         }
 
         wishlist.products.push(productId);
         await wishlist.save();
 
-        return res.status(200).json({success: true, isAdded: true, message: "Product added to wishlist"});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, isAdded: true, message: "Product added to wishlist"});
         
 
     } catch (error) {
 
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     
     }
 
-}
+};
 
 
 //remove from wishlist
@@ -608,13 +765,13 @@ export const removeFromWishlist = async (req,res) => {
         wishlist.products = wishlist.products.filter(item => item.toString() != productId);
         await wishlist.save();
         
-        return res.status(200).json({success: true, isRemoved: true, message: "Product removed from wishlist"});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, isRemoved: true, message: "Product removed from wishlist"});
 
     }catch (error){
         
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
-}
+};
 
 
 
@@ -633,41 +790,45 @@ export const removeFromWishlist = async (req,res) => {
 
 export const getCheckout = async(req,res) => {
 
-    let cart, address, user;
+    let cart, address, user, wallet;
     try {
-        [cart, address, user] = await Promise.all([
+        [cart, address, user, wallet] = await Promise.all([
             Cart.findOne({owner: req.session.user._id}).populate('items.product', 'productname price images'),
             Address.find({owner: req.session.user._id}),
-            User.findById(req.session.user._id,{couponsUsed: 1, _id: 0})
+            User.findById(req.session.user._id, {couponsUsed: 1, _id: 0}),
+            Wallet.findOne({owner: req.session.user._id}, {balance: 1, _id: 0})
         ]);
-
-        if(!cart) {
-            return res.status(404).json({success: false, error: "Cart not found."});
+        
+        if(!user) {
+            return res.status(STATUS_CODES.NOT_FOUND).json({success: false, error: "User not found."});
         }
 
-        if(!user) {
-            return res.status(404).json({success: false, error: "User not found."});
+        if(!cart) {
+            return res.status(STATUS_CODES.NOT_FOUND).json({success: false, error: "Cart not found."});
         }
 
     } catch (err) {
-        return res.status(500).json({success: false, error: "Database error", err});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: "Database error", err});
     }
     
 
     if (!cart.items.length) {
-        return res.status(400).json({success: false, error: 'Nothing to checkout… not even good intentions!'});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: 'Nothing to checkout… not even good intentions!'});
     } else {
 
         cart.items.forEach(item => {
             if(item.quantity > item.product.maxQuantity){
-                return res.status(400).json({success: false, error: `maximum quantity for ${item.product.productname} is ${item.product.maxQuantity}`})
+                return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: `maximum quantity for ${item.product.productname} is ${item.product.maxQuantity}`})
             }
             if (item.product.stock < item.quantity ){
-                return res.status(400).json({success: false, error: `not enough stock for ${item.product.productname}`});
+                return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: `not enough stock for ${item.product.productname}`});
             }
         })
 
     }
+
+    const cartWithOffersApplied = await applyOfferPricesToCart(cart);
+    console.log(cartWithOffersApplied);
     
     const couponsUsed = user.couponsUsed.map(item => item.coupon);
     const coupons = await Coupon.find(
@@ -677,7 +838,7 @@ export const getCheckout = async(req,res) => {
                 {validFrom: {$lte: new Date()}},
                 {expiry: {$gte: new Date()}},
                 {$expr: {$lt: ['$usage', '$maxUsage']}},
-                {minimumCartValue: {$lte: cart.totalPrice}}
+                {minimumCartValue: {$lte: cartWithOffersApplied.totalPrice}}
             ] 
         },
         
@@ -692,7 +853,7 @@ export const getCheckout = async(req,res) => {
         
         let discount;
         if (coupon.isPercent) {
-            let percentDiscount = cart.totalPrice*(coupon.couponAmount/100);
+            let percentDiscount = cartWithOffersApplied.totalPrice*(coupon.couponAmount/100);
             discount = percentDiscount > coupon.maxDiscount ?  coupon.maxDiscount : percentDiscount;
         } else {
             discount = coupon.couponAmount;
@@ -701,23 +862,19 @@ export const getCheckout = async(req,res) => {
 
     });
 
+    const disabledPaymentMethods = [];
+    if (cartWithOffersApplied.totalPrice > 1000){
+        disabledPaymentMethods.push('cod');
+    }
+
+    if (cartWithOffersApplied.totalPrice > wallet.balance) {
+        disabledPaymentMethods.push('wallet');
+    }
 
     let couponInfo = req.session.couponInfo || null;
-    res.render("checkout", {cart, address, couponInfo, coupons, usableCoupons, couponsUsed});
+    res.render("checkout", {cart: cartWithOffersApplied, address, couponInfo, coupons, usableCoupons, couponsUsed, walletBalance: wallet.balance, disabledPaymentMethods});
 
-    // try {
-        
-    //     const cart = await Cart.findOne({owner: req.session.user._id}).populate('items.product', 'productname price images');
-    //     const address = await Address.find({owner: req.session.user._id});
-    //     return res.render("checkout", {cart, address});
-
-
-
-    // } catch (error) {
-    //     return res.status(500).json({success: false, error: error.message});
-    // }
-
-}
+};
 
 
 
@@ -730,131 +887,88 @@ export const isCouponValid = async(req,res) => {
     try {
 
         const regexedCode = new RegExp(`^${req.body.couponCode}$`, "i"); 
+        let coupon = {};
+        const cart = await Cart.findOne({owner: req.session.user._id});
 
-        const cart = await Cart.findOne(
-            {owner: req.session.user._id},
-            { totalPrice: 1, _id: 0 }
-        );
+        let couponInSearch = await Coupon.findOne({code: regexedCode}, {code: 1, description: 1, expiry: 1}).lean();
+        if (!couponInSearch) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Invalid Coupon"});
+        };
 
-        const user = await User.findById(
-            req.session.user._id,
-            {couponsUsed: 1, _id: 0}
-        );
-
-        const coupon = await Coupon.findOne(
-            {
-                $and: [
-                    {code: regexedCode},
-                    {couponActive: true},
-                    {validFrom: {$lt: new Date()}},
-                    {expiry: {$gt: new Date()}},
-                    {$expr: {$lt: ['$usage', '$maxUsage']}},
-                    {minimumCartValue: {$lte: cart.totalPrice}}
-                ] 
-            }, 
-        
-            {
-                code: 1, description: 1, isPercent: 1, couponAmount: 1, maxDiscount: 1, expiry: 1
-            }
-
-        ).lean();
-
-        console.log({coupon});
-
-        if (coupon) {
-
-            let discount;
-            if (coupon.isPercent) {
-                let percentDiscount = cart.totalPrice*(coupon.couponAmount/100);
-                discount = percentDiscount > coupon.maxDiscount ?  coupon.maxDiscount : percentDiscount;
-            } else {
-                discount = coupon.couponAmount;
-            }
-
-            coupon.discount = discount;
-            return res.status(200).json({success: true, coupon});
-
+        if (req.body.couponId) {
+            coupon = {
+                code: req.body.couponCode,
+                id: req.body.couponId
+            };
         } else {
-            return res.status(400).json({success: false, error: "Coupon invalid"});
+            coupon = {
+                code: req.body.couponCode,
+                id: couponInSearch._id
+            };
         }
+        console.log(coupon);
+        const cartWithOffersApplied = await applyOfferPricesToCart(cart);
+        const cartWithCouponApplied = await applyCouponToCart(coupon, cartWithOffersApplied, req.session.user._id);
+        const {isCouponValid = true, error} = cartWithCouponApplied;
+
+        // console.log(cartWithCouponApplied, {isCouponValid, error});
+        
+        if (!isCouponValid) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: cartWithCouponApplied.error});
+        };
+        
+        couponInSearch.discount = cartWithCouponApplied.couponInfo?.discount;
+        console.log(cartWithCouponApplied);
+
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, cart: cartWithCouponApplied, coupon: couponInSearch});
+        // const user = await User.findById(
+        //     req.session.user._id,
+        //     {couponsUsed: 1, _id: 0}
+        // );
+
+        // const coupon = await Coupon.findOne(
+        //     {
+        //         $and: [
+        //             {code: regexedCode},
+        //             {couponActive: true},
+        //             {validFrom: {$lt: new Date()}},
+        //             {expiry: {$gt: new Date()}},
+        //             {$expr: {$lt: ['$usage', '$maxUsage']}},
+        //             {minimumCartValue: {$lte: cart.totalPrice}}
+        //         ] 
+        //     }, 
+        
+        //     {
+        //         code: 1, description: 1, isPercent: 1, couponAmount: 1, maxDiscount: 1, expiry: 1
+        //     }
+
+        // ).lean();
+
+        // console.log({coupon});
+
+        // if (coupon) {
+
+        //     let discount;
+        //     if (coupon.isPercent) {
+        //         let percentDiscount = cart.totalPrice*(coupon.couponAmount/100);
+        //         discount = percentDiscount > coupon.maxDiscount ?  coupon.maxDiscount : percentDiscount;
+        //     } else {
+        //         discount = coupon.couponAmount;
+        //     }
+
+        //     coupon.discount = discount;
+        //     return res.status(STATUS_CODES.SUCCESS).json({success: true, coupon});
+
+        // } else {
+        //     return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Coupon invalid"});
+        // }
 
     } catch (error) {
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
 
-    
 }
 
-
-
-
-//obsolete
-// export const applyCoupon = async (req, res) => {
-    
-//     const coupon = req.body.coupon.toUpperCase();
-//     const validCoupon = await Coupon.findOne({code: coupon});
-//     const cart = await Cart.findOne({owner: req.session.user._id});
-
-
-//     ///validations
-//     if(coupon == req.session?.couponInfo?.coupon){
-//         return res.status(400).json({success: false, error: "Coupon already applied!"});
-//     }
-
-//     if(!validCoupon){
-//         return res.status(400).json({success: false, error: "Coupon invalid"});
-//     }
-
-//     if(!validCoupon.couponActive || validCoupon.usage >= validCoupon.maxUsage){
-//         return res.status(400).json({success: false, error: "This coupon is no more active"});
-//     }
-
-//     //minimum cart value check
-//     if(validCoupon.minimumCartValue > cart.totalPrice){
-//         return res.status(400).json({success: false, error: `Minimum cart value is ₹${validCoupon.minimumCartValue}`});
-//     }
-
-//     if(validCoupon.validFrom > Date.now()){
-//         return res.status(400).json({success: false, error: "This coupon is invalid"});
-//     }
-
-//     if(validCoupon.expiry < Date.now()){
-//         return res.status(400).json({success: false, error: "This coupon is expired"});
-//     }
-
-//     ///user coupon applied or not
-//     const userCouponInfo = await User.findById(req.session.user._id, {couponsUsed: 1});
-
-//     const hasUsedCoupon = userCouponInfo.couponsUsed.some(coupon => {
-//         return coupon.couponId.toString() == validCoupon._id.toString() && coupon.coupon == validCoupon.code;
-//     })
-
-//     if(hasUsedCoupon){
-//         return res.status(400).json({success: false, error: "You have already used this coupon"});
-//     }
-
-    
-//     //discount calculation
-//     let discount, discountedPrice, totalPrice = cart.totalPrice;
-
-//     if(validCoupon.isPercent){
-//         let calculated = +((validCoupon.couponAmount/100) * cart.totalPrice).toFixed();
-//         discount = Math.min(calculated, validCoupon.maxDiscount);
-//     }else{
-//         discount = validCoupon.couponAmount;
-//     }
-
-//     discountedPrice = totalPrice - discount;
-    
-//     req.session.couponInfo = {
-//         couponId: validCoupon._id,
-//         coupon: validCoupon.code, discount
-//     };
-
-
-//     return res.status(200).json({success: true, message: "Coupon applied successfully", discount, totalPrice, discountedPrice});
-
-// };
 
 
 
@@ -864,100 +978,30 @@ export const createOrder = async(req, res) => {
     const {address, paymentMethod} = req.body;
     
     if (!address){
-        return res.status(400).json({success: false, error: "Choose an address to proceed"});
-    }
+        return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Choose an address to proceed"});
+    };
 
     if(!paymentMethod){
-        return res.status(400).json({success: false, message: "Choose a payment method to proceed"});
-    }
-    
+        return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, message: "Choose a payment method to proceed"});
+    };
 
-    const cart = await Cart.findOne(
-            {owner: req.session.user._id},
-            { totalPrice: 1, _id: 0 }
-    );
-
-    const user = await User.findById(
-            req.session.user._id,
-            {couponsUsed: 1, _id: 0}
-    );
-
-
-
-    let couponInfo;
-    if (req.body.coupon) {
-
-        couponInfo = JSON.parse(req.body.coupon);
-
-        try {
-
-            console.log({coupon: couponInfo}); 
-            let coupon_ = await Coupon.findById(couponInfo.id);
-            console.log({coupon_}); 
-
-            const coupon = await Coupon.findOne(
-                {
-                    $and: [
-                        {_id: couponInfo.id},
-                        {couponActive: true},
-                        {validFrom: {$lte: new Date()}},
-                        {expiry: {$gte: new Date()}},
-                        {$expr: {$lt: ['$usage', '$maxUsage']}},
-                        {minimumCartValue: {$lte: cart.totalPrice}}
-                    ]
-                },
-            
-                {
-                    code: 1, isPercent: 1, couponAmount: 1, maxDiscount: 1
-                }
-
-            ).lean();
-
-            if (coupon) {
-
-                let discount;
-                if (coupon.isPercent) {
-                    let percentDiscount = cart.totalPrice*(coupon.couponAmount/100);
-                    discount = percentDiscount > coupon.maxDiscount ?  coupon.maxDiscount : percentDiscount;
-                } else {
-                    discount = coupon.couponAmount;
-                }
-
-                couponInfo = {
-                    couponId: coupon._id,
-                    couponCode: coupon.code,
-                    discount
-                };                
-
-            } else {
-                return res.status(400).json({success: false, error: "Coupon invalid"});
-            }
-
-        } catch (err) {
-            return res.status(500).json({success: false, error: err.message});
-        }
-
-    } else {
-        couponInfo = null;
-    }
-
-    req.session.couponInfo = couponInfo;
 
 
     try {
 
         const cart = await Cart.findOne({owner: req.session.user._id}).populate('items.product');
+        if(!cart) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json({status: false, error: "No cart found for the user"});
+        };
+
         const errors = [];
         
-
-
         //validations
         if (!cart.items.length){
             errors.push("Empty cart");
-        }
+        };
 
         cart.items.forEach(item => {
-            
             if(item.quantity > item.product.maxQuantity){
                 errors.push(`maximum quantity for ${item.product.productname} is ${item.product.maxQuantity}`)
             }
@@ -965,158 +1009,215 @@ export const createOrder = async(req, res) => {
             if (item.product.stock < item.quantity ){
                 errors.push(`not enough stock for ${item.product.productname}`);
             }
-    
-        })
+        });
 
         console.log("validations check ✅");
-
-
-
         
         if (errors.length) {
-            return res.status(400).json({success: false, error: errors});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: errors});
+        };
 
-        } else {
+        
+        const cartWithOffersApplied = await applyOfferPricesToCart(cart);
+        let updatedCart = {...cartWithOffersApplied};
+        console.log(updatedCart);
 
-            const newOrder = new Order({
+        
+        if (req.body.coupon) {
+            const cartWithCouponApplied = await applyCouponToCart(req.body.coupon, cartWithOffersApplied, req.session.user._id);
+            updatedCart = {...cartWithCouponApplied};
 
-                owner : req.session.user._id,
-                orderItems : cart.items.map(item => ({product: item.product, price: item.price, quantity: item.quantity})),
-                paymentInfo: {
-                    status : "pending",
-                    mode : paymentMethod
-                },
-                address : address,
-                couponInfo
+            req.session.couponInfo = req.body.coupon;
+            // console.log(updatedCart);
+        };
 
-            })
-            console.log("new order object creation check ✅");
+        
+        const priceBreakdown = pricingBreakdown(updatedCart);
+        // console.log(priceBreakdown);
 
+        const newOrder = new Order({
+            owner : req.session.user._id,
+            orderId: generateOrderId(),
+            orderItems : updatedCart.items.map(item => {
+                return {
+                    product: item.product._id,
+                    price: item.price,
+                    offerInfo: item.offerInfo || null,
+                    quantity: item.quantity,
+                    subtotal: item.subtotal,
+                    couponInfo: item.couponInfo || null,
+                    finalPrice: item.finalPrice,
+                    trackRecords: [
+                        {status: "created", date: new Date()}
+                    ]
+                }
+            }),
+            totalPrice: priceBreakdown.grandTotal,
+            pricing: {...priceBreakdown},
+            paymentInfo: {
+                status : "pending",
+                mode : paymentMethod
+            },
+            address : address,
+            couponInfo: updatedCart.couponInfo || null
+        });
+        console.log("new order object creation check ✅", newOrder);
+        
+        // if cod, create order
+        // try integrating captcha verification for cod order
+        let orderConfirm = false, responseJson;
+        if(paymentMethod == "cash-on-delivery"){
             
+            if (newOrder.totalPrice > 1000) {
+                return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "COD is not allowed for orders above ₹1000"});
+            };
 
-            //if cod, create order
-            let orderConfirm = false, responseJson;
-            if(paymentMethod == "cash-on-delivery"){
-                
+            newOrder.orderStatus = "confirmed";
+            newOrder.orderItems.forEach(item => item.status = "confirmed");
+            await newOrder.save();
+            orderConfirm = true;
+            responseJson = {
+                success: true,
+                redirectUrl: `/api/user/order-confirmation?orderId=${newOrder._id}`
+            }
+            console.log({newOrder});
+
+        } else if (paymentMethod == "razorpay"){
+
+            await newOrder.save();
+            req.session.tempOrderId = newOrder._id;
+            const razorpayOrder  = await razorpay.orders.create({
+                amount: newOrder.pricing.grandTotal*100,
+                currency: "INR",
+                receipt: `receipt#${newOrder.orderId}`,
+                payment_capture: 1
+            })
+
+            console.log({razorpayOrder});
+            responseJson = {
+                success: true,
+                razorpayOrder,
+                prefill: {
+                    name: req.session.user.fullname,
+                    email: req.session.user.email,
+                    contact: req.session.user.phone
+                },
+                key: process.env.RAZORPAY_KEY_ID
+            };
+
+        } else if (paymentMethod == "wallet") {
+            
+            try {
+                const wallet = await Wallet.findOne({owner: req.session.user._id});
+                if (wallet.balance < newOrder.totalPrice) {
+                    return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Insufficient balance in the wallet"});
+                };
+
                 newOrder.orderStatus = "confirmed";
                 newOrder.orderItems.forEach(item => item.status = "confirmed");
+                newOrder.paymentInfo.status = "completed";
                 await newOrder.save();
                 orderConfirm = true;
                 responseJson = {
                     success: true,
                     redirectUrl: `/api/user/order-confirmation?orderId=${newOrder._id}`
                 }
+                console.log({newOrder});
 
-            } else if (paymentMethod == "razorpay"){
-
-                newOrder.orderStatus = "created";
-                newOrder.orderItems.forEach(item => item.status = "created");
-                await newOrder.save();
-                req.session.tempOrderId = newOrder._id;
-                const razorpayOrder  = await razorpay.orders.create({
-                    amount: newOrder.totalPrice*100,
-                    currency: "INR",
-                    receipt: `receipt#${newOrder._id.toString()}`,
-                    payment_capture: 1
-                })
-
-                console.log({razorpayOrder});
-                responseJson = {
-                    success: true,
-                    razorpayOrder,
-                    prefill: {
-                        name: req.session.user.fullname,
-                        email: req.session.user.email,
-                        contact: req.session.user.phone
+                const newTransaction = {
+                    amount: newOrder.totalPrice,
+                    direction: 'Debit',
+                    source: 'paid-for-order',
+                    relatedOrder: {
+                        orderId: newOrder._id,
+                        itemId: newOrder.orderItems[0]._id
                     },
-                    key: process.env.RAZORPAY_KEY_ID
+                    status: 'success'
                 };
 
+                wallet.balance -= newOrder.totalPrice;
+                wallet.transactions.push(newTransaction);
+                await wallet.save();
+
+
+            } catch (err) {
+                return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
             }
-            //wallet logic here in the else part
-            //paypal if possible
-            
+        }
+        //paypal if possible
+        
 
-            //post- order tasks
-            if(orderConfirm === true){
+        //post- order tasks
+        if(orderConfirm === true){
 
-                //update product quantity
-                for (const item of cart.items) {
+            //update product quantity
+            for (const item of cart.items) {
 
-                    const product = await Product.findById(item.product._id); 
-                    product.stock -= item.quantity;
-                    await product.save();
-
-                }
-
-                console.log("stock updation check ✅");
-
-
-                //empty cart
-                cart.items = [];
-                await cart.save();
-                console.log("cart emptied check ✅")
-
-
-
-                //update coupon info - update coupon used by user and increment coupon usage
-                if (couponInfo) {
-
-                    let couponUsed = {
-                        couponId: couponInfo.couponId,
-                        coupon: couponInfo.couponCode
-                    };
-
-                    await User.findByIdAndUpdate(
-                        req.session.user._id,
-                        {$addToSet: {couponsUsed: couponUsed}}
-                    );
-
-                    await Coupon.findByIdAndUpdate(
-                        couponInfo.couponId, 
-                        {$inc: {usage: 1}}
-                    );
-
-                }
-
-                console.log("coupon info updated on user side check ✅")
-
-
-
-                //send order confirmation email
-                await sendOrderConfirmation(req.session.user.email, newOrder);
-                console.log("email sent check ✅");
-
-
+                const product = await Product.findById(item.product._id); 
+                product.stock -= item.quantity;
+                await product.save();
 
             }
 
-            return res.status(201).json(responseJson);
+            console.log("stock updation check ✅");
+
+
+            //empty cart
+            cart.items = [];
+            await cart.save();
+            console.log("cart emptied check ✅")
+
+
+
+            //update coupon info - update coupon used by user and increment coupon usage
+            if (newOrder.couponInfo) {
+
+                let couponUsed = {
+                    couponId: newOrder.couponInfo.couponId,
+                    coupon: newOrder.couponInfo.couponCode
+                };
+
+                await User.findByIdAndUpdate(
+                    req.session.user._id,
+                    {$addToSet: {couponsUsed: couponUsed}}
+                );
+
+                await Coupon.findByIdAndUpdate(
+                    newOrder.couponInfo.couponId, 
+                    {$inc: {usage: 1}}
+                );
+
+            }
+
+            console.log("coupon info updated on user side check ✅")
+
+
+            //send order confirmation email
+            await sendOrderConfirmation(req.session.user.email, newOrder);
+            console.log("email sent check ✅");
 
         }
+
+        return res.status(201).json(responseJson);
         
     } catch (error) {
-
         console.log({error});
-        return res.status(500).json({success: false, error: error.message});
-
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
-}
+};
 
 
 
-export const verifyRazorpay = async (req, res) => {
+export const verifyRazorpayPayment = async (req, res) => {
 
     console.log({razorpay_response : req.body});
     const {razorpay_order_id, razorpay_payment_id, razorpay_signature} = req.body;
     
     const isVerified = verifySign (
-        
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature,
         process.env.RAZORPAY_KEY_SECRET
-
     );
 
     if (isVerified.success) {
@@ -1128,11 +1229,9 @@ export const verifyRazorpay = async (req, res) => {
         newOrder.orderItems.forEach(item => item.status = "confirmed");
         newOrder.paymentInfo.status = "completed";
         newOrder.paymentInfo.razorpayInfo = {
-
             razorpayOrderId: razorpay_order_id,
             razorpayPaymentId: razorpay_payment_id,
             razorpaySignature: razorpay_signature
-        
         };
         
         await newOrder.save();
@@ -1197,6 +1296,56 @@ export const verifyRazorpay = async (req, res) => {
 }
 
 
+export const handleRazorpayPaymentFailure = async (req, res) => {
+    const {response} = req.body;
+    console.log({response: response.error.metadata});
+    if (req?.session?.tempOrderId) {
+        const order = await Order.findById(req.session.tempOrderId);
+        order.paymentInfo.status = "failed";
+        order.paymentInfo.razorpayInfo = {
+            razorpayOrderId: response.error.metadata.order_id,
+            razorpayPaymentId: response.error.metadata.payment_id
+        };
+        console.log({order});
+        await order.save();
+    }
+    return res.status(STATUS_CODES.NOT_FOUND).json({success: false, redirectUrl: `/api/user/order-confirmation?status=error`});
+};
+
+export const retryRazorpayPayment = async (req, res) => {
+    const {orderId} = req.body;
+    try {
+        const order = await Order.findById(orderId);
+        req.session.tempOrderId = order._id;
+        const razorpayOrder  = await razorpay.orders.create({
+            amount: order.pricing.grandTotal*100,
+            currency: "INR",
+            receipt: `receipt#${order.orderId}`,
+            payment_capture: 1
+        })
+
+        console.log({razorpayOrder});
+        let responseJson = {
+            success: true,
+            razorpayOrder,
+            prefill: {
+                name: req.session.user.fullname,
+                email: req.session.user.email,
+                contact: req.session.user.phone
+            },
+            key: process.env.RAZORPAY_KEY_ID
+        };
+
+        console.log(responseJson);
+
+        return res.status(STATUS_CODES.SUCCESS).json(responseJson);
+
+    } catch(err){
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
+    } 
+}
+
+
 
 
 export const orderStatus = async (req, res) => {
@@ -1208,18 +1357,18 @@ export const orderStatus = async (req, res) => {
         const order = await Order.findById(req.query.orderId, {owner:1, orderItems:1});
         console.log(order);
         if (order?.owner?.toString() === req?.session?.user?._id.toString()) {
-            return res.status(200).render("order-confirmation", {success: true, order: req.query.orderId, item: order.orderItems[0]._id});
+            return res.status(STATUS_CODES.SUCCESS).render("order-confirmation", {success: true, order: req.query.orderId, item: order.orderItems[0]._id});
         }else{
-            return res.redirect("404");
+            return res.redirect(`/api/user/order-confirmation?status=error`);
         }
         
 
     } else if (req?.session?.user?._id && req.query.status == "error") {
 
-        res.status(500).render('order-confirmation', {success: false});
+        res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).render('order-confirmation', {success: false});
 
     } else {
-        res.redirect("404");
+        res.redirect(`/api/user/order-confirmation?status=error`);
     }
 
 }
@@ -1248,35 +1397,68 @@ export const cancelOrder = async (req,res) => {
     try {
 
         const order = await Order.findOne({_id: orderId, 'orderItems._id': itemId});
-        
         if (!order){
-            return res.status(400).json({success: false, error: "no such order found" });
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "no such order found" });
         }
+        console.log(order);
 
         const item = order.orderItems.id(itemId);
         if (!item){
-            return res.status(400).json({success: false, error: "no such order item found" });
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "no such order item found" });
         }
+        console.log(item);
+
         
+
         const product = await Product.findById(item.product);
         if (!product){
-            return res.status(400).json({success: false, error: "no such product found" });
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "no such product found" });
         }
 
         if (findAllowedAction(item.status) != 'cancel') {
-            return res.status(400).json({success: false, error: 'cancellation not possible at this stage'});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: 'cancellation not possible at this stage'});
         }
 
         item.status = 'cancelled';
         product.stock += item.quantity;
 
+        // check if order is paid
+        // cod - instant cancel
+        // razorpay - payment completed - refund to wallet
+        if (order.paymentInfo?.mode == "razorpay" && order.paymentInfo?.status == "completed") {
+            const amountToRefund = item.finalPrice ?? (item.price*item.quantity);
+            const newTransaction = {
+                amount: amountToRefund,
+                direction: 'Credit',
+                source: 'refund',
+                relatedOrder: {
+                    orderId,
+                    itemId
+                },
+                refundType: 'cancel',
+                status: 'success'
+            };
+            //update wallet
+            const wallet = await Wallet.findOneAndUpdate(
+                {owner: order.owner},
+                {$setOnInsert: {balance: 0, transaction: []}},
+                {upsert: true, new: true}
+            );
+
+            console.log(amountToRefund, newTransaction, wallet);
+
+            wallet.balance += amountToRefund;
+            wallet.transactions.push(newTransaction);
+            await wallet.save();
+        }
+
         await order.save();
         await product.save();
 
-        return res.status(200).json({success: true, message: `order Cancelled successfully` });
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: `Order cancelled successfully` });
 
     } catch (error) {
-        return res.status(500).json({success: false, error: error.message });
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message });
     }
 }
 
@@ -1303,18 +1485,18 @@ export const returnOrder = async (req,res) => {
     try {
 
         const order = await Order.findOne({_id: orderId, 'orderItems._id': itemId});
-        if (!order) return res.status(400).json({success: false, error: 'no such order found'});
+        if (!order) return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: 'no such order found'});
         console.log({returnOrder:order}, "✅");
 
         const item = order.orderItems.id(itemId);
-        if (!item) return res.status(400).json({success: false, error: 'no such order item found'});
+        if (!item) return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: 'no such order item found'});
         console.log({returnItem:item},"✅");
 
         const product = await Product.findById(item.product);
         console.log({returnProduct:product}, "✅");
 
         if (findAllowedAction(item.status) != 'return') {
-            return res.status(400).json({success: false, error: 'This order is not eligible for return'});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: 'This order is not eligible for return'});
         }
 
         const now = new Date();
@@ -1322,18 +1504,18 @@ export const returnOrder = async (req,res) => {
         const maxReturnDate = new Date(itemDeliveredAt.getTime() + (product.returnPeriod * 24 * 60 * 60 * 1000));
         console.log({now, itemDeliveredAt, maxReturnDate, returnPeriod: product.returnPeriod}, "✅");
     
-        if (now > maxReturnDate) return res.status(400).json({success: false, error: "Return period is over!"});
+        if (now > maxReturnDate) return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Return period is over!"});
 
         item.returnStatus = "requested";
         item.returnReason = req.body.returnReason;
 
         await order.save();
         console.log("============ return order api - end ============");
-        return res.status(200).json({success: true, message: "Return request submitted sucessfully"});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Return request submitted sucessfully"});
 
 
     } catch (err) {
-        return res.status(500).json({success: false, error: err.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
     }
 
 }
@@ -1349,11 +1531,6 @@ export const getOrder = async (req,res) => {
     console.log({orderId, itemId})
     
     try{
-
-        const orderByNew = await Order.findOne({_id: orderId, 'orderItems._id': itemId});
-        const itemByNew = orderByNew.orderItems.id(itemId);
-        const productByNew = await Product.findById(itemByNew.product);
-        console.log({orderByNew, itemByNew, productByNew});
 
         const order = await Order.aggregate([
             
@@ -1376,7 +1553,11 @@ export const getOrder = async (req,res) => {
             }},
             {$unwind: "$addressData"}
 
-        ])
+        ]);
+
+        console.log("//=========== Order ============//");
+        console.log(order[0]);
+        console.log("//=========== Order - End ============//");
 
         const otherItemsInOrder = await Order.aggregate([
 
@@ -1393,43 +1574,99 @@ export const getOrder = async (req,res) => {
             {$project: {
                 itemId: "$orderItems._id",
                 productName: "$productData.productname",
-                productImage: {$arrayElemAt: ["$productData.images", 0]}
+                thumbnail: {$arrayElemAt: ["$productData.images", 0]}
             }}
 
         ]);
 
-        console.log({otherItemsInOrder});
+        console.log("//=========== otherItemsInOrder ============//");
+        console.log(otherItemsInOrder);
+        console.log("//=========== otherItemsInOrder - end ============//");
 
         
         function findAllowedAction(orderItemStatus){
             
             const allowedAction = {
-                created: "cancel",
-                confirmed: "cancel", 
-                processing: "cancel", 
-                shipped: null, 
-                delivered: "return", 
-                cancelled: null
+                created: {action: "cancel", label: 'Cancel Order'},
+                confirmed: {action: "cancel", label: 'Cancel Order'}, 
+                processing: {action: "cancel", label: 'Cancel Order'}, 
+                shipped: {action: null, label: ''}, 
+                delivered: {action: "return", label: 'Return Order'}, 
+                cancelled: {action: null, label: ''}
             };
 
             return allowedAction[orderItemStatus];
         };
 
-        const allowedActionForItem = order[0].orderItems.returnStatus == "none" ? findAllowedAction(order[0].orderItems.status) : null;
+        function buildOrderViewObject(order, otherItemsInOrder = []){
 
-        console.log({order: order[0], allowedAction: allowedActionForItem});
+            const item = order[0].orderItems;
+            const listingPrice = item.price;
+            const quantity = item.quantity;
+            const subTotal = listingPrice * quantity;
+            const offerDiscount = (item.offerInfo?.discount * quantity) || 0;
+            const couponDiscount = item.couponInfo?.itemDiscount || 0;
+            const shippingFee = order[0].pricing?.shipping || 0;
+            const totalDiscount = offerDiscount + couponDiscount;
+            const grandTotal = (subTotal - totalDiscount) + shippingFee;
+            const allowedActionForItem = item.returnStatus == "none" ? findAllowedAction(item.status) : null;
+            const orderStatusCode = {
+                created: 0, 
+                confirmed: 1, 
+                processing: 2, 
+                shipped: 3, 
+                delivered: 4, 
+                cancelled: 5
+            };
+            console.log(allowedActionForItem);
 
-        return res.status(200).render("order", {
-            order,
-            orderData: order[0],
-            otherItemsInOrder,
-            allowedAction: allowedActionForItem,
-            returnStatus: order[0].orderItems.returnStatus,
-            payment: order[0].paymentInfo.status
-        });
+            
+            return {
+                _id: order[0]._id,
+                orderId: order[0].orderId ?? null,
+                orderItem: {
+                    _id: item._id,
+                    productId: order[0].productData._id,
+                    productName: order[0].productData.productname,
+                    thumbnail: order[0].productData.images[0],
+                    status: item.status,
+                    statusCode: orderStatusCode[item.status],
+                    returnStatus: item.returnStatus
+                },
+                couponInfo: item.couponInfo ? {...item.couponInfo} : null,
+                pricing: {
+                    listingPrice,
+                    quantity,
+                    subTotal,
+                    offerDiscount,
+                    couponDiscount,
+                    shippingFee,
+                    grandTotal
+                },
+                shipping: {
+                    name: order[0].addressData.name,
+                    phone: order[0].addressData.phone,
+                    pin: order[0].addressData.pincode,
+                    address: order[0].addressData.address,
+                    city: order[0].addressData.city,
+                    state: order[0].addressData.state
+                },
+                shippingUpdates: [...item.trackRecords],
+                paymentMode: order[0].paymentInfo.mode,
+                paymentStatus: order[0].paymentInfo.status,
+                allowedActionForItem,
+                otherItemsInOrder
+            };
+        };
+
+
+        const orderView = buildOrderViewObject(order, otherItemsInOrder);
+        console.log('Order view object \n', orderView);
+
+        return res.status(STATUS_CODES.SUCCESS).render("order", {orderView});
 
     } catch (error) {
-        return res.status(500).json({success: false, error : error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error : error.message});
     }
 
 }
@@ -1444,19 +1681,38 @@ export const generateInvoice = async (req, res) => {
     const order = await Order.findById(orderId).populate('orderItems.product', 'productname').populate('address');
     const item = order.orderItems.id(itemId);
 
-    console.log({order, item});
+    const listingPrice = item.price;
+    const quantity = item.quantity;
+    const subTotal = listingPrice * quantity;
+    const offerDiscount = (item.offerInfo?.discount * quantity) || 0;
+    const couponDiscount = item.couponInfo?.itemDiscount || 0;
+    const shippingFee = order.pricing?.shipping || 0;
+    const totalDiscount = offerDiscount + couponDiscount;
+    const grandTotal = (subTotal - totalDiscount) + shippingFee;
+
+    // console.log({order, item});
     invoiceData._id = order._id;
     invoiceData.invoiceNumber = generateInvoiceNumber(itemId);
     invoiceData.address = order.address;
     invoiceData.item = {
         product: item.product.productname,
-        quantity: item.quantity,
-        price: item.price,
+        quantity,
         deliveredAt: item.deliveredAt
     };
+
+    invoiceData.pricing = {
+        listingPrice,
+        subTotal,
+        offerDiscount,
+        couponDiscount,
+        shippingFee,
+        totalDiscount,
+        grandTotal
+    }
     invoiceData.coupon = order.couponInfo;
     invoiceData.createdAt = new Date();
-
+    
+    console.log(invoiceData);
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const htmlData = await ejs.renderFile(
@@ -1464,7 +1720,6 @@ export const generateInvoice = async (req, res) => {
         {invoiceData}
     );
 
-    
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setContent(htmlData);
@@ -1511,15 +1766,15 @@ export const addAddress = async (req,res) => {
         await newAddress.save();
 
         console.log(newAddress);
-        return res.status(200).json({success:true, message: "New address added successfully", address: newAddress})
+        return res.status(STATUS_CODES.SUCCESS).json({success:true, message: "New address added successfully", address: newAddress})
 
     } catch (error) {
 
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
 
     }
 
-}
+};
 
 
 //delete address
@@ -1534,14 +1789,14 @@ export const deleteAddress = async (req,res) => {
             return res.redirect("/api/user/profile");
         
         } catch (error) {
-            return res.status(500).json({success:false, error: error.message});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success:false, error: error.message});
         }
 
     }else{
         return res.redirect("/");
     }
 
-}
+};
 
 
 
@@ -1562,10 +1817,10 @@ export const editAddress = async (req,res) => {
             address.type = req.body.editAddressType;
             address.state = req.body.editAddressState;
             await address.save();
-            return res.status(200).json({success:true, message: "Address updated successfully", address});
+            return res.status(STATUS_CODES.SUCCESS).json({success:true, message: "Address updated successfully", address});
 
         } catch (error) {
-            return res.status(500).json({success: false, error: error.message});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
     }else{
         return res.redirect("/");
@@ -1580,10 +1835,8 @@ export const editAddress = async (req,res) => {
 export const logoutUser = async(req,res) => {
 
     if(req.session.user){
-
         req.session.destroy();
         res.redirect("/");
-    
     }
 
 }
@@ -1596,7 +1849,7 @@ export const signUpGoogle = async (req, res) => {
     const {credential} = req.body;
 
     if(!credential){
-        return res.status(400).json({ success: false, error: "No credential"});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "No credential"});
     }
 
     try {
@@ -1604,21 +1857,36 @@ export const signUpGoogle = async (req, res) => {
         const userInfo = await verifyGoogleToken(credential);
         const user = await User.findOne({email: userInfo.email});
         
-        if(user){
-
+        if(user) {
             req.session.user = user;
-            
-        }else{
+
+            const wallet = await Wallet.findOneAndUpdate(
+                {owner: user._id},
+                {$setOnInsert: {balance: 0, transaction: []}},
+                {upsert: true, new: true}
+            );
+
+            console.log(wallet);
+        } else {
 
             const newUser = await User.create({ fullname: userInfo.name, email: userInfo.email, createdWith: "google" });
             req.session.user = newUser;
+            await Wallet.create({owner: req.session.user._id, balance: 0, transactions: []});
+
             console.log(newUser);
         }
+
+        const referralCode = generateReferralCode(req.session.user.fullname);
+        await User.findOneAndUpdate(
+            { _id: user._id, referralCode: { $exists: false } },
+            {$set: {referralCode, referrals: []}},
+            {new: true}
+        );
 
         return res.redirect("/");
 
     } catch (error) {
-        return res.status(400).json({ success: false, error});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error});
     }
 
 }
@@ -1639,11 +1907,11 @@ export const editProfileName = async (req, res) => {
             const user = await User.findByIdAndUpdate(req.session.user._id, {fullname: req.body.updatedFullName} , {new:true});
             req.session.user.fullname = req.body.updatedFullName;
             console.log(user);
-            return res.status(200).json({success: true, message: "Name updated successfully", firstname: user.fullname.split(" ")[0], lastname: user.fullname.split(" ")[1]});
+            return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Name updated successfully", firstname: user.fullname.split(" ")[0], lastname: user.fullname.split(" ")[1]});
 
         
         } catch (error) {
-            return res.status(500).json({success: false, error: error.message});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
 
 
@@ -1666,11 +1934,11 @@ export const editPhone = async (req, res) => {
             const user = await User.findByIdAndUpdate(req.session.user._id, {phone: req.body.updatedPhone} , {new:true});
             req.session.user.phone = req.body.updatedPhone;
             console.log(user);
-            res.status(200).json({success: true, message: "Phone Number updated successfully", phone: user.phone});
+            res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Phone Number updated successfully", phone: user.phone});
 
         
         } catch (error) {
-            res.status(500).json({success: false, error: error.message});
+            res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
 
 
@@ -1678,7 +1946,7 @@ export const editPhone = async (req, res) => {
         return res.redirect("/");
     }
 
-}
+};
 
 
 //edit email
@@ -1699,12 +1967,12 @@ export const editEmail = async (req, res) => {
             req.session.updatedEmail = req.body.updatedEmail;
 
             console.log(req.session.oldOtp, req.session.newOtp);
-            res.status(200).json({success: true, message: "Otp sent successfully to both emails"});
+            res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Otp sent successfully to both emails"});
 
         
         } catch (error) {
             console.log(error);
-            res.status(500).json({success: false, error: error.message});
+            res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
 
 
@@ -1712,7 +1980,7 @@ export const editEmail = async (req, res) => {
         return res.redirect("/");
     }
 
-}
+};
 
 
 //confirm email
@@ -1723,11 +1991,11 @@ export const confirmEmail = async (req, res) => {
     if(req.session?.user){
         
         if (!req.session.updatedEmail){
-            return res.status(400).json({success: false, error: "unauthorized"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "unauthorized"});
         }
     
         if (req.session.otpExpiry < Date.now()){
-            return res.status(400).json({success: false, error: "otp expired"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "otp expired"});
         }
     
         if(req.session.oldOtp == req.body.oldOtp && req.session.newOtp == req.body.newOtp){
@@ -1737,12 +2005,12 @@ export const confirmEmail = async (req, res) => {
                 const user = await User.findByIdAndUpdate(req.session.user._id, {email: req.session.updatedEmail}, {new:true});
                 req.session.user.email = req.session.updatedEmail;
                 console.log(user);
-                return res.status(200).json({success: true, message: "Email updated successfully", email:user.email});
+                return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Email updated successfully", email:user.email});
     
             
             } catch (error) {
                 console.log(error);
-                return res.status(500).json({success: false, error: error.message});
+                return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
             }
     
         }
@@ -1751,7 +2019,7 @@ export const confirmEmail = async (req, res) => {
         return res.redirect("/");
     }
 
-}
+};
 
 
 //--------------------------------------------//
@@ -1760,21 +2028,19 @@ export const confirmEmail = async (req, res) => {
 
 //list products
 export const getProducts = async(req,res) => {
-
-
+    
     try {
 
         //category filter
-        const categoryArray = [].concat(req.query.category || []);
-        let categoryIdArray = [];
-
-        console.log({categoryArray});
-
         let filter = {
             isUnListed: false,
             stock: {$gt: 0},
         };
 
+        const categoryArray = [].concat(req.query.category || []);
+        let categoryIdArray = [];
+        console.log({categoryArray});
+        
         if (Array.isArray(categoryArray) && categoryArray.length) {
             try {
                 const categoryIds = await Promise.all(categoryArray.map(category => Category.findOne({name: category}, '_id')));
@@ -1782,43 +2048,31 @@ export const getProducts = async(req,res) => {
                 filter.category = {$in: categoryIdArray};
             } catch (err) {
                 if (err) {
-                    return res.status(400).json({success: false, error: err.message});
+                    return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: err.message});
                 }
             }
+        };
+
+        let populate = [
+            { path: 'category',select: 'name _id' }
+        ];
+        
+        const options = {
+            page: req.query.page,
+            limit: req.query.limit || PAGINATION_CONFIG.DEFAULT_LIMIT,
+            sort: req.query.sort,
+            filters: filter,
+            populate, 
+        };
+
+        let {q} = req.query;
+        if(q && q.trim() !== ""){
+            options.search = q;
+            // filter.$text = {$search: q};
         }
-        
+        console.log(options);
+        const {data: productdata, pagination, sort} = await paginate(Product, options); 
 
-        //for pagination and sort
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 5;
-        const sort = req.query.sort || "default";
-        const totalProducts = await Product.countDocuments(filter);
-        const totalPages = Math.ceil(totalProducts/limit);
-
-        const sortOptions = {
-
-            popularity : {sales: -1},
-            newArrivals : {createdAt: -1},
-            priceAsc : {price: 1},
-            priceDesc : {price: -1},
-            default : {createdAt : 1},
-            alphaAsc : {productname: 1},
-            alphaDesc : {productname: -1}
-
-        }
-
-        const sortBy = sortOptions[sort] || sortOptions.default;
-
-        let productdata = await Product.find(filter)
-                                            .populate("category", "name _id")
-                                            .collation({ locale: 'en', strength: 2 })
-                                            .sort(sortBy)
-                                            .skip((page-1)*limit)
-                                            .limit(limit)
-                                            .lean();
-        
-
-        
         //categories and no of products in each category
         const categoryData = await Product.aggregate([
 
@@ -1867,64 +2121,7 @@ export const getProducts = async(req,res) => {
             return {...product, isWishlisted};
         })
 
-        console.log({finalProductData});
-
-
-        // const now = new Date();
-        // const offers = await Offer.find({
-        //     isActive: true,
-        //     validFrom: {$lte: now},
-        //     expiry: {$gte: now}
-        // }).lean();
-
-        // const offerData = offers.flatMap(offer => {
-            
-        //     return offer.appliesTo.map(categ => ({
-        //         offer: offer.name,
-        //         category: categ.categName,
-        //         isPercent: offer.isPercent,
-        //         offerAmount: offer.offerAmount,
-        //         minValue: offer.minimumValue
-        //     }))
-
-        // })
-
-        // console.log('offer data query success ✅')
-
-
-        // const finalProductData = productdata.map(product => {
-
-        //     let offerPrice;
-        //     const offer = offerData.find(offer => offer.category.toLowerCase() == product.category.name.toLowerCase());
-
-        //     const isWishlisted = wishlist ? wishlistSet.has(product._id.toString()) : false;
-            
-        //     if (offer && product.price >= offer.minValue){
-
-        //         if (offer.isPercent) {
-        //             offerPrice = product.price - (product.price * offer.offerAmount/100);
-        //         } else {
-        //             offerPrice = product.price - offer.offerAmount;
-        //         }
-
-        //     } else {
-        //         offerPrice = product.price;
-        //     }
-
-            // return {
-            //     ...product.toObject(),
-            //     offerPrice: parseFloat(Math.max(0, offerPrice).toFixed(2)),
-            //     offer: offer?.offer,
-            //     isWishlisted
-            // }
-
-        // })
-
-        // console.log('finalProductData success ✅')
-
         // console.log({finalProductData});
-
-        // --------- offer fetching and calculations end
 
 
         const categData = categoryData.map(category => {
@@ -1933,10 +2130,11 @@ export const getProducts = async(req,res) => {
 
         // console.log('final categData success ✅')
         
-        return res.status(200).render('user-product-list', {finalProductData, page, totalPages, sort, categData, categoryArray});
+        // return res.status(STATUS_CODES.SUCCESS).json({finalProductData, pagination, page: pagination.currentPage, totalPages: pagination.totalPages, sort, categData, categoryArray});
+        return res.status(STATUS_CODES.SUCCESS).render('user-product-list', {finalProductData, pagination, page: pagination.currentPage, totalPages: pagination.totalPages, sort, categData, categoryArray, q});
         
     } catch (error) {
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
 }
 
@@ -1962,7 +2160,7 @@ export const getProductPage  = async(req,res) => {
     // ])
 
     
-    const productData = await Product.findById(pId).populate("category", "name").populate("subcategory", "name");
+    const productData = await Product.findById(pId).populate("category", "name _id").populate("subcategory", "name").lean();
     
     let isWishlisted = false;
 
@@ -1990,51 +2188,53 @@ export const getProductPage  = async(req,res) => {
     
     // ------------- offer fetching and calculations 
 
-    const now = new Date();
-    const offer = await Offer.findOne({
-        isActive: true,
-        validFrom: {$lte: now},
-        expiry: {$gte: now},
-        "appliesTo.categName" : productData.category.name
-    }).lean();
+    const finalProductData = await findBestPrice(productData);
+    console.log({finalProductData: finalProductData[0]});
+    // const now = new Date();
+    // const offer = await Offer.findOne({
+    //     isActive: true,
+    //     validFrom: {$lte: now},
+    //     expiry: {$gte: now},
+    //     "appliesTo.categName" : productData.category.name
+    // }).lean();
 
 
-    let offerPrice, product;
-    if (offer) {
+    // let offerPrice, product;
+    // if (offer) {
 
-        if(offer.isPercent){
-            offerPrice = productData.price - (productData.price * offer.offerAmount/100);
-        }else{
-            offerPrice = productData.price - offer.offerAmount;
-        }
+    //     if(offer.isPercent){
+    //         offerPrice = productData.price - (productData.price * offer.offerAmount/100);
+    //     }else{
+    //         offerPrice = productData.price - offer.offerAmount;
+    //     }
 
-        product = {
-            ...productData.toObject(),
-            offerPrice,
-            offer: offer.name 
-        };
+    //     product = {
+    //         ...productData.toObject(),
+    //         offerPrice,
+    //         offer: offer.name 
+    //     };
 
-    }else{
+    // }else{
         
-        offerPrice = productData.price;
+    //     offerPrice = productData.price;
 
-        product = {
-            ...productData.toObject(),
-            offerPrice
-        };
-    }
+    //     product = {
+    //         ...productData.toObject(),
+    //         offerPrice
+    //     };
+    // }
 
     // --------- offer fetching and calculations end
 
-    return res.status(200).render("user-product-page", {
-        product,
+    return res.status(STATUS_CODES.SUCCESS).render("user-product-page", {
+        finalProductData: finalProductData[0],
         user,
         relatedProducts,
         isWishlisted
     });
 
 
-}
+};
 
 
 //set cart count
@@ -2049,7 +2249,7 @@ export const countCart = async (req, res, next) => {
     }
     res.locals.cartCount = cartCount;
     next();
-}
+};
 
 
 export const countWishlist = async (req, res, next) => {
@@ -2065,20 +2265,20 @@ export const countWishlist = async (req, res, next) => {
 
         }catch(error){
 
-            return res.status(400).json({success: false, error: error.message});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: error.message});
 
         }
     }
 
     res.locals.wishlistCount = wishlistCount;
     next();
-}
+};
 
 
 //404 error page
 export const errorPage = async (req,res) => {
     
     const user = req.session.user || null;
-    res.status(404).render("404", {user});
+    res.status(STATUS_CODES.NOT_FOUND).render("404", {user});
 
-} 
+};

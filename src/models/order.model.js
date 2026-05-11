@@ -135,8 +135,9 @@ const orderSchema = new Schema({
         },
 
         discount: {
-            type: Number,
-            default: 0
+            totalDiscount: {type: Number, default: 0},
+            offerDiscount: {type: Number, default: 0},
+            couponDiscount: {type: Number, default: 0}
         },
 
         shipping: {

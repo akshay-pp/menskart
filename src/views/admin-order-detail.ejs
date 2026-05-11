@@ -54,7 +54,7 @@
                                     minute: "numeric", 
                                     hour12: true 
                                 }).replace(" at", ", ") %></b> </span> <br />
-                                <small class="text-muted">Order ID: <%= order._id.toString().slice(12) %></small>
+                                <small class="text-muted">Order ID: <%= order.orderId || order._id.toString().slice(12) %></small>
                             </div>
                             <div class="d-none col-lg-6 col-md-6 ms-auto text-md-end">
                                 <form id="change-order-status-form" data-id="<%= order._id %>">
@@ -183,19 +183,19 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <div class="<%= item.status === "delivered" ? "d-none" : "" %>">
-                                                            <form id="change-order-status-form-<%= item._id %>" class="change-order-status-form d-flex justify-content-start gap-1" data-order-id="<%= order._id %>" data-item-id="<%= item._id %>">
-                                                                <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
-                                                                    <option hidden disabled selected value>Change Order Status</option>
-                                                                    <option value="confirmed">Confirmed</option>
-                                                                    <option value="processing">Processing</option>
-                                                                    <option value="shipped">Shipped</option>
-                                                                    <option value="delivered">Delivered</option>
-                                                                    <option value="cancelled">Cancelled</option>
-                                                                </select>
-                                                                <button type="submit" class="btn btn-primary" href="#">Save</button>
-                                                            </form>
-                                                        </div>
+                                                        <% if (item.allowedAction.length) { %>
+                                                            <div class="">
+                                                                <form id="change-order-status-form-<%= item._id %>" class="change-order-status-form d-flex justify-content-start gap-1" data-order-id="<%= order._id %>" data-item-id="<%= item._id %>">
+                                                                    <select name="changeOrderStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
+                                                                        <option hidden disabled selected value>Change Order Status</option>
+                                                                        <% item.allowedAction.forEach(action => { %>
+                                                                            <option value="<%= action.value %>"><%= action.label %></option>
+                                                                        <% }) %>
+                                                                    </select>
+                                                                    <button type="submit" class="btn btn-primary" href="#">Save</button>
+                                                                </form>
+                                                            </div>
+                                                        <% } %>
                                                     </td>
                                                     <!-- <td class="text-end">₹<%# item.price * item.quantity %></td> -->
                                                 </tr>
@@ -219,16 +219,33 @@
                                         <article class="float-end">
                                             <dl class="dlist">
                                                 <dt>Subtotal:</dt>
-                                                <dd>₹<%= order.totalPrice %></dd>
+                                                <dd>₹<%= order.pricing.itemsTotal %></dd>
                                             </dl>
+
+                                            <% if (order.pricing.discount.offerDiscount) { %>
+                                                <dl class="dlist">
+                                                    <dt>Offer Discount:</dt>
+                                                    <dd>- ₹<%= order.pricing.discount.offerDiscount %></dd>
+                                                </dl>
+                                            <% } %>
+
+                                            <% if (order.pricing.discount.couponDiscount) { %>
+                                                <dl class="dlist">
+                                                    <dt>Coupon Discount:</dt>
+                                                    <dd>- ₹<%= order.pricing.discount.couponDiscount %></dd>
+                                                </dl>
+                                            <% } %>
+
                                             <dl class="dlist">
                                                 <dt>Shipping cost:</dt>
-                                                <dd>0.00</dd>
+                                                <dd><%= order.pricing.shipping ? `₹${order.pricing.shipping}` : `Free Shipping` %></dd>
                                             </dl>
+
                                             <dl class="dlist">
                                                 <dt>Grand total:</dt>
-                                                <dd><b class="h5">₹<%= order.totalPrice %></b></dd>
+                                                <dd><b class="h5">₹<%= order.pricing.grandTotal %></b></dd>
                                             </dl>
+
                                             <dl class="dlist">
                                                 <dt class="text-muted">Status:</dt>
                                                 <dd>
@@ -366,7 +383,11 @@
                         }
     
                         document.getElementById(`order-status-${itemId}`).textContent = data.orderStatus.toUpperCase();
-                        triggerToast('success', `${data.message} to ${data.orderStatus.toUpperCase()} ` || "Operation successful!");
+                        triggerToast('success', `${data.message} ` || "Operation successful!");
+
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
                         // document.getElementById("order-details-alert").textContent = data.message;
                         // document.getElementById("order-details-alert").className = "alert alert-success";
                         // document.getElementById("order-details-alert").style.display = "block";

@@ -36,7 +36,7 @@
                 <div class="content-header">
                     <div>
                         <h2 class="content-title card-title">Offers</h2>
-                        <p>Manage Offers</p>
+                        <span>Manage <h6 class="d-inline-block"><%= pagination.totalDocs %></h6> offers</span>
                     </div>
                     <div>
                         <input type="text" placeholder="Search Categories" class="form-control bg-white" />
@@ -176,6 +176,7 @@
                                             <% }) %>
                                         </tbody>
                                     </table>
+                                    <%- include('./partials/admin/pagination.ejs') %>
                                 </div>
                             </div>
                             <!-- .col// -->
@@ -639,7 +640,7 @@
                             document.getElementById("disable-offer-error").style.display = "block";
                             setTimeout(() => {
                                 location.reload();
-                            }, 1000);
+                            }, 500);
 
                         }
                     })

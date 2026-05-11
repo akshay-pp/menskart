@@ -504,10 +504,8 @@
             $('#remove-from-wishlist-modal').modal('hide');
 
             const response = await fetch(`/api/user/wishlist/${productId}`, {
-
                 method : "DELETE",
                 headers : {"Content-Type" : "application/json"}
-
             });
 
             const data = await response.json();
@@ -515,18 +513,15 @@
             // showAlert(data, document.getElementById("wishlist-alert"));
 
             if (data.success) {
-                
                 const productRowToRemove = document.getElementById(`${productId}-wishlist`);
                 const wishlistCount = document.getElementById("wishlist-count");
                 wishlistCount.textContent = parseInt(document.getElementById("wishlist-count").textContent) - 1;
 
                 if (wishlistCount.textContent == 0) {
-
                     document.getElementById('empty-wishlist-div').classList.remove('d-none');
                     document.getElementById('empty-wishlist-div').classList.add('d-flex');
                     
                     document.getElementById('wishlist-table').classList.add('d-none');
-
                 }
 
                 if (productRowToRemove) {
@@ -535,9 +530,7 @@
                 }
 
             } else {
-
                 triggerToast('failure', data.error||data.message)
-            
             }
 
             

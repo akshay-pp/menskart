@@ -1,27 +1,89 @@
 import {Router} from "express";
-
 const router = Router();
 
-import {getHome,
+// import {
+//         getHome,
+//         getLogin, 
+//         loginUser, 
+//         registerUser, 
+//         verifyRegistration, 
+//         resendOtp, 
+//         forgotPassword,
+//         verifyForgotOtp,
+//         resetPassword,
+//         logoutUser
+// } from "../controllers/auth.controllers.js";
+
+// import {
+//         getProfile,
+//         editProfileName,
+//         editPhone,
+//         editEmail,
+//         confirmEmail,
+//         addAddress,
+//         deleteAddress,
+//         editAddress
+// } from "../controllers/profile.controllers.js";
+
+// import {
+//         getProducts,
+//         getProductPage
+// } from "../controllers/product.controllers.js";
+
+// import {
+//         getWishlist,
+//         addToWishlist,
+//         removeFromWishlist
+// } from "../controllers/wishlist.controllers.js";
+
+// import {
+//         getCart,
+//         addToCart,
+//         removeFromCart,
+//         updateQuantity
+// } from "../controllers/cart.controllers.js";
+
+// import {
+//         getCheckout,
+//         createOrder,
+//         orderStatus,
+//         cancelOrder,
+//         returnOrder,
+//         getOrder,
+//         generateInvoice
+// } from "../controllers/order.controllers.js";
+
+// import {
+//         isCouponValid
+// } from "../controllers/coupon.controllers.js";
+
+// import {
+//         verifyRazorpayPayment,
+//         handleRazorpayPaymentFailure
+// } from "../controllers/payment.controllers.js";
+
+
+import {
+        getHome,
         getLogin,
+        loginUser,
+        registerUser,
+        verifyRegistration,
+        resendOtp,
+        forgotPassword,
+        verifyForgotOtp,
+        resetPassword,
+        logoutUser,
         getProfile,
         editProfileName,
         editPhone,
         editEmail,
         confirmEmail,
-        loginUser,
-        registerUser,
-        verifyRegistration,
-        logoutUser,
-        resendOtp,
-        getProducts,
-        getProductPage,
         addAddress,
         deleteAddress,
         editAddress,
-        forgotPassword,
-        verifyForgotOtp,
-        resetPassword,
+        getProducts,
+        getProductPage,
         getWishlist,
         addToWishlist,
         removeFromWishlist,
@@ -35,10 +97,12 @@ import {getHome,
         cancelOrder,
         returnOrder,
         getOrder,
+        generateInvoice,
         isCouponValid,
         verifyRazorpayPayment,
         handleRazorpayPaymentFailure,
-        generateInvoice}
+        retryRazorpayPayment
+}
 from "../controllers/user.controllers.js";
 
 import { userVerify } from "../middlewares/authVerify.js";
@@ -54,7 +118,7 @@ router.route("/forgot-password/verify-otp").post(verifyForgotOtp);
 router.route("/forgot-password/reset-password").patch(resetPassword);
 
 router.route("/resend-otp").post(resendOtp);
-router.route("/verify-registration").post(verifyRegistration)
+router.route("/verify-registration").post(verifyRegistration);
 router.post("/logout", logoutUser);
 
 
@@ -88,6 +152,7 @@ router.get("/order-confirmation", orderStatus);
 router.post('/coupon/is-valid', isCouponValid);
 router.post('/payments/razorpay/verify', verifyRazorpayPayment);
 router.post('/payments/razorpay/failure', handleRazorpayPaymentFailure);
+router.post('/payments/razorpay/retry', retryRazorpayPayment);
 
 
 

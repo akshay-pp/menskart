@@ -29,7 +29,7 @@
                 <div class="content-header">
                     <div>
                         <h2 class="content-title card-title">Order List</h2>
-                        <p>Lorem ipsum dolor sit amet.</p>
+                        <span>Manage <h6 class="d-inline-block"><%= pagination.totalDocs %></h6> Orders</span>
                     </div>
                     <div>
                         <input type="text" placeholder="Search order ID" class="form-control bg-white" />
@@ -127,29 +127,7 @@
                     <!-- card-body end// -->
                 </div>
                 <!-- card end// -->
-                <div class="pagination-area mt-30 mb-50">
-                    <nav aria-label="Page navigation example">
-                        <ul class="pagination justify-content-start">
-
-                            <% if (page > 1) { %>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<%= page - 1 %>"><i class="material-icons md-chevron_left"></i></a>
-                                </li>
-                            <% } %>
-                            
-                            <% for (let i = 1; i <= totalPages; i++) { %>
-                                <li class="page-item <%= page === i ? 'active' : '' %>"><a class="page-link" href="?page=<%= i %>"><%= i %></a></li>
-                            <% } %>
-
-                            <% if (page < totalPages) { %>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<%= page + 1 %>"><i class="material-icons md-chevron_right"></i></a>
-                                </li>
-                            <% } %>
-
-                        </ul>
-                    </nav>
-                </div>
+                <%- include('./partials/admin/pagination.ejs') %>
             </section>
             <!-- content-main end// -->
             <footer class="main-footer font-xs">

@@ -4,7 +4,19 @@ import {Product} from "../models/product.model.js";
 import {Order} from "../models/order.model.js";
 import {Coupon} from "../models/coupon.model.js";
 import { Offer } from "../models/offer.model.js";
+import { Wallet } from "../models/wallet.model.js";
 import {findBestPrice} from '../utils/calculateOfferPrice.js';
+import {generateOrderId} from '../utils/idGenerator.js';
+import {paginate} from '../utils/paginate.js';
+import {STATUS_CODES} from '../utils/constants/statusCodes.js';
+import { PAGINATION_CONFIG } from "../utils/constants/config.js";
+import { generateDashboardData } from "../utils/generateDashboardData.js";
+import puppeteer from 'puppeteer';
+import ejs from 'ejs';
+import path from 'path';
+import {fileURLToPath} from 'url';
+import {formatDate} from '../utils/formatDate.js';
+
 // import {Brand} from "../models/brand.model.js";
 
 
@@ -14,140 +26,13 @@ export const getAdmin = async(req,res) => {
 
         try {
 
-            const now = new Date();
-            const nowForMonthly = new Date();
-            const { start, end } = req.query;
-            const interval = req.query.interval || "all-time";
-            console.log(req.query);
-            let fromDate = new Date("2024-03-25");
-            switch (interval) {
-
-                case 'daily':
-                  fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                  break;
-              
-                case 'weekly':
-                  const day = now.getDay();
-                  fromDate = new Date(now);
-                  fromDate.setDate(now.getDate() - day);
-                  fromDate.setHours(0, 0, 0, 0);
-                  break;
-              
-                case 'monthly':
-                  fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                  break;
-              
-                case 'yearly':
-                  fromDate = new Date(now.getFullYear(), 0, 1);
-                  break;
-              
-                case 'custom':
-                  fromDate = new Date(start);
-                  now.setTime(new Date(end).getTime());
-                  break;
-                
-                case 'all-time':
-                    fromDate = new Date("2024-03-25"); 
-
-            }
-
-            console.log(fromDate)
-            const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            const latestOrders = await Order.find({}).sort({createdAt: -1}).populate('owner', 'fullname').limit(10);
+            const dashboardData = await generateDashboardData(req.query);
             
-            console.log("req.query:", req.query);
-            console.log("Interval:", interval);
-            console.log("Start:", start);
-            console.log("End:", end);
-            console.log("From Date:", fromDate.toISOString());
-            console.log("Now:", now.toISOString()); 
-            
-            const thisMonthRevenue = await Order.aggregate([
-                {
-                    $match: {
-                        createdAt: {$gte: firstDayThisMonth, $lte: nowForMonthly}
-                    }
-                },
+            // console.log(data);
 
-                {
-                    $group: {
-                        _id: null,
-                        thisMonthRevenue: {$sum: "$totalPrice"}
-                    }
-                }
-            ]);
-
-            const productSales = await Order.aggregate([
-                
-                {
-                    $match: {
-                      createdAt: { $gte: fromDate, $lte: now }
-                    }
-                },
-
-                { $unwind: "$orderItems" },
-
-                {
-                  $group: {
-                    _id: null,
-                    productSales: { $sum: "$orderItems.quantity" }
-                  }
-                }
-
-            ]);
-
-            const totalRevenue = await Order.aggregate([
-                
-                {
-                    $match: {
-                      createdAt: { $gte: fromDate, $lte: now }
-                    }
-                },
-
-                {
-                  $group: {
-                    _id: null,
-                    totalRevenue: { $sum: "$totalPrice" }
-                  }
-                }
-
-            ]);
-
-
-            const totalOrders = await Order.aggregate([
-                
-                {
-                    $match: {
-                      createdAt: { $gte: fromDate, $lte: now }
-                    }
-                },
-
-                {
-                    $group: {
-                        _id: null, 
-                        totalOrders: { $sum: 1 }, 
-                    }
-                }
-
-            ]);
-
-            
-            const data = { 
-
-                thisMonthRevenue: thisMonthRevenue[0]?.thisMonthRevenue || 0,
-                productSales: productSales[0]?.productSales || 0,
-                totalRevenue: totalRevenue[0]?.totalRevenue || 0,
-                totalOrders: totalOrders[0]?.totalOrders || 0
-
-            };
-            
-            
-
-            console.log(data);
-
-            
-
-            return res.status(200).render("index-admin", {user: req.session.user, data, latestOrders, interval, start, end});
+            // return res.status(STATUS_CODES.SUCCESS).json({user: req.session.user, data, latestOrders, interval, start, end});
+            // return res.status(STATUS_CODES.SUCCESS).render("sales-report", {user: req.session.user, ...dashboardData});
+            return res.status(STATUS_CODES.SUCCESS).render("index-admin", {user: req.session.user, ...dashboardData});
     
         } catch (error) {
             console.error("Error fetching total sales and revenue:", error);
@@ -158,13 +43,44 @@ export const getAdmin = async(req,res) => {
     // }
 };
 
+export const generateSalesReport = async(req, res) => {
+    console.log(req.query);
+    const salesReportData = await generateDashboardData(req.query);
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const htmlData = await ejs.renderFile(
+        path.join(__dirname, '../views/sales-report.ejs'),
+        {...salesReportData}
+    );
+
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(htmlData);
+    const pdfData = await page.pdf({
+        format: 'A4',
+        printBackground: true 
+    })
+    
+    await browser.close();
+
+    res.set({
+        'Content-Type' : 'application/pdf',
+        'Content-Disposition' : `attachment; filename=sales-report-${req.query.interval}-${formatDate(new Date())}.pdf`,
+        'Content-Length' : pdfData.length
+    });
+
+    return res.end(pdfData);
+    
+};
+
 
 export const getUserList = async(req,res) => {
 
     if(req.session.user?.role === "admin"){
-        const userdata = await User.find({}, {password:0, avatar:0, });
-        res.status(200).render("admin-user-list", {userdata, user: req.session.user});
-    }else{
+        const {data: userdata, pagination} = await paginate(User, {page: req.query.page, limit: PAGINATION_CONFIG.DEFAULT_LIMIT, sort: 'newestFirst'});
+        const {totalPages, currentPage} = pagination;
+        res.status(STATUS_CODES.SUCCESS).render("admin-user-list", {userdata, pagination, totalPages, currentPage, user: req.session.user});
+    } else {
         res.redirect("/");
     } 
 };
@@ -179,13 +95,10 @@ export const blockUser = async(req,res) => {
         try {
 
             if(action){
-
                 await User.findByIdAndUpdate(userId, { isBlocked: false } );
-
-            }else{
-
+            } else {
                 if(userId == req.session.user._id){
-                    return res.status(400).json({success: false, error: "Cannot block yourself"});
+                    return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Cannot block yourself"});
                 }
                 await User.findByIdAndUpdate(userId, { isBlocked: true } );
             }
@@ -193,16 +106,13 @@ export const blockUser = async(req,res) => {
             return res.redirect("/api/admin/user-list")
 
         } catch (error) {
-
-            return res.status(500).json({success:false, error:error.message});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success:false, error:error.message});
         }
         
-    }else{
+    } else {
         res.redirect("/");
     }
 }
-
-
 
 
 
@@ -215,14 +125,10 @@ export const blockUser = async(req,res) => {
 export const getCategories = async(req,res) => {
 
     try{
-
         const categdata = await Category.find().populate("parent", "name");
-        return res.status(200).render("admin-categories", {categdata, user: req.session.user});
-
-    }catch(error){
-
-        return res.status(500).json(error.message);
-        
+        return res.status(STATUS_CODES.SUCCESS).render("admin-categories", {categdata, user: req.session.user});
+    } catch (error){
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json(error.message);
     }
 
 }
@@ -240,24 +146,24 @@ export const createCateogry = async(req,res) => {
         let isEmpty = [categoryName, parent, categoryDescription].some(item => item?.trim() === "")
 
         if (isEmpty){
-            return res.status(400).json({ success: false, error: "All fields are required" });
+            return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "All fields are required" });
         }
 
         const existingCategory = await Category.find({name:categoryName}).collation({locale: 'en', strength: 2});
         if(existingCategory.length > 0){
-            return res.status(400).json({success:false, error: "Category with that name already exists"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success:false, error: "Category with that name already exists"});
         }
 
         try {
             const newCategory = await Category.create({name: categoryName, parent, description: categoryDescription});
             console.log(newCategory);
-            return res.status(200).json({ success: true, message: "Created succesfully" });
+            return res.status(STATUS_CODES.SUCCESS).json({ success: true, message: "Created succesfully" });
         } catch (error) {
-            res.status(500).json({success: false, error: error.message});
+            res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
 
     } else {
-        res.status(400).json({success:false, error: "Area 51, Unauthorized"});
+        res.status(STATUS_CODES.BAD_REQUEST).json({success:false, error: "Area 51, Unauthorized"});
     }
 }
 
@@ -275,7 +181,7 @@ export const editCateogry = async(req,res) => {
         let isEmpty = [editCategoryName, editParentCategory, editCategoryDescription].some(item => item?.trim() === "")
 
         if (isEmpty){
-            return res.status(400).json({ success: false, error: "All fields are required" });
+            return res.status(STATUS_CODES.BAD_REQUEST).json({ success: false, error: "All fields are required" });
         }
 
         try {
@@ -283,13 +189,13 @@ export const editCateogry = async(req,res) => {
             const existingCategory = await Category.find({name:editCategoryName}).collation({locale: 'en', strength: 2});
 
             if(existingCategory.length > 0){
-                return res.status(400).json({success:false, error: "Category with that name already exists"});
+                return res.status(STATUS_CODES.BAD_REQUEST).json({success:false, error: "Category with that name already exists"});
             }
 
             const category = await Category.findById(categoryId);
             
             if(!category){
-                return res.status(400).json({ success:false, error: "Category not found"});
+                return res.status(STATUS_CODES.BAD_REQUEST).json({ success:false, error: "Category not found"});
             }
             
             category.name = editCategoryName;
@@ -299,12 +205,12 @@ export const editCateogry = async(req,res) => {
             const updatedCategory = await Category.findById(category._id);
             console.log(updatedCategory);
 
-            return res.status(200).json({ success:true, message:"Details updated successfully"});
+            return res.status(STATUS_CODES.SUCCESS).json({ success:true, message:"Details updated successfully"});
 
 
         } catch (error) {
             
-            return res.status(500).json({ success:false, error: error.message });
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success:false, error: error.message });
 
         }
     }else{
@@ -325,7 +231,7 @@ export const unListcategory = async(req,res) => {
             const category = await Category.findById(categoryId);
 
             if(!category){
-                return res.status(400).json({ success:false, error: "Category not found" })
+                return res.status(STATUS_CODES.BAD_REQUEST).json({ success:false, error: "Category not found" })
             }
 
             if (req.body.payload == "To List"){
@@ -337,11 +243,11 @@ export const unListcategory = async(req,res) => {
             await category.save();
             const updatedCategory = await Category.findById(category._id);
             console.log(updatedCategory);
-            return res.status(200).json({ success:true, message:"Updated successfully"});
+            return res.status(STATUS_CODES.SUCCESS).json({ success:true, message:"Updated successfully"});
 
 
         } catch (error) {
-            return res.status(500).json({ success:false, error: error.message });
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success:false, error: error.message });
         }
 
         
@@ -360,18 +266,40 @@ export const getOrders = async(req,res) => {
 
         try {
 
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 10;
-            const skip = (page-1) * limit;
-    
-            const totalOrders = await Order.countDocuments();
-            const totalPages = Math.ceil(totalOrders/limit);
-            const orders = await Order.find({}).sort({createdAt: -1}).populate('owner', 'fullname').populate('address', 'city state').skip(skip).limit(limit);
-            return res.status(200).render("admin-orders", {orders, page, totalPages});
+
+            // const shoesOrders = await Order.aggregate([
+            //     {$unwind: "$orderItems"},
+            //     {$lookup: {
+            //         from: "product",
+            //         localField: "orderItems.product",
+            //         foreignField: "_id",
+            //         as: "productData"
+            //     }},
+            //     {$unwind: "$productData"},
+            //     {$match: {"productData.categoryName": "shoes"}},
+            //     {$group: {_id: null, count: {$sum: 1}}}
+            // ]);
+
+            // console.log(shoesOrders);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            const ordersToday = await Order.find({createdAt: {$gte: today, $lte: now}});
+            console.log(ordersToday, `no. of orders: ${ordersToday.length}`);
+            return;
+            const populate = [
+                {path: 'owner', select: 'fullname'},
+                {path: 'address', select: 'city state'}
+            ];
+
+            const {data: orders, pagination} = await paginate(Order, {page: req.query.page, limit: PAGINATION_CONFIG.DEFAULT_LIMIT, sort: 'newestFirst', populate});
+            const {totalPages, currentPage} = pagination;
+
+            return res.status(STATUS_CODES.SUCCESS).render("admin-orders", {orders, pagination, currentPage, totalPages});
 
         } catch (error) {
-
-            return res.status(500).json({success: false, error: error.message});
+            console.log(error);
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
 
     // }else{
@@ -389,12 +317,24 @@ export const getOrderDetails = async(req,res) => {
 
         try {
 
-            const order = await Order.findById(orderId).populate('owner', 'fullname email phone').populate('orderItems.product').populate('address')
-            return res.status(200).render("admin-order-detail", {order});
+            const order = await Order.findById(orderId).populate('owner', 'fullname email phone').populate('orderItems.product').populate('address').lean();
+
+            const allowedAction = {
+                created: [{value: 'confirmed', label: 'Confirmed'}, {value: 'cancelled', label: 'Cancelled'}], 
+                confirmed: [{value: 'processing', label: 'Processing'}, {value: 'cancelled', label: 'Cancelled'}] , 
+                processing: [{value: 'shipped', label: 'Shipped'}, {value: 'cancelled', label: 'Cancelled'}], 
+                shipped: [{value: 'delivered', label: 'Delivered'}, {value: 'cancelled', label: 'Cancelled'}], 
+                delivered: [],
+                cancelled: []
+            }
+
+            order.orderItems.forEach(item => item.allowedAction = allowedAction[item.status]);
+            console.log(order);
+            return res.status(STATUS_CODES.SUCCESS).render("admin-order-detail", {order});
 
         } catch (error) {
 
-            return res.status(500).json({success: false, error: error.message});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
         }
 
     // }else{
@@ -405,6 +345,15 @@ export const getOrderDetails = async(req,res) => {
 
 export const changeOrderStatus = async (req, res) => {
 
+    const allowedAction = {
+        created: new Set(['confirmed', 'cancelled']), 
+        confirmed: new Set(['processing', 'cancelled']) , 
+        processing: new Set(['shipped', 'cancelled']), 
+        shipped: new Set(['delivered', 'cancelled']), 
+        delivered: new Set(), 
+        cancelled: new Set()
+    };
+
     const {orderId, itemId} = req.params;
     console.log({orderId, itemId, body: req.body});
 
@@ -414,7 +363,7 @@ export const changeOrderStatus = async (req, res) => {
         const item = order.orderItems.id(itemId);
         let updateObject = {};
         let trackRecord = {};
-        console.log({order, item, status: item.status});
+        // console.log({order, item, status: item.status, returnStatus: item.returnStatus});
 
         if (req.body.returnStatus) {
 
@@ -431,18 +380,53 @@ export const changeOrderStatus = async (req, res) => {
 
             console.log(trackRecord, updateObject);
 
+            //push to wallet as pending
+
             if (req.body.returnStatus == "refunded") {
-                
+                //fetch finalPrice from orderItem
+                const amountToRefund = item.finalPrice ?? (item.price*item.quantity);
+                const newTransaction = {
+                    amount: amountToRefund,
+                    direction: 'Credit',
+                    source: 'refund',
+                    relatedOrder: {
+                        orderId,
+                        itemId
+                    },
+                    refundType: 'return',
+                    status: 'success'
+                };
+                //update wallet
+                const wallet = await Wallet.findOneAndUpdate(
+                    {owner: order.owner},
+                    {$setOnInsert: {balance: 0, transaction: []}},
+                    {upsert: true, new: true}
+                );
+
+                console.log(amountToRefund, newTransaction, wallet);
+
+                wallet.balance += amountToRefund;
+                wallet.transactions.push(newTransaction);
+                await wallet.save();
+
             }
-            return;
+            // return;
         };
 
         
         if(req.body.status) {
 
+            if(!allowedAction[item.status].size) {
+                return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: `Item status cannot be changed at this stage`});
+            }
+
             if (item.status === "delivered"){
-                return res.status(400).json({success: false, error: "Item already delivered. cannot change status"});
+                return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Item already delivered. cannot change status"});
             };
+
+            if(!allowedAction[item.status].has(req.body.status)) {
+                return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: `${req.body.status} is not a valid choice`});
+            }
 
             trackRecord = {
                 'orderItems.$.trackRecords' : {
@@ -469,16 +453,26 @@ export const changeOrderStatus = async (req, res) => {
             {$set: updateObject, $push: trackRecord}
         );
 
+        const updatedOrder = await Order.findById(orderId);
+        const updatedItem = updatedOrder.orderItems.id(itemId);
+        console.log('updated item \n', updatedItem);
+
         if(result.matchedCount === 0) {
-            return res.status(400).json({success: false, error: "Order or item not found"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Order or item not found"});
         };
 
         //update orderStatus with recalculateOrderStatus();
 
-        return res.status(200).json({success: true, message: "Order status changed", orderStatus: req.body.status});
+        if(req.body.status) {
+            return res.status(STATUS_CODES.SUCCESS).json({success: true, message: `Order status changed to: ${updatedItem.status.toUpperCase()}`, orderStatus: updatedItem.status});  
+        }
+
+        if (req.body.returnStatus) {
+            return res.status(STATUS_CODES.SUCCESS).json({success: true, message: `Return status changed to: ${updatedItem.returnStatus.toUpperCase()}`, orderStatus: updatedItem.returnStatus});
+        }
 
     } catch (error) {
-        return res.status(500).json({success: false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message});
     }
 };
 
@@ -498,16 +492,28 @@ export const getProductList = async (req,res) => {
 
     // if (req.session.user?.role === "admin") {
         try {
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 5;
-    
-            const totalProducts = await Product.countDocuments();
-            const totalPages = Math.ceil(totalProducts/limit);
-    
-            const productdata = await Product.find({}).populate("category", "name").skip((page-1)*limit).limit(limit);
-            return res.status(200).render("admin-products-list", {productdata, page, totalPages, user: req.session.user});
+
+            const populate = [
+                {path: 'category', select: 'name'}
+            ];
+
+            const {data: productdata, pagination} = await paginate(Product, {page: req.query.page, limit: PAGINATION_CONFIG.DEFAULT_LIMIT, sort: 'newestFirst', populate});
+            const {totalPages, currentPage} = pagination;
+
+            const productIds = productdata.map(item => item._id)
+            const productOffers = await Offer.find({type: 'product', productIds: {$in: productIds}});
+            const productOfferMap = new Map();
+            productOffers.forEach(item => {
+                productOfferMap.set(item.productIds.toString(), item);
+            });
+
+            productdata.forEach(item => {
+                item.productOffer = productOfferMap.get(item._id.toString());
+            });
+
+            return res.status(STATUS_CODES.SUCCESS).render("admin-products-list", {productdata, pagination, currentPage, totalPages, user: req.session.user});
         } catch (error) {
-            return res.status(500).json({success: false, error: "Error fetching products"});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message || "Error fetching products"});
         }
 
     // } else {
@@ -524,15 +530,15 @@ export const getInventory = async (req,res) => {
     // if (req.session.user?.role === "admin") {
         try {
             const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 5;
+            const limit = PAGINATION_CONFIG.DEFAULT_LIMIT || parseInt(req.query.limit);
     
             const totalProducts = await Product.countDocuments();
             const totalPages = Math.ceil(totalProducts/limit);
     
             const productdata = await Product.find({}).populate("category", "name").skip((page-1)*limit).limit(limit);
-            return res.status(200).render("admin-inventory", {productdata, page, totalPages, user: req.session.user});
+            return res.status(STATUS_CODES.SUCCESS).render("admin-inventory", {productdata, page, totalPages, user: req.session.user});
         } catch (error) {
-            return res.status(500).json({success: false, error: "Error fetching products"});
+            return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: "Error fetching products"});
         }
 
     // } else {
@@ -554,21 +560,21 @@ export const updateStock = async (req,res) => {
         const product = await Product.findById(productId);
 
         if(!product){
-            return res.status(400).json({success: false, error: "Product doesnt exist"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Product doesnt exist"});
         }
 
         if(quantity <= 0 || isNaN(quantity)){
-            return res.status(400).json({success: false, error: "Enter a valid quantity value"});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Enter a valid quantity value"});
         }
 
         product.stock += quantity;
         await product.save();
 
-        return res.status(200).json({success: true, message: "Stock updated successfully", stock: product.stock});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Stock updated successfully", stock: product.stock});
 
     } catch (error) {
 
-        return res.status(500).json({success: false, error: error.message}); 
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: error.message}); 
 
     }
 }
@@ -589,7 +595,7 @@ export const getEditProduct = async(req,res) => {
                                         .populate("category", "name")
                                         .populate("subcategory", "name");
     const categdata = await Category.find().populate("parent", "name");
-    res.status(200).render("admin-edit-product", {product, categdata, user: req.session.user});
+    res.status(STATUS_CODES.SUCCESS).render("admin-edit-product", {product, categdata, user: req.session.user});
 }
 
 
@@ -601,7 +607,7 @@ export const getAddProduct = async (req,res) => {
         return res.redirect("/");
     }
     const categdata = await Category.find({}); 
-    return res.status(200).render("admin-add-product", {user: req.session.user, categdata});
+    return res.status(STATUS_CODES.SUCCESS).render("admin-add-product", {user: req.session.user, categdata});
 }
 
 
@@ -614,11 +620,13 @@ export const postAddProduct = async (req,res) => {
 
     const product = req.body;
     const files = req.files;
+    const category = await Category.findById(req.body.category).select('name');
 
-    console.log(files);
+
+    console.log({files, product, category});
     
     if(req.files.length < 3) {
-        return res.status(400).json({success: false, error: "Minimum 3 images neeeded"});
+        return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error: "Minimum 3 images neeeded"});
     }
 
 
@@ -626,13 +634,13 @@ export const postAddProduct = async (req,res) => {
     
     try {
         
-        const newProduct = await Product.create({...product, images});
+        const newProduct = await Product.create({...product, images, categoryName: category.name});
 
         console.log(newProduct);
-        return res.status(200).json({success: true, message: "Product added successfully", newProduct});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Product added successfully", newProduct});
     
     } catch (error) {
-        return res.status(500).json({success: false, error});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error});
     }
 }
 
@@ -662,7 +670,7 @@ export const unlistProduct = async (req,res) => {
 
     } catch (error) {
 
-        return res.status(500).json({success:false, error:error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success:false, error:error.message});
     }
 
 }
@@ -681,9 +689,9 @@ export const deleteImage = async (req,res) => {
         if (!product){
             return res.json({success:false, error: "Error deleting the image"});
         }
-        return res.status(200).json({success:true, message: "Image deleted successfully"});
+        return res.status(STATUS_CODES.SUCCESS).json({success:true, message: "Image deleted successfully"});
     } catch (error) {
-        return res.status(500).json({success:false, error: error.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success:false, error: error.message});
     }
 
 }
@@ -694,9 +702,10 @@ export const deleteImage = async (req,res) => {
 
 export const getCoupons = async (req, res) => {
 
-    const coupons = await Coupon.find({}).sort({createdAt:-1});
+    const {data: coupons, pagination} = await paginate(Coupon, {page: req.query.page, limit: PAGINATION_CONFIG.DEFAULT_LIMIT, sort: 'newestFirst'});
+    const {totalPages, currentPage} = pagination;
     console.log(req.path);
-    return res.status(200).render("coupons", {coupons});
+    return res.status(STATUS_CODES.SUCCESS).render("coupons", {coupons, pagination, totalPages, currentPage});
     
 }
 
@@ -778,7 +787,7 @@ export const createCoupon = async(req,res) => {
         console.log("validateFields worked ✅")
 
         if (!isValid) {
-            return res.status(400).json({success: false, error});
+            return res.status(STATUS_CODES.BAD_REQUEST).json({success: false, error});
         }
 
 
@@ -809,7 +818,7 @@ export const createCoupon = async(req,res) => {
         console.log({existingCoupon});
 
         if (existingCoupon.length) {
-            return res.status(409).json({success:false, message: "An active coupon with the same name exists"});
+            return res.status(STATUS_CODES.CONFLICT).json({success:false, message: "An active coupon with the same name exists"});
         }
         
 
@@ -821,23 +830,86 @@ export const createCoupon = async(req,res) => {
             isPercent,
             couponAmount: discountAmount,
             minimumCartValue: minimumValue,
-            maxDiscount,
+            maxDiscount: isPercent ? maxDiscount : null,
             validFrom: couponStartDate,
             expiry: couponExpiryDate
 
         });
 
+        console.log(coupon);
+
         await coupon.save();
         const newCoupon = await Coupon.findById(coupon._id);
         console.log(JSON.stringify(newCoupon, null, 2));
 
-        return res.status(200).json({success: true, message: "Coupon created successfully"})
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Coupon created successfully"})
 
     } catch(err) {
-        return res.status(500).json({success: false, error: err.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
     }
 
 }
+
+export const changeCouponStat = async(req, res) => {
+
+    console.log({body: req.body, params: req.params});
+    const {couponId} = req.params;
+        
+    try { 
+            
+        const coupon = await Coupon.findById(couponId);
+            
+        if(!couponId){
+            return res.status(STATUS_CODES.BAD_REQUEST).json({ success:false, error: "Coupon not found" })
+        }
+
+        if (req.body.payload == "Deactivate"){
+            coupon.couponActive = false;
+        } else {
+            coupon.couponActive = true;
+        }
+        
+        await coupon.save();
+        const updatedCoupon = await Coupon.findById(coupon._id);
+        console.log(updatedCoupon);
+        return res.status(STATUS_CODES.SUCCESS).json({ success:true, message:"Updated successfully"});
+
+    } catch (error) {
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success:false, error: error.message });
+    }
+};
+
+
+export const editCoupon = async(req, res) => {
+
+    try {
+
+        console.log(req.body);
+        //validations
+
+        const isPercent = req.body.editIsPercentage ? true : false;
+        const editCoupon = {
+            name: req.body.editCouponName,
+            code: req.body.editCouponCode,
+            offerAmount: req.body.editCouponAmount,
+            maxDiscount: isPercent ? req.body.editMaxDiscount : null,
+            description: req.body.editCouponDescription,
+            minimumValue: req.body.editMinimumValue,
+            validFrom: req.body.editCouponStartDate,
+            expiry: req.body.editCouponExpiry,
+            isPercent
+        }
+
+        const updatedCoupon = await Coupon.findByIdAndUpdate(req.body._id, {$set: editCoupon}, {new: true});
+        console.log(updatedCoupon);
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Changes applied successfully"});
+
+
+    } catch(err) {
+        console.log(err);
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
+    }
+};
 
 
 
@@ -846,8 +918,10 @@ export const getOffers = async(req, res) => {
 
     //fetch needed data from db
     const categories = await Category.find({isUnListed: false}, {name: 1});
-    const offers = await Offer.find({}).sort({createdAt: -1});
-    return res.render('offers', {categories, offers});
+    const {data: offers, pagination} = await paginate(Offer, {page: req.query.page, limit: PAGINATION_CONFIG.DEFAULT_LIMIT, sort: 'newestFirst'});
+    const {currentPage, totalPages, totalDocs} = pagination;
+    // return res.json({categories, offers, currentPage, totalPages});
+    return res.render('offers', {categories, offers, pagination, currentPage, totalPages});
     
 }
 
@@ -856,33 +930,33 @@ export const createOffer = async(req, res) => {
 
     try {
 
-        console.log(req.body);
+        console.log({body: req.body});
         //validations
 
-        const isPercent = req.body.productOfferIsPercentage ? true : false;
+        const isPercent = req.body.isPercentage ? true : false;
         const offer = new Offer({
-            name: req.body.productOfferName,
+            name: req.body.offerName,
             type: req.body.type,
             appliesTo: req.body.appliesTo ?? null ,
             productIds: req.body.productId ?? null,
-            offerAmount: req.body.productOfferAmount,
-            maxDiscount: isPercent ? req.body.productOfferMaxDiscount : null,
-            description: req.body.productOfferDescription,
-            minimumValue: req.body.productOfferMinimumValue,
-            validFrom: req.body.productOfferStartDate,
-            expiry: req.body.productOfferExpiryDate,
+            offerAmount: req.body.offerAmount,
+            maxDiscount: isPercent ? req.body.maxDiscount : null,
+            description: req.body.offerdescription,
+            minimumValue: req.body.type == 'product' ? null : req.body.minimumValue,
+            validFrom: req.body.offerStartDate,
+            expiry: req.body.offerExpiry,
             isPercent
         });
 
-        console.log(offer);
+        console.log({offer});
 
         await offer.save();
-        return res.status(201).json({success: true, message: "Offer created successfully"});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Offer created successfully"});
 
 
     } catch(err) {
         console.log(err);
-        return res.status(500).json({success: false, error: err.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
     }
     
 }
@@ -911,12 +985,12 @@ export const editOffer = async(req, res) => {
 
         const updatedOffer = await Offer.findByIdAndUpdate(req.body._id, {$set: editOffer}, {new: true});
         console.log(updatedOffer);
-        return res.status(201).json({success: true, message: "Changes applied successfully"});
+        return res.status(STATUS_CODES.SUCCESS).json({success: true, message: "Changes applied successfully"});
 
 
     } catch(err) {
         console.log(err);
-        return res.status(500).json({success: false, error: err.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
     }
     
 }
@@ -933,7 +1007,7 @@ export const changeOfferStat = async(req,res) => {
         const offer = await Offer.findById(offerId);
             
         if(!offerId){
-            return res.status(400).json({ success:false, error: "Offer not found" })
+            return res.status(STATUS_CODES.BAD_REQUEST).json({ success:false, error: "Offer not found" })
         }
 
         if (req.body.payload == "Deactivate"){
@@ -945,10 +1019,10 @@ export const changeOfferStat = async(req,res) => {
         await offer.save();
         const updatedOffer = await Offer.findById(offer._id);
         console.log(updatedOffer);
-        return res.status(200).json({ success:true, message:"Updated successfully"});
+        return res.status(STATUS_CODES.SUCCESS).json({ success:true, message:"Updated successfully"});
 
     } catch (error) {
-        return res.status(500).json({ success:false, error: error.message });
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success:false, error: error.message });
     }
 
 }
@@ -960,7 +1034,7 @@ export const getReturns = async (req,res) => {
         
         const ordersInReturnRequests = await Order.aggregate([
             {$unwind: "$orderItems"},
-            {$match: {"orderItems.returnStatus" : "requested"}},
+            {$match: {"orderItems.returnStatus" : {$ne: 'none'}}},
             {$lookup: {
                 from: "users",
                 let: {userId:'$owner'},
@@ -993,18 +1067,37 @@ export const getReturns = async (req,res) => {
             }},
             {$unwind: "$productData"},
             {$unwind: "$username"},
+            {$addFields: {
+                    returnStatusOrder: {
+                        $indexOfArray: [
+                            ["requested", "approved", "rejected", "refunded"],
+                            "$orderItems.returnStatus"
+                        ]
+                    }
+                }
+            },
+            {$sort: {returnStatusOrder: 1,'orderItems.deliveredAt': -1}},
             {$project: {
                 username: 1, productData: 1, orderItems: 1, 
-            }},
-            {$sort: {'orderItems.deliveredAt': -1}}
-        ])
+            }}
+        ]);
 
-        console.log({sampleFullOrder: ordersInReturnRequests[0], sampleOrderItem: ordersInReturnRequests[0].orderItems, username: ordersInReturnRequests[0].username, productData: ordersInReturnRequests[0].productData });
-        return res.status(200).render("admin-returns", {ordersInReturnRequests});
+        ordersInReturnRequests.forEach(item => {
+            const states = {
+                requested: {label: "Review Request", badgeClass: 'alert-warning'}, 
+                approved: {label: "Issue Refund", badgeClass: 'alert-info'},
+                rejected: {label: "Reopen request", badgeClass: 'alert-danger'},
+                refunded: {label: "Reopen request", badgeClass: 'alert-success'}
+            } 
+            item.uiData = states[item.orderItems.returnStatus];
+        })
+
+        // console.log(ordersInReturnRequests);
+        return res.status(STATUS_CODES.SUCCESS).render("admin-returns", {ordersInReturnRequests});
 
 
-    } catch (error) {
-        return res.status(500).json({success: false, error});
+    } catch (err) {
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
     }
 
 }
@@ -1013,12 +1106,18 @@ export const getReturns = async (req,res) => {
 export const exprApi = async (req, res) => {
 
     try {
-        const products = await Product.find({}).limit(5).lean();
-        // console.log(products);
-        const productsWithOfferApplied = findBestPrice(...products);
-        return res.status(200).json(productsWithOfferApplied);
+        const products = await Product.find({}).populate('category');
+        for (const product of products) {
+            if (product.category && product.category.name) {
+                product.categoryName = product.category.name;
+                await product.save();
+            }
+        };
+
+        const updatedProducts = await Product.find({});
+        return res.status(STATUS_CODES.SUCCESS).json({updatedProducts});
     } catch (err) {
-        return res.status(500).json({success: false, error: err.message});
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success: false, error: err.message});
     }
 
 }

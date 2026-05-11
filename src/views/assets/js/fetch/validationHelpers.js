@@ -172,7 +172,7 @@ export function showAlert(data, alertElement) {
 export function triggerToast (status, feedbackMessage) {
 
     // status - type: string - enum ['success', 'warning', 'failure']
-    // feedbackMessage - type: string - any error message
+    // feedbackMessage - type: string - data.message/data.error
 
     const toastId = document.querySelector('.toast')?.id
 

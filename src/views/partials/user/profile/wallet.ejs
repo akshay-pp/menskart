@@ -1,13 +1,13 @@
 <div class="tab-pane fade show active mx-4" id="tab-wallet" role="tabpanel" aria-labelledby="tab-wallet-link">
     <div class="d-flex bg-dark justify-content-between align-items-center mb-2" style="border: 1px solid #b1b1b1; border-radius: 8px;">
-        <div class="p-5 d-flex flex-column align-items-end">
+        <div class="p-5 d-flex flex-column align-items-start">
             <span class="text-white h6 mb-1">Current Wallet Balance</span>
             <h2 class="text-secondary mb-0">
-                <i class="icon-rupee"></i>2499.00
+                <i class="icon-rupee"></i><%= wallet?.balance ?? '2499.00' %> 
             </h2>
         </div>
 
-        <div class="p-5 d-flex flex-column align-items-end">
+        <div class="p-5 d-none flex-column align-items-end">
             <span class="text-white h6 mb-1">Referral Earnings</span>
             <h3 class="text-secondary mb-0">
                 <i class="icon-rupee"></i>300.00
@@ -19,62 +19,92 @@
     <div class="mb-2" style="border: 1px solid #b1b1b1; border-radius: 8px; background: rgba(204, 153, 102, 0.1)">
         <div class="p-5 d-flex flex-column align-items-center">
             <h3>Refer a friend. Give <i class="icon-rupee"></i>200 Get <i class="icon-rupee"></i>200</h3>
-            <span class="font-weight-normal">Invite a friend to Menskart. Your friend gets <i class="icon-rupee"></i>200 instantly and you get <i class="icon-rupee"></i>200 once he completes his first order</span>
+            <span class="font-weight-normal">Invite a friend to Menskart. Both of you gets <i class="icon-rupee"></i>200 instantly when your friend signs up!</span>
         </div>
 
         <div class="d-flex justify-content-center mb-2">
             <div class="d-flex align-items-center bg-white" style="border: 1px dashed #A6C76C;">
-                <div class="px-5">referralcodesample</div>
+                <div class="px-5"><strong id="referralCode"><%= user.referralCode %></strong></div>
             </div>
             <div class="btn btn-secondary">
-                <div class="p-2">Copy</div>
+                <div class="p-2" id="copy-referralCode">Copy</div>
             </div>
         </div>
     </div>
 
+    <script>
+        const btn = document.getElementById("copy-referralCode");
+
+        btn.addEventListener("click", async () => {
+            const code = document.getElementById("referralCode").innerText;
+
+            await navigator.clipboard.writeText(code);
+
+            btn.setAttribute("data-original", btn.innerText);
+            btn.innerText = "✅ Copied";
+
+            setTimeout(() => {
+                btn.innerText = btn.getAttribute("data-original");
+            }, 3000);
+        });
+    </script>
+
     <div class="" style="border: 1px solid #b1b1b1; border-radius: 8px;">
         <h4 class="pl-5 mt-3 mb-0">Wallet Activity</h4>
         <div class="px-5 mb-0 mt-3">
-            <table class="table">
-                <thead class="thead-light">
-                    <tr>
-                        <th scope="col" class="pl-4">Type</th>
-                        <th scope="col">Source</th>
-                        <th scope="col">Amount</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="pl-4">
-                            <span class="badge rounded-pill bg-secondary text-white font-weight-normal px-4 py-2">Credit</span>
-                        </td>
-                        <td>Refund OrderId: #178486</td>
-                        <td class="h6 mb-0 text-success">+2499.00</td>
-                        <td>Oct 25, 2025</td>
-                        <td>Success</td>
-                    </tr>
-                    <tr>
-                        <td class="pl-4">
-                            <span class="badge rounded-pill bg-danger text-white font-weight-normal px-4 py-2">Debit</span>
-                        </td>
-                        <td>Payment for OrderId: #17987686</td>
-                        <td class="h6 mb-0 text-danger">-3699.00</td>
-                        <td>Oct 17, 2025</td>
-                        <td>Success</td>
-                    </tr>
-                    <tr>
-                        <td class="pl-4">
-                            <span class="badge rounded-pill bg-secondary text-white font-weight-normal px-4 py-2">Credit</span>
-                        </td>
-                        <td>Referral Bonus</td>
-                        <td class="h6 mb-0 text-success">+199.00</td>
-                        <td>Oct 16, 2025</td>
-                        <td>Success</td>
-                    </tr>
-                </tbody>
-            </table>
+            <% if(!wallet?.transactions?.length) { %>
+                <div class="d-flex justify-content-center">
+                    <span class="font-weight-normal px-5 py-2 mb-4 rounded-pill bg-light border">No transactions found!</span>
+                </div>
+            <% } else { %>
+                <table class="table">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col" class="pl-4">Type</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Amount</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% wallet.transactions.forEach(transaction => { %>
+                        <tr>
+                            <td class="pl-4">
+                                <span class="badge rounded-pill <%= transaction.badgeClass %> text-white font-weight-normal px-4 py-2"><%=transaction.direction%></span>
+                            </td>
+                            <td>
+                                <%= transaction.description %> 
+                                <a href="/api/user/order/<%=transaction.relatedOrder?.orderId%>/item/<%=transaction.relatedOrder?.itemId%>" class="<%=transaction.relatedOrder?.itemId ? "" : "d-none" %>">
+                                    <span class="font-weight-normal">Order</span>
+                                </a>
+                            </td>
+                            <td class="h6 mb-0 <%= transaction.amountClass %> "><%=transaction.amountText%></td>
+                            <td><%=transaction.date%></td>
+                            <td><%=transaction.status%></td>
+                        </tr>
+                        <% }) %>
+                        <!-- <tr>
+                            <td class="pl-4">
+                                <span class="badge rounded-pill bg-danger text-white font-weight-normal px-4 py-2">Debit</span>
+                            </td>
+                            <td>Payment for OrderId: #17987686</td>
+                            <td class="h6 mb-0 text-danger">-3699.00</td>
+                            <td>Oct 17, 2025</td>
+                            <td>Success</td>
+                        </tr>
+                        <tr>
+                            <td class="pl-4">
+                                <span class="badge rounded-pill bg-secondary text-white font-weight-normal px-4 py-2">Credit</span>
+                            </td>
+                            <td>Referral Bonus</td>
+                            <td class="h6 mb-0 text-success">+199.00</td>
+                            <td>Oct 16, 2025</td>
+                            <td>Success</td>
+                        </tr> -->
+                    </tbody>
+                </table>
+            <% } %>
         </div>
     </div>
 

@@ -14,6 +14,13 @@
         <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
         <!-- Template CSS -->
         <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+        <style>
+            .disabled-div {
+                pointer-events: none; /* Blocks all mouse interactions */
+                opacity: 0.6;         /* Visually dims the content */
+                cursor: not-allowed;  /* Optional: Changes cursor to indicate disabled state */
+            }
+        </style>
     </head>
 
     <body>
@@ -29,12 +36,14 @@
                 <div class="content-header">
                     <div>
                         <h2 class="content-title card-title">Coupons</h2>
-                        <p>Manage coupons</p>
+                        <span>Manage <h6 class="d-inline-block"><%= pagination.totalDocs %></h6> coupons</span>
+                        
                     </div>
                     <div>
                         <input type="text" placeholder="Search Categories" class="form-control bg-white" />
                     </div>
                 </div>
+                
                 <div class="card">
                     <div class="card-body">
                         <div class="alert alert-danger" style="display: none" id="coupon-error" role="alert">
@@ -46,7 +55,7 @@
                                     
                                     <div class="mb-4">
                                         <label for="couponName" class="form-label">Name</label>
-                                        <input type="text" id="couponName" name="couponName" placeholder="Type here" class="form-control form-field"/>
+                                        <input type="text" id="couponName" name="couponName" placeholder="Type here" class="form-control form-field create-coupon"/>
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -55,7 +64,7 @@
                                     
                                     <div class="mb-4">
                                         <label for="couponCode" class="form-label">Coupon Code</label>
-                                        <input type="text" id="couponCode" name="couponCode" placeholder="6 to 15 characters" class="form-control form-field"/>
+                                        <input type="text" id="couponCode" name="couponCode" placeholder="6 to 15 characters" class="form-control form-field create-coupon"/>
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -68,7 +77,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="discountAmount">Discount Amount</label>
-                                        <input type="number" id="discountAmount" name="discountAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field">
+                                        <input type="number" id="discountAmount" name="discountAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field create-coupon">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -76,7 +85,7 @@
 
                                     <div class="mb-4" id= 'maxDiscount-div'>
                                         <label class="form-label" for="maxDiscount">Maximum Discount</label>
-                                        <input type="number" id="maxDiscount" name="maxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field">
+                                        <input type="number" id="maxDiscount" name="maxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field create-coupon">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -84,7 +93,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="minimumValue">Minimum Cart Value</label>
-                                        <input type="number" id="minimumValue" name="minimumValue" placeholder="Type here" min="1" class="form-control form-field">
+                                        <input type="number" id="minimumValue" name="minimumValue" placeholder="Type here" min="1" class="form-control form-field create-coupon">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -92,7 +101,7 @@
                                     
                                     <div class="mb-4">
                                         <label class="form-label" for="couponStartDate">Valid from: </label>
-                                        <input type="date" name="couponStartDate" id="couponStartDate" class="form-control form-field">
+                                        <input type="date" name="couponStartDate" id="couponStartDate" class="form-control form-field create-coupon">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -100,7 +109,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="couponExpiryDate">Expires on: </label>
-                                        <input type="date" name="couponExpiryDate" id="couponExpiryDate" class="form-control form-field">
+                                        <input type="date" name="couponExpiryDate" id="couponExpiryDate" class="form-control form-field create-coupon">
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -108,7 +117,7 @@
 
                                     <div class="mb-4">
                                         <label class="form-label" for="coupondescription">Description</label>
-                                        <textarea placeholder="Type here" class="form-control form-field" id="coupondescription" name="coupondescription"></textarea>
+                                        <textarea placeholder="Type here" class="form-control form-field create-coupon" id="coupondescription" name="coupondescription"></textarea>
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -120,7 +129,7 @@
 
                                 </form>
                            </div>
-                            <div class="col-md-9">
+                            <div class="col-md-9 mt-4">
                                 <div class="table-responsive">
                                     <table class="table table-hover">
                                         <thead>
@@ -156,8 +165,12 @@
                                                     <div class="dropdown">
                                                         <a href="#" data-bs-toggle="dropdown" class="btn btn-light rounded btn-sm font-sm"> <i class="material-icons md-more_horiz"></i> </a>
                                                         <div class="dropdown-menu">
-                                                            <a class="dropdown-item text-danger" href="#">Disable</a>
-                                                            <a class="dropdown-item" href="#">Edit info</a>
+                                                            <a href="#" class= "<%= coupon.couponActive ? "dropdown-item text-danger" : "dropdown-item text-success" %> disable-coupon-modal-btn" data-bs-toggle="modal" data-bs-target="#disable-coupon-modal" data-coupon="<%= coupon.couponActive %>"  id="<%= coupon._id %>">
+                                                                <%= coupon.couponActive ? "Disable" : "Enable" %>
+                                                            </a>
+                                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#edit-coupon-modal" data-coupon="<%= JSON.stringify(coupon) %>">
+                                                                Edit info
+                                                            </a>
                                                             <!-- <a class="dropdown-item text-danger" href="#">Delete</a> -->
                                                         </div>
                                                     </div>
@@ -167,6 +180,7 @@
                                             <% }) %>
                                         </tbody>
                                     </table>
+                                    <%- include('./partials/admin/pagination.ejs') %>
                                 </div>
                             </div>
                             <!-- .col// -->
@@ -177,6 +191,129 @@
                 </div>
                 <!-- card .// -->
             </section>
+
+            <div class="modal fade" id="edit-coupon-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="staticBackdropLabel">Edit Coupon</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 card" id ="delete-modal-content"> 
+                            <div class="col-md-12">
+                                <form id="editCouponForm">
+
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label for="editCouponName" class="form-label">Name</label>
+                                            <input type="text" name="editCouponName" placeholder="Type here" class="form-control" id="editCouponName"/>
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-4 col-6">
+                                            <label for="editCouponCode" class="form-label">Code</label>
+                                            <input type="text" name="editCouponCode" placeholder="Type here" class="form-control" id="editCouponCode"/>
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center align-items-center">
+                                        <div class="mb-0 col-6">
+                                            <label class="form-label" for="editIsPercentage">isPercentage? : </label>
+                                            <input type="checkbox" name="editIsPercentage" id="editIsPercentage" class="form-check-input" checked>
+                                        </div>
+
+                                        <div class="mb-4 col-6" id= 'edit-maxDiscount-div'>
+                                            <label class="form-label" for="editMaxDiscount">Maximum Discount</label>
+                                            <input type="number" id="editMaxDiscount" name="editMaxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field edit-coupon">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editCouponAmount">Discount Amount</label>
+                                            <input type="number" id="editCouponAmount" name="editCouponAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field edit-coupon">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+    
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editMinimumValue">Minimum Product Value</label>
+                                            <input type="number" id="editMinimumValue" name="editMinimumValue" placeholder="Type here" min="1" class="form-control form-field edit-coupon">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editCouponStartDate">Valid from: </label>
+                                            <input type="date" name="editCouponStartDate" id="editCouponStartDate" class="form-control form-field edit-coupon">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+    
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editCouponExpiryDate">Expires on: </label>
+                                            <input type="date" name="editCouponExpiry" id="editCouponExpiryDate" class="form-control form-field edit-coupon">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="editCouponDescription">Description</label>
+                                        <textarea placeholder="Type here" class="form-control form-field edit-coupon" id="editCouponDescription" name="editCouponDescription"></textarea>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary" type="submit">Apply Changes</button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="disable-coupon-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered ">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="disable-modal-header">Are you sure?</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="alert alert-danger" style="display: none" id="disable-coupon-error" role="alert">
+                        A simple danger alert—check it out!
+                    </div>
+                    <div class="modal-body fs-6" id ="disable-coupon-content"> Hello
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <form action="#" method="POST" id= "confirm-disable-form">
+                            <button type="submit" class="btn btn-danger" id="confirm-disable-btn" >Confirm</button>
+                        </form>
+                    </div>
+                </div>
+                </div>
+            </div>
+
             <!-- content-main end// -->
             <footer class="main-footer font-xs">
                 <div class="row pb-30 pt-15">
@@ -202,176 +339,537 @@
                 setError, setSuccess,
                 isEmpty,
                 showAlert,
-                clearFeedback
+                clearFeedback,
+                triggerToast
             } from "/assets/js/fetch/validationHelpers.js"
 
             
-            //========================= Field reference =========================//
+
+            document.addEventListener('DOMContentLoaded', createCoupon());
+            function createCoupon() {
+                //========================= Field reference =========================//
+                  
+                const fields = {
+                    couponName: document.getElementById('couponName'),
+                    couponCode: document.getElementById('couponCode'),
+                    isPercentage: document.getElementById('isPercentage'),
+                    discountAmount: document.getElementById('discountAmount'),
+                    maxDiscount: document.getElementById('maxDiscount'),
+                    minimumValue: document.getElementById('minimumValue'),
+                    couponStartDate: document.getElementById('couponStartDate'),
+                    couponExpiryDate: document.getElementById('couponExpiryDate'),
+                    coupondescription: document.getElementById('coupondescription'),
+                } 
+    
+    
+                // toggle max discount wrt isPercentage
+                fields.isPercentage.addEventListener('change', function () {
+    
+                    if (this.checked) {
+                        document.getElementById('maxDiscount-div').classList.remove('d-none')
+                    } else {
+                        document.getElementById('maxDiscount-div').classList.add('d-none')
+                    }
+    
+                })
+    
+    
+                //disable previous dates
+                fields.couponStartDate.min = new Date().toISOString().split('T')[0];
+                fields.couponExpiryDate.min = new Date().toISOString().split('T')[0];
+    
+    
+                //========================= Blur validations =========================//
+                
+                //validation for empty field
+                emptyFieldCheck("blur", ...document.querySelectorAll(".form-field.create-coupon"));
+    
+    
+                //minimum maximum length validation
+                [fields.couponCode, fields.couponName].forEach(field => {
+    
+                    field.addEventListener("blur", function() {
+    
+                        if (!hasMinimumLength(field, 6)) {
+                            setError(field, "minimum 6 characters");
+                            return false;
+                        } else if (!hasMaximumLength(field, 15)){
+                            setError(field, "maximum 15 characters");
+                            return false;
+                        }
+    
+                        clearFeedback(field);
+                    })
+                });
+    
+    
+                fields.discountAmount.addEventListener("blur", function(){
                     
-            const fields = {
-                couponName: document.getElementById('couponName'),
-                couponCode: document.getElementById('couponCode'),
-                isPercentage: document.getElementById('isPercentage'),
-                discountAmount: document.getElementById('discountAmount'),
-                maxDiscount: document.getElementById('maxDiscount'),
-                minimumValue: document.getElementById('minimumValue'),
-                couponStartDate: document.getElementById('couponStartDate'),
-                couponExpiryDate: document.getElementById('couponExpiryDate'),
-                coupondescription: document.getElementById('coupondescription'),
-            } 
+                    if (fields.isPercentage.checked) {
+                        if (this.value > 100 || this.value < 0) {
+                            setError(this, "Invalid percentage value");
+                            return false;
+                        }
+                    } else {
+                        if (fields.minimumValue.value.trim() && Number(this.value.trim()) >= Number(fields.minimumValue.value.trim())) {
+                            setError(this, "Discount amount should be less than cart value");
+                            return false
+                        }
+    
+                        clearFeedback(this);
+                        clearFeedback(fields.minimumValue);
+                    }
+    
+                });
+    
+    
+                fields.maxDiscount.addEventListener('blur', function() {
+    
+                    if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
+                        return setError(this, "not that much discount dude!");
+                    }
+    
+                    clearFeedback(fields.maxDiscount);
+                    clearFeedback(fields.minimumValue);
+    
+                });
+    
+    
+                fields.minimumValue.addEventListener('blur', function() {
+    
+                    if (!fields.isPercentage.checked) {
+                        if (fields.discountAmount.value.trim() && Number(this.value.trim()) <= Number(fields.discountAmount.value.trim())) {
+                            return setError(this, 'chose a higher cart value than discount');
+                        } else {
+                            clearFeedback(this);
+                            clearFeedback(fields.discountAmount);
+                        }
+                    }
+    
+                    if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
+                        return setError(this, "higher cart value please!");
+                    } else {
+                        clearFeedback(this);
+                        clearFeedback(fields.maxDiscount);
+                    }
+    
+                });
+    
+    
+                // select higher expiry date than start date
+                fields.couponExpiryDate.addEventListener("blur", function(){
+                    if (fields.couponStartDate.value && this.value < fields.couponStartDate.value) {
+                        setError(this, "select a higher date than start date");
+                    }
+                });
+                
+    
+                // select lower start date than expiry date
+                fields.couponStartDate.addEventListener("blur", function(){
+                    if (fields.couponExpiryDate.value && this.value > fields.couponExpiryDate.value) {
+                        setError(this, "select a lower date than expiry date");
+                    }
+                });
+    
+    
+                document.getElementById("createCouponForm").addEventListener("submit", async function(e){
+    
+                    e.preventDefault();
+    
+                    //============================= Submit Validations =============================//
+    
+                    let isValid = true;
+                    if (fields.isPercentage.checked){
+                        if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.create-coupon"))) {
+                            isValid = false;
+                        }
+                    } else {
+                        if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.create-coupon:not(#maxDiscount)"))) {
+                            isValid = false;
+                        }
+                    }
+    
+                    console.log("checkpoint 1 ✅", {isValid});
+    
+    
+                    [fields.couponCode, fields.couponName].forEach(field => {
+                        
+                        if (isEmpty(field)) {
+                            setError(field, "field cant be empty");
+                            isValid = false;
+                        } else if (!hasMinimumLength(field, 6)) {
+                            setError(field, "minimum 6 characters");
+                            isValid = false;
+                        } else if (!hasMaximumLength(field, 15)) {
+                            setError(field, "maximum 15 characters");
+                            isValid = false;
+                        }
+    
+                    });
+                    console.log("checkpoint 2 ✅", {isValid});
+    
+                    
+                    if (fields.isPercentage.checked) {
+                        
+                        if (fields.discountAmount.value.trim() > 100 || fields.discountAmount.value.trim() < 0) {
+                            setError(fields.discountAmount, "Invalid percentage value");
+                            isValid = false;
+                        }
+    
+                        if (fields.minimumValue.value && fields.maxDiscount.value && Number(fields.minimumValue.value.trim()) <= Number(fields.maxDiscount.value.trim())) {
+                            setError(fields.maxDiscount, "Discount cant be higher than cart value");
+                            isValid = false;
+                        }
+    
+                    } else {
+    
+                        if (fields.discountAmount.value && fields.minimumValue.value && Number(fields.discountAmount.value.trim()) >= Number(fields.minimumValue.value.trim())) {
+                            setError(fields.discountAmount, "Discount amount should be less than cart value");
+                            isValid = false;
+                        }
+    
+                    }
+    
+                    console.log("checkpoint 3 ✅", {isValid});
+    
+    
+                    // dates validation
+                    if (fields.couponExpiryDate.value < fields.couponStartDate.value) {
+                        setError(fields.couponExpiryDate, "select a higher date than start date")
+                        isValid = false;
+                    }
+                    console.log("checkpoint 4 ✅", {isValid});
+    
+                    if (!isValid) {
+                        document.querySelector('.is-invalid')?.focus();
+                        return
+                    }
+                    console.log("checkpoint 5 ✅", {isValid});
+    
+    
+                    //============================= Validations end =============================//
+    
+    
+    
+                    const formData = new FormData(this);
+                    console.log({formData}, "✅");
+                    const payload = Object.fromEntries(formData);
+                    console.log({payload});
+                    // return;
+    
+                    const response = await fetch("/api/admin/coupons", {
+                        method: "POST",
+                        headers: {"Content-Type" : "application/json"},
+                        body: JSON.stringify(payload)
+                    })
+    
+                    const data = await response.json();
+    
+                    showAlert(data, document.getElementById("coupon-error"));
+    
+                    if (data.success) {
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    } else {
+                        if (typeof data.error == "object") {
+                            Object.entries(data.error).forEach(([field, errorMessage]) => {
+                                let element = document.getElementById(field)
+                                setError(element, errorMessage);
+                            })
+                        }
+                        if (response.status == 409) {
+                            setError(document.getElementById("couponCode"), "Use another coupon code");
+                        }
+                    }
+    
+                })
+
+            }
 
 
-            // toggle max discount wrt isPercentage
-            fields.isPercentage.addEventListener('change', function () {
+            // disable-enable coupon
+            const disbaleCouponButton = document.querySelectorAll(".disable-coupon-modal-btn");
+            disbaleCouponButton.forEach((button) => {
 
-                if (this.checked) {
-                    document.getElementById('maxDiscount-div').classList.remove('d-none')
-                } else {
-                    document.getElementById('maxDiscount-div').classList.add('d-none')
-                }
+                button.addEventListener("click", async function(){
 
-            })
+                    const couponId = this.id;
+                    console.log({couponId});
+                    const isActive = JSON.parse(this.getAttribute("data-coupon"));
+                    console.log({isActive});
+                    if (!isActive){
 
+                        document.getElementById("disable-modal-header").textContent = "Activate Coupon?";
+                        document.getElementById("disable-coupon-content").textContent = `Are you sure you want to activate the coupon?`;
+                        document.getElementById("confirm-disable-btn").className = "btn btn-success text-white";
+                        document.getElementById("confirm-disable-btn").textContent = "Activate";
 
-            //disable previous dates
-            fields.couponStartDate.min = new Date().toISOString().split('T')[0];
-            fields.couponExpiryDate.min = new Date().toISOString().split('T')[0];
+                    }else {
 
+                        document.getElementById("disable-modal-header").textContent = "Deactivate the coupon?";
+                        document.getElementById("disable-coupon-content").textContent = `Are you sure you want to deactivate the the coupon?`;
+                        document.getElementById("confirm-disable-btn").className = "btn btn-danger";
+                        document.getElementById("confirm-disable-btn").textContent = "Deactivate";
 
-            //========================= Blur validations =========================//
-            
-            //validation for empty field
-            emptyFieldCheck("blur", ...document.querySelectorAll(".form-field"));
-
-
-            //minimum maximum length validation
-            [fields.couponCode, fields.couponName].forEach(field => {
-
-                field.addEventListener("blur", function() {
-
-                    if (!hasMinimumLength(field, 6)) {
-                        setError(field, "minimum 6 characters");
-                        return false;
-                    } else if (!hasMaximumLength(field, 15)){
-                        setError(field, "maximum 15 characters");
-                        return false;
                     }
 
-                    clearFeedback(field);
+                    document.getElementById("confirm-disable-form").addEventListener("submit", async (e) => {
+                        e.preventDefault();
+
+                        const payload = isActive ? "Deactivate" : "Activate" ; 
+                        console.log({payload, couponId});
+                        const response = await fetch(`/api/admin/coupons/unlist/${couponId}`, {
+                            method : "PATCH",
+                            headers : { "Content-Type" : "application/json" },
+                            body : JSON.stringify({payload})
+                        });
+
+                        const data = await response.json();
+
+                        if (!data.success) {
+                            
+                            document.getElementById("disable-coupon-error").textContent = data.error;
+                            document.getElementById("disable-coupon-error").className = "alert alert-danger";
+                            document.getElementById("disable-coupon-error").style.display = "block";
+                                    
+                        } else {
+
+                            document.getElementById("disable-coupon-error").textContent = data.message;
+                            document.getElementById("disable-coupon-error").className = "alert alert-success";
+                            document.getElementById("disable-coupon-error").style.display = "block";
+                            setTimeout(() => {
+                                location.reload();
+                            }, 500);
+
+                        }
+                    })
+
                 })
             });
 
 
-            fields.discountAmount.addEventListener("blur", function(){
+            // edit coupon
+            document.addEventListener('DOMContentLoaded', editCoupon());
+
+            function editCoupon() {
+                const fields = {
+                    couponName: document.getElementById("editCouponName"),
+                    couponCode: document.getElementById("editCouponCode"),
+                    isPercentage: document.getElementById("editIsPercentage"),
+                    couponAmount: document.getElementById("editCouponAmount"),
+                    maxDiscount: document.getElementById("editMaxDiscount"),
+                    minimumValue: document.getElementById("editMinimumValue"),
+                    couponStartDate: document.getElementById("editCouponStartDate"),
+                    couponExpiryDate: document.getElementById("editCouponExpiryDate"),
+                    couponDescription: document.getElementById("editCouponDescription")
+                }
                 
-                if (fields.isPercentage.checked) {
-                    if (this.value > 100 || this.value < 0) {
-                        setError(this, "Invalid percentage value");
+                const editCouponModal = document.getElementById('edit-coupon-modal');
+                let couponId;
+
+
+                //==================== pre-populate edit coupon modal ====================// 
+                editCouponModal.addEventListener('show.bs.modal', function(e) {
+                    const button = e.relatedTarget;
+                    const coupon = JSON.parse(button.dataset.coupon);
+                    couponId = coupon._id;
+                    console.log(coupon);
+                    fields.couponName.value = coupon.name;
+                    fields.couponCode.value = coupon.code;
+                    fields.isPercentage.checked = coupon.isPercent;
+                    fields.couponAmount.value = coupon.couponAmount;
+                    fields.maxDiscount.value = coupon.maxDiscount;
+                    fields.minimumValue.value = coupon.minimumCartValue;
+                    fields.couponStartDate.valueAsDate = new Date(coupon.validFrom);
+                    fields.couponExpiryDate.valueAsDate = new Date(coupon.expiry);
+                    fields.couponDescription.value = coupon.description;
+                    
+                    if (fields.isPercentage.checked) {
+                        document.getElementById('edit-maxDiscount-div').classList.remove('disabled-div');
+                    } else {
+                        document.getElementById('edit-maxDiscount-div').classList.add('disabled-div');
+                    }
+    
+                })
+
+
+
+
+                //remove validation errors when closing modal
+                editCouponModal.addEventListener('hidden.bs.modal', function() {
+                    const elements = editCouponModal.querySelectorAll('.is-valid, .is-invalid');
+                    elements.forEach(el => {
+                        el.classList.remove('is-valid', 'is-invalid');
+                    });
+                })
+
+
+
+
+                // toggle max discount wrt isPercentage
+                fields.isPercentage.addEventListener('change', function () {
+
+                    if (this.checked) {
+                        document.getElementById('edit-maxDiscount-div').classList.remove('disabled-div')
+                    } else {
+                        document.getElementById('edit-maxDiscount-div').classList.add('disabled-div')
+                    }
+
+                })
+
+
+
+
+                //disable previous dates
+                fields.couponStartDate.min = new Date().toISOString().split('T')[0];
+                fields.couponExpiryDate.min = new Date().toISOString().split('T')[0];
+
+                
+
+                //==================== blur validations ====================//
+
+                
+                // validation for empty field
+                emptyFieldCheck("blur", ...document.querySelectorAll(".form-field.edit-coupon"));
+
+
+                //minimum maximum length validation
+                [fields.couponName, fields.couponCode].forEach(field => {
+                    field.addEventListener("blur", function() {
+                        if (isEmpty(this)) {
+                            return setError(this, "field cant be empty");
+                        }
+                        
+                        if (!hasMinimumLength(this, 6)){
+                            return setError(this, "minimum 6 characters");
+                        }
+                        
+                        if (!hasMaximumLength(this, 30)){
+                            return setError(this, "maximum 30 characters");
+                        }
+                    });
+                })
+                
+
+                fields.couponExpiryDate.addEventListener("blur", function() {
+                    if (fields.couponStartDate.value && this.value < fields.couponStartDate.value) {
+                        return setError(this, "select a higher date than start date");
+                    }
+                })
+
+
+                fields.couponStartDate.addEventListener("blur", function() {
+                    if (fields.couponExpiryDate.value && this.value > fields.couponExpiryDate.value) {
+                        return setError(this, "select a lower date than expiry date");
+                    }
+                })
+
+
+                //cross field validations
+                fields.couponAmount.addEventListener("blur", function(){
+                    
+                    if (fields.isPercentage.checked) {
+                        if(this.value.trim() > 100 || this.value.trim() < 0){
+                            setError(this, "Invalid percentage value");
+                            return;
+                        }
+                    } else {
+                        if (this.value.trim() <= fields.minimumValue.value.trim()) {
+                            setError(this, "Discount amount should be less than cart value");
+                            return;
+                        }
+                    }
+
+                });
+
+
+                fields.maxDiscount.addEventListener('blur', function() {
+
+                    if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
+                        setError(this, "not that much discount Mr Admin!");
+                        return;
+                    }
+
+                });
+
+
+                fields.minimumValue.addEventListener('blur', function() {
+
+                    if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
+                        setError(this, "higher cart value please!");
                         return false;
                     }
-                } else {
-                    if (fields.minimumValue.value.trim() && Number(this.value.trim()) >= Number(fields.minimumValue.value.trim())) {
-                        setError(this, "Discount amount should be less than cart value");
-                        return false
-                    }
 
-                    clearFeedback(this);
-                    clearFeedback(fields.minimumValue);
-                }
-
-            });
+                });
 
 
-            fields.maxDiscount.addEventListener('blur', function() {
+                document.getElementById("editCouponForm").addEventListener("submit", async function(e){
 
-                if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
-                    return setError(this, "not that much discount dude!");
-                }
+                    e.preventDefault();
 
-                clearFeedback(fields.maxDiscount);
-                clearFeedback(fields.minimumValue);
-
-            });
-
-
-            fields.minimumValue.addEventListener('blur', function() {
-
-                if (!fields.isPercentage.checked) {
-                    if (fields.discountAmount.value.trim() && Number(this.value.trim()) <= Number(fields.discountAmount.value.trim())) {
-                        return setError(this, 'chose a higher cart value than discount');
+                    if (fields.isPercentage.checked){
+                        if(!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.edit-coupon"))){
+                            return;
+                        };
                     } else {
-                        clearFeedback(this);
-                        clearFeedback(fields.discountAmount);
+                        if(!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.edit-coupon:not(#editMaxDiscount)"))){
+                            return;
+                        };
+                    };
+
+
+                    let isValid = submitValidations(fields);
+
+                    if (!isValid) {
+                        document.querySelector('.is-invalid')?.focus();
+                        return;
                     }
-                }
-
-                if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
-                    return setError(this, "higher cart value please!");
-                } else {
-                    clearFeedback(this);
-                    clearFeedback(fields.maxDiscount);
-                }
-
-            });
 
 
-            // select higher expiry date than start date
-            fields.couponExpiryDate.addEventListener("blur", function(){
-                if (fields.couponStartDate.value && this.value < fields.couponStartDate.value) {
-                    setError(this, "select a higher date than start date");
-                }
-            });
-            
+                    const formData = new FormData(this);
 
-            // select lower start date than expiry date
-            fields.couponStartDate.addEventListener("blur", function(){
-                if (fields.couponExpiryDate.value && this.value > fields.couponExpiryDate.value) {
-                    setError(this, "select a lower date than expiry date");
-                }
-            });
+                    const payload = Object.fromEntries(formData);
+                    payload._id = couponId;
+                    console.log({payload});
 
+                    const response = await fetch("/api/admin/coupons", {
+                        method: "PATCH",
+                        headers: {"Content-Type" : "application/json"},
+                        body: JSON.stringify(payload)
+                    })
 
-            document.getElementById("createCouponForm").addEventListener("submit", async function(e){
+                    const data = await response.json();
+                    location.reload();
+                    console.log(data);
 
-                e.preventDefault();
+                })
 
-                //============================= Validations =============================//
+            }
 
+            function submitValidations(fields) {
                 let isValid = true;
-                if (fields.isPercentage.checked){
-                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field"))) {
-                        isValid = false;
-                    }
-                } else {
-                    if (!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field:not(#maxDiscount)"))) {
-                        isValid = false;
-                    }
-                }
 
-                // console.log("checkpoint 1 ✅", {isValid});
-
-
-                [fields.couponCode, fields.couponName].forEach(field => {
-                    
+                [fields.couponName, fields.couponCode].forEach(field => {
+                
                     if (isEmpty(field)) {
                         setError(field, "field cant be empty");
                         isValid = false;
                     } else if (!hasMinimumLength(field, 6)) {
                         setError(field, "minimum 6 characters");
                         isValid = false;
-                    } else if (!hasMaximumLength(field, 15)) {
-                        setError(field, "maximum 15 characters");
+                    } else if (!hasMaximumLength(field, 20)) {
+                        setError(field, "maximum 20 characters");
                         isValid = false;
                     }
 
                 });
-                // console.log("checkpoint 2 ✅", {isValid});
 
-                
+
                 if (fields.isPercentage.checked) {
-                    
-                    if (fields.discountAmount.value.trim() > 100 || fields.discountAmount.value.trim() < 0) {
-                        setError(fields.discountAmount, "Invalid percentage value");
+                
+                    if (fields.couponAmount.value.trim() > 100 || fields.couponAmount.value.trim() < 0) {
+                        setError(fields.couponAmount, "Invalid percentage value");
                         isValid = false;
                     }
 
@@ -382,66 +880,25 @@
 
                 } else {
 
-                    if (fields.discountAmount.value && fields.minimumValue.value && Number(fields.discountAmount.value.trim()) >= Number(fields.minimumValue.value.trim())) {
-                        setError(fields.discountAmount, "Discount amount should be less than cart value");
+                    if (fields.couponAmount.value && fields.minimumValue.value && Number(fields.couponAmount.value.trim()) >= Number(fields.minimumValue.value.trim())) {
+                        setError(fields.couponAmount, "Discount amount should be less than cart value");
                         isValid = false;
                     }
 
                 }
 
-                // console.log("checkpoint 3 ✅", {isValid});
 
-
-                // dates validation
                 if (fields.couponExpiryDate.value < fields.couponStartDate.value) {
                     setError(fields.couponExpiryDate, "select a higher date than start date")
                     isValid = false;
                 }
-                // console.log("checkpoint 4 ✅", {isValid});
 
-                if (!isValid) {
-                    document.querySelector('.is-invalid')?.focus();
-                    return
-                }
-                // console.log("checkpoint 5 ✅", {isValid});
-
-
-                //============================= Validations end =============================//
+                return isValid
+                
+            };
 
 
 
-                const formData = new FormData(this);
-                // console.log({formData}, "✅");
-                const payload = Object.fromEntries(formData);
-                // console.log({payload});
-
-                const response = await fetch("/api/admin/coupons", {
-                    method: "POST",
-                    headers: {"Content-Type" : "application/json"},
-                    body: JSON.stringify(payload)
-                })
-
-                const data = await response.json();
-
-                showAlert(data, document.getElementById("coupon-error"));
-
-                if (data.success) {
-                    setTimeout(() => {
-                        location.reload();
-                    }, 500);
-                } else {
-                    if (typeof data.error == "object") {
-                        Object.entries(data.error).forEach(([field, errorMessage]) => {
-                            let element = document.getElementById(field)
-                            setError(element, errorMessage);
-                        })
-                    }
-                    if (response.status == 409) {
-                        setError(document.getElementById("couponCode"), "Use another coupon code");
-                    }
-                }
-
-            })
         </script>
         <script src="/assets/js/vendors/jquery-3.6.0.min.js"></script>
         <script src="/assets/js/vendors/bootstrap.bundle.min.js"></script>

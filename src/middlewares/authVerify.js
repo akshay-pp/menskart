@@ -9,11 +9,12 @@ export const userVerify = async (req,res,next) => {
 
     if (!req.session.user){
 
+        console.log({ogUrl: req.originalUrl});
         if (jsonPath.some(path => req.path.startsWith(path))  && req.method != "GET"){
             return res.status(400).json({success: false, error: "not logged in. please login", redirect: "/api/user/login?error=not-logged-in"});
         }
 
-        return res.redirect('/api/user/login?error=not-logged-in');
+        return res.redirect(`/api/user/login?error=not-logged-in&redirect=${req.originalUrl}`);
         
     }
 

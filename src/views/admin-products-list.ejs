@@ -14,6 +14,14 @@
         <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
         <!-- Template CSS -->
         <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+
+        <style>
+            .disabled-div {
+                pointer-events: none; /* Blocks all mouse interactions */
+                opacity: 0.6;         /* Visually dims the content */
+                cursor: not-allowed;  /* Optional: Changes cursor to indicate disabled state */
+            }
+        </style>
     </head>
 
     <body>
@@ -29,7 +37,7 @@
                 <div class="content-header">
                     <div>
                         <h2 class="content-title card-title">Products List</h2>
-                        <p>Lorem ipsum dolor sit amet.</p>
+                        <span>Manage <h6 class="d-inline-block"><%= pagination.totalDocs %></h6> Products</span>
                     </div>
                     <div>
                         <a href="#" class="btn btn-light rounded font-md">Export</a>
@@ -83,41 +91,64 @@
                                             </div>
                                             <div class="info">
                                                 <h6 class="mb-0"><%= product.productname %></h6>
+                                                <% if(product.isUnListed) { %>
+                                                    <span class="badge rounded-pill alert-danger mt-1">Unlisted</span>
+                                                <% } else {%>
+                                                    <span class="badge rounded-pill alert-success mt-1">Active</span>
+                                                <% } %>
                                             </div>
                                         </a>
                                     </div>
                                     <div class="col-lg-2 col-sm-2 col-4 col-price"><span>₹<%= product.price %></span></div>
-                                    <div class="col-lg-2 col-sm-2 col-4 col-status">
 
-                                    <% if(product.isUnListed) { %>
-                                        <span class="badge rounded-pill alert-danger">Unlisted</span>
-                                    <% } else {%>
-                                        <span class="badge rounded-pill alert-success">Active</span>
-                                    <% } %>
-
-                                    </div>
-                                    <!-- <div class="col-lg-1 col-sm-2 col-4 col-date">
-                                        <span><%# new Date(product.createdAt).toLocaleString("en-IN", { 
-                                            day: "numeric", 
-                                            month: "short", 
-                                            year: "numeric", 
-                                            hour: "numeric", 
-                                            minute: "numeric", 
-                                            hour12: true 
-                                        }).replace(" at", ", ") %></span>
-                                    </div> -->
-                                    <div class="col-lg-4 col-sm-2 col-4 col-action d-flex justify-content-center">
-                                        <a href="#" id="add-product-offer" data-bs-toggle="modal" data-bs-target="#product-offer-modal" data-product="<%= product._id%>" class="mx-1 btn btn-sm font-sm rounded btn-warning"> <i class="px-1 icon material-icons md-redeem"></i>Add Offer</a>
-
-                                        <a href="/api/admin/p/edit/<%= product._id %>" class="mx-1 btn btn-sm font-sm btn-light rounded"> <i class="material-icons md-edit"></i> Edit </a>
-                                        
-                                        <% if(product.isUnListed) { %>
-                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="mx-1 btn btn-sm font-sm rounded btn-brand"> <i class="material-icons md-delete_forever"></i>List</a>
+                                    <div class="col-lg-2 col-sm-2 col-4 col-price">
+                                        <% if(product.productOffer) { %>
+                                            <!-- <div> -->
+                                                <a class="badge rounded-pill alert-info mt-1" data-bs-toggle="modal" data-bs-target="#edit-offer-modal" data-offer="<%= JSON.stringify(product.productOffer) %>">
+                                                    <%= product.productOffer.name%>
+                                                </a>
+                                            <!-- </div> -->
+                                            <span class="small text-secondary"> | <%= product.productOffer.description%></span>
                                         <% } else {%>
-                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="mx-1 btn btn-sm font-sm rounded btn-danger"> <i class="material-icons md-delete_forever"></i>Unlist</a>
+                                            <div>
+                                                <a class="badge rounded-pill alert-warning mt-1">
+                                                    No product offer
+                                                </a>
+                                            </div>
                                         <% } %>
-                                        
                                     </div>
+
+                                    
+                                    
+                                    <div class="dropdown col-lg-4 col-sm-2 col-4 text-end">
+                                        <button class="btn alert-light" data-bs-toggle="dropdown">
+                                            <i class="material-icons md-more_vert"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a href="#" id="add-product-offer" data-bs-toggle="modal" data-bs-target="#product-offer-modal" data-product="<%= product._id%>" class="dropdown-item ms-1 rounded font-sm"> <i class="px-1 icon material-icons md-redeem"></i>Add Offer</a>
+
+                                            <a href="/api/admin/p/edit/<%= product._id %>" class="dropdown-item ms-1 rounded font-sm"> <i class="material-icons md-edit"></i> Edit </a>
+
+
+                                            <% if(product.isUnListed) { %>
+                                                <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="dropdown-item ms-1 rounded font-sm"> <i class="material-icons md-delete_forever"></i>List</a>
+                                            <% } else {%>
+                                                <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%= JSON.stringify(product) %>" class="dropdown-item ms-1 rounded font-sm"> <i class="material-icons md-delete_forever"></i>Unlist</a>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <!-- <div class="col-lg-4 col-sm-2 col-4 col-action d-flex justify-content-center">
+                                        <a href="#" id="add-product-offer" data-bs-toggle="modal" data-bs-target="#product-offer-modal" data-product="<%# product._id%>" class="mx-1 btn btn-sm font-sm rounded btn-warning"> <i class="px-1 icon material-icons md-redeem"></i>Add Offer</a>
+
+                                        <a href="/api/admin/p/edit/<%# product._id %>" class="mx-1 btn btn-sm font-sm btn-light rounded"> <i class="material-icons md-edit"></i> Edit </a>
+                                        
+                                        <%# if(product.isUnListed) { %>
+                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%# JSON.stringify(product) %>" class="mx-1 btn btn-sm font-sm rounded btn-brand"> <i class="material-icons md-delete_forever"></i>List</a>
+                                        <%# } else {%>
+                                            <a href="#" id="unlist-product-btn" data-bs-toggle="modal" data-bs-target="#unlist-product-modal" data-product="<%# JSON.stringify(product) %>" class="mx-1 btn btn-sm font-sm rounded btn-danger"> <i class="material-icons md-delete_forever"></i>Unlist</a>
+                                        <%# } %>
+                                        
+                                    </div> -->
                                 </div>
                                 <!-- row .// -->
                             </article>
@@ -153,29 +184,8 @@
                 </div>
 
                 <!-- card end// -->
-                <div class="pagination-area mt-30 mb-50">
-                    <nav aria-label="Page navigation example">
-                        <ul class="pagination justify-content-start">
+                <%- include('./partials/admin/pagination.ejs') %>
 
-                            <% if (page > 1) { %>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<%= page - 1 %>"><i class="material-icons md-chevron_left"></i></a>
-                                </li>
-                            <% } %>
-                            
-                            <% for (let i = 1; i <= totalPages; i++) { %>
-                                <li class="page-item <%= page === i ? 'active' : '' %>"><a class="page-link" href="?page=<%= i %>"><%= i %></a></li>
-                            <% } %>
-
-                            <% if (page < totalPages) { %>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<%= page + 1 %>"><i class="material-icons md-chevron_right"></i></a>
-                                </li>
-                            <% } %>
-
-                        </ul>
-                    </nav>
-                </div>
             </section>
 
             <div class="modal fade" id="product-offer-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -196,18 +206,10 @@
                                         </div>
                                     </div>
                                     
-                                    <div class="d-flex mx-2 gap-3 justify-content-center align-items-center">
+                                    <div class="d-flex mx-2 mb-2 gap-3 justify-content-center align-items-center">
                                         <div class="mb-0 col-6">
                                             <label class="form-label" for="productOfferIsPercentage">isPercentage? : </label>
                                             <input type="checkbox" name="productOfferIsPercentage" id="productOfferIsPercentage" class="form-check-input" checked>
-                                        </div>
-
-                                        <div class="mb-4 col-6" id= 'productOffer-maxDiscount-div'>
-                                            <label class="form-label" for="productOfferMaxDiscount">Maximum Discount</label>
-                                            <input type="number" id="productOfferMaxDiscount" name="productOfferMaxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field">
-                                            <div class="invalid-feedback">
-                                                Feedback message
-                                            </div>
                                         </div>
                                     </div>
 
@@ -219,10 +221,10 @@
                                                 Feedback message
                                             </div>
                                         </div>
-    
-                                        <div class="mb-4 col-6">
-                                            <label class="form-label" for="productOfferMinimumValue">Minimum Product Value</label>
-                                            <input type="number" id="productOfferMinimumValue" name="productOfferMinimumValue" placeholder="Type here" min="1" class="form-control form-field">
+
+                                        <div class="mb-4 col-6" id= 'productOffer-maxDiscount-div'>
+                                            <label class="form-label" for="productOfferMaxDiscount">Maximum Discount</label>
+                                            <input type="number" id="productOfferMaxDiscount" name="productOfferMaxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control">
                                             <div class="invalid-feedback">
                                                 Feedback message
                                             </div>
@@ -251,6 +253,89 @@
                                     <div class="mb-4">
                                         <label class="form-label" for="productOfferDescription">Description</label>
                                         <textarea placeholder="Type here" class="form-control form-field" id="productOfferDescription" name="productOfferDescription"></textarea>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary" type="submit">Apply Changes</button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="modal fade" id="edit-offer-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="staticBackdropLabel">Edit Offer</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 card" id ="delete-modal-content"> 
+                            <div class="col-md-12">
+                                <form id="editOfferForm">
+                                    <div class="mb-4">
+                                        <label for="editOfferName" class="form-label">Name</label>
+                                        <input type="text" name="editOfferName" placeholder="Type here" class="form-control" id="editOfferName"/>
+                                        <div class="invalid-feedback">
+                                            Feedback message
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center align-items-center">
+                                        <div class="mb-0 col-6">
+                                            <label class="form-label" for="editIsPercentage">isPercentage? : </label>
+                                            <input type="checkbox" name="editIsPercentage" id="editIsPercentage" class="form-check-input" checked>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editOfferAmount">Discount Amount</label>
+                                            <input type="number" id="editOfferAmount" name="editOfferAmount" placeholder="&lt 100 if percentage" min="1" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-4 col-6" id= 'edit-maxDiscount-div'>
+                                            <label class="form-label" for="editMaxDiscount">Maximum Discount</label>
+                                            <input type="number" id="editMaxDiscount" name="editMaxDiscount" placeholder="Maximum coupon discount" min="1" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    
+                                    <div class="d-flex mx-2 gap-3 justify-content-center">
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editOfferStartDate">Valid from: </label>
+                                            <input type="date" name="editOfferStartDate" id="editOfferStartDate" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+    
+                                        <div class="mb-4 col-6">
+                                            <label class="form-label" for="editOfferExpiryDate">Expires on: </label>
+                                            <input type="date" name="editOfferExpiry" id="editOfferExpiryDate" class="form-control form-field edit-offer">
+                                            <div class="invalid-feedback">
+                                                Feedback message
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label" for="editOfferDescription">Description</label>
+                                        <textarea placeholder="Type here" class="form-control form-field edit-offer" id="editOfferDescription" name="editOfferDescription"></textarea>
                                         <div class="invalid-feedback">
                                             Feedback message
                                         </div>
@@ -295,6 +380,211 @@
             } from "/assets/js/fetch/validationHelpers.js"
 
             document.addEventListener('DOMContentLoaded', addProductOffer());
+            document.addEventListener('DOMContentLoaded', editOffer());
+
+            function editOffer() {
+                const fields = {
+                    offerName: document.getElementById("editOfferName"),
+                    isPercentage: document.getElementById("editIsPercentage"),
+                    offerAmount: document.getElementById("editOfferAmount"),
+                    maxDiscount: document.getElementById("editMaxDiscount"),
+                    offerStartDate: document.getElementById("editOfferStartDate"),
+                    offerExpiryDate: document.getElementById("editOfferExpiryDate"),
+                    offerDescription: document.getElementById("editOfferDescription")
+                }
+                
+                const editOfferModal = document.getElementById('edit-offer-modal');
+                let offerId;
+
+
+                //==================== pre-populate edit offer modal ====================// 
+                editOfferModal.addEventListener('show.bs.modal', function(e) {
+                    const button = e.relatedTarget;
+                    const offer = JSON.parse(button.dataset.offer);
+                    offerId = offer._id;
+                    console.log(offer);
+                    fields.offerName.value = offer.name;
+                    fields.isPercentage.checked = offer.isPercent;
+                    fields.offerAmount.value = offer.offerAmount;
+                    fields.maxDiscount.value = offer.maxDiscount;
+                    fields.offerStartDate.valueAsDate = new Date(offer.validFrom);
+                    fields.offerExpiryDate.valueAsDate = new Date(offer.expiry);
+                    fields.offerDescription.value = offer.description;
+                    
+                    if (fields.isPercentage.checked) {
+                        document.getElementById('edit-maxDiscount-div').classList.remove('disabled-div');
+                    } else {
+                        document.getElementById('edit-maxDiscount-div').classList.add('disabled-div');
+                    }
+                })
+
+
+
+
+                //remove validation errors when closing modal
+                editOfferModal.addEventListener('hidden.bs.modal', function() {
+                    const elements = editOfferModal.querySelectorAll('.is-valid, .is-invalid');
+                    elements.forEach(el => {
+                        el.classList.remove('is-valid', 'is-invalid');
+                    });
+                })
+
+
+
+
+                // toggle max discount wrt isPercentage
+                fields.isPercentage.addEventListener('change', function () {
+
+                    if (this.checked) {
+                        document.getElementById('edit-maxDiscount-div').classList.remove('disabled-div')
+                    } else {
+                        document.getElementById('edit-maxDiscount-div').classList.add('disabled-div')
+                    }
+
+                })
+
+
+
+
+                //disable previous dates
+                fields.offerStartDate.min = new Date().toISOString().split('T')[0];
+                fields.offerExpiryDate.min = new Date().toISOString().split('T')[0];
+
+                
+
+                //==================== blur validations ====================//
+
+                
+                // validation for empty field
+                emptyFieldCheck("blur", ...document.querySelectorAll(".form-field.edit-offer"));
+
+
+                //minimum maximum length validation
+                fields.offerName.addEventListener("blur", function() {
+                    if (isEmpty(this)) {
+                        return setError(this, "field cant be empty");
+                    }
+                    
+                    if (!hasMinimumLength(this, 6)){
+                        return setError(this, "minimum 6 characters");
+                    }
+                    
+                    if (!hasMaximumLength(this, 30)){
+                        return setError(this, "maximum 30 characters");
+                    }
+                })
+                
+
+                fields.offerExpiryDate.addEventListener("blur", function() {
+                    if (fields.offerStartDate.value && this.value < fields.offerStartDate.value) {
+                        return setError(this, "select a higher date than start date");
+                    }
+                })
+
+
+                fields.offerStartDate.addEventListener("blur", function() {
+                    if (fields.offerExpiryDate.value && this.value > fields.offerExpiryDate.value) {
+                        return setError(this, "select a lower date than expiry date");
+                    }
+                })
+
+
+                //cross field validations
+                fields.offerAmount.addEventListener("blur", function(){
+                    
+                    if (fields.isPercentage.checked) {
+                        if(this.value.trim() > 100 || this.value.trim() < 0){
+                            setError(this, "Invalid percentage value");
+                            return;
+                        }
+                    }
+
+                });
+
+
+                
+
+
+                document.getElementById("editOfferForm").addEventListener("submit", async function(e){
+
+                    e.preventDefault();
+
+                    if (fields.isPercentage.checked){
+                        if(!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.edit-offer"))){
+                            return;
+                        };
+                    } else {
+                        if(!emptyFieldCheck("submit", ...document.querySelectorAll(".form-field.edit-offer:not(#editMaxDiscount)"))){
+                            return;
+                        };
+                    };
+
+
+                    let isValid = submitValidations(fields);
+
+                    if (!isValid) {
+                        document.querySelector('.is-invalid')?.focus();
+                        return;
+                    }
+
+                    const formData = new FormData(this);
+
+                    const payload = Object.fromEntries(formData);
+                    payload.type = 'product';
+                    payload._id = offerId;
+                    console.log({payload});
+
+                    const response = await fetch("/api/admin/offers", {
+                        method: "PATCH",
+                        headers: {"Content-Type" : "application/json"},
+                        body: JSON.stringify(payload)
+                    })
+
+                    const data = await response.json();
+                    location.reload();
+                    console.log(data);
+
+                })
+
+                function submitValidations(fields) {
+                    let isValid = true;
+
+                    [fields.offerName].forEach(field => {
+                    
+                        if (isEmpty(field)) {
+                            setError(field, "field cant be empty");
+                            isValid = false;
+                        } else if (!hasMinimumLength(field, 6)) {
+                            setError(field, "minimum 6 characters");
+                            isValid = false;
+                        } else if (!hasMaximumLength(field, 15)) {
+                            setError(field, "maximum 15 characters");
+                            isValid = false;
+                        }
+
+                    });
+
+
+                    if (fields.isPercentage.checked) {
+                    
+                        if (fields.offerAmount.value.trim() > 100 || fields.offerAmount.value.trim() < 0) {
+                            setError(fields.offerAmount, "Invalid percentage value");
+                            isValid = false;
+                        }
+
+                    }
+
+
+                    if (fields.offerExpiryDate.value < fields.offerStartDate.value) {
+                        setError(fields.offerExpiryDate, "select a higher date than start date")
+                        isValid = false;
+                    }
+
+                    return isValid
+                    
+                };
+
+            }
 
 
 
@@ -306,7 +596,6 @@
                     isPercentage: document.getElementById("productOfferIsPercentage"),
                     offerAmount: document.getElementById("productOfferAmount"),
                     maxDiscount: document.getElementById("productOfferMaxDiscount"),
-                    minimumValue: document.getElementById("productOfferMinimumValue"),
                     offerStartDate: document.getElementById("productOfferStartDate"),
                     offerExpiryDate: document.getElementById("productOfferExpiryDate"),
                     offerDescription: document.getElementById("productOfferDescription")
@@ -321,9 +610,9 @@
                 fields.isPercentage.addEventListener('change', function () {
 
                     if (this.checked) {
-                        document.getElementById('productOffer-maxDiscount-div').classList.remove('d-none')
+                        document.getElementById('productOffer-maxDiscount-div').classList.remove('disabled-div');
                     } else {
-                        document.getElementById('productOffer-maxDiscount-div').classList.add('d-none')
+                        document.getElementById('productOffer-maxDiscount-div').classList.add('disabled-div');
                     }
 
                 });
@@ -377,34 +666,10 @@
                             setError(this, "Invalid percentage value");
                             return;
                         }
-                    } else {
-                        if (this.value.trim() <= fields.minimumValue.value.trim()) {
-                            setError(this, "Discount amount should be less than cart value");
-                            return;
-                        }
                     }
 
                 });
 
-
-                fields.maxDiscount.addEventListener('blur', function() {
-
-                    if (fields.minimumValue.value.trim() && Number(fields.minimumValue.value.trim()) <= Number(this.value.trim())) {
-                        setError(this, "not that much discount Mr Admin!");
-                        return;
-                    }
-
-                });
-
-
-                fields.minimumValue.addEventListener('blur', function() {
-
-                    if (fields.maxDiscount.value.trim() && Number(fields.maxDiscount.value.trim()) >= Number(this.value.trim())) {
-                        setError(this, "higher cart value please!");
-                        return false;
-                    }
-
-                });
 
                 document.getElementById("addProductOfferForm").addEventListener("submit", async function(e){
 
@@ -433,13 +698,21 @@
 
                     }
 
-                    const formData = new FormData(this);
+                    // const formData = new FormData(this);
 
-                    const payload = Object.fromEntries(formData);
+                    // const payload = Object.fromEntries(formData);
+                    const payload = {
+                        offerName: document.getElementById("productOfferName").value.trim(),
+                        isPercentage: document.getElementById("productOfferIsPercentage").checked,
+                        offerAmount: document.getElementById("productOfferAmount").value.trim(),
+                        maxDiscount: document.getElementById("productOfferMaxDiscount").value.trim(),
+                        offerStartDate: document.getElementById("productOfferStartDate").value.trim(),
+                        offerExpiry: document.getElementById("productOfferExpiryDate").value.trim(),
+                        offerdescription: document.getElementById("productOfferDescription").value.trim()
+                    }
                     payload.type = 'product';
                     payload.productId = productId;
-                    console.log({payload});
-
+                    console.log({payload}); 
                     const response = await fetch("/api/admin/offers", {
                         method: "POST",
                         headers: {"Content-Type" : "application/json"},

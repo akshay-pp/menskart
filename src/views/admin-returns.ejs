@@ -14,6 +14,55 @@
         <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/theme/favicon.svg" />
         <!-- Template CSS -->
         <link href="/assets/css/main.css?v=1.1" rel="stylesheet" type="text/css" />
+        <link href="/assets/css/toast.css" rel="stylesheet" type="text/css" />
+        <!-- <style>
+            /* Starting state (before Bootstrap shows it) */
+            .toast {
+                position: fixed;
+                top: 1rem;
+                left: 50%;;
+                z-index: 1055;
+                width: fit-content;
+                max-width: 350px;
+
+                transform: translate(-50%, -80px);
+                opacity: 0;
+            }
+
+            /* When toast becomes visible */
+            .toast.show {
+                animation: toastDropBounce 0.6s cubic-bezier(.34,1.56,.64,1);
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+
+            /* Fade out when hiding */
+            .toast.hide {
+                animation: toastFadeOut 0.4s ease forwards;
+            }
+
+            @keyframes toastDropBounce {
+                0% {
+                    transform: translate(-50%, -80px);
+                    opacity: 0;
+                }
+                60% {
+                    transform: translate(-50%, 10px);
+                    opacity: 1;
+                }
+                80% {
+                    transform: translate(-50%, -4px);
+                }
+                100% {
+                    transform: translate(-50%, 0);
+                }
+            }
+
+            @keyframes toastFadeOut {
+                from {opacity: 1;}
+                to {opacity: 0;}
+            }
+        </style> -->
     </head>
 
     <body>
@@ -67,7 +116,7 @@
                                         <th>#ID</th>
                                         <th scope="col">Product</th>
                                         <!-- <th scope="col">Date</th> -->
-                                        <th scope="col">Customer</th>
+                                        <!-- <th scope="col">Customer</th> -->
                                         <th scope="col">Reason for return</th>
                                         <th scope="col">Price</th>
                                         <th scope="col" class="text-end">Action</th>
@@ -83,26 +132,31 @@
                                                         <img src="/<%= order.productData.thumbnail %>" width="80" height="80" class="img-xs" alt="Item" />
                                                     </div>
                                                     <div class="ms-3">
-                                                        <div class="h6 mb-0"><%= order.productData.productname %></div>
+                                                        <div class="h6 mb-1"><%= order.productData.productname %></div>
                                                         <span class="small text-secondary">Quantity: <%= order.orderItems.quantity %></span>
+                                                        <span class="ms-2 badge rounded-pill <%= order.uiData.badgeClass%>"><%= order.orderItems.returnStatus.toUpperCase() %></span>
                                                     </div>
                                                 </a>
                                             </td>
-                                            <td><%= order.username.fullname %></td>
+                                            <!-- <td><%# order.username.fullname %></td> -->
                                             <td>
                                                 <% const states = {broken:"Product Broken", wrong: "Wrong Product", defective: "Defective Product", missing: "Product Missing"} %>
                                                 <%= states[order.orderItems.returnReason] || "Other" %>
                                             </td>
-                                            <td class="h6 text-secondary">₹ <%= order.orderItems.price %></td>
+                                            <td class="h6 text-secondary">₹<%= order.orderItems.price %></td>
                                             
                                             <td class="text-end">
-                                                <a href="/api/admin/orders/<%= order._id %>" class="btn btn-md rounded font-sm">Detail</a>
                                                 <div class="dropdown">
-                                                    <a href="#" data-bs-toggle="dropdown" class="btn btn-light rounded btn-sm font-sm"> <i class="material-icons md-more_horiz"></i> </a>
+                                                    <button class="btn alert-light" data-bs-toggle="dropdown">
+                                                        <i class="material-icons md-more_vert"></i>
+                                                    </button>
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#">View detail</a>
-                                                        <a class="dropdown-item" href="#">Edit info</a>
-                                                        <a class="dropdown-item text-danger" href="#">Delete</a>
+                                                        <% if (order.orderItems.returnStatus != 'refunded') { %> 
+                                                            <a data-bs-toggle="modal" data-bs-target="#return-order-modal" data-orderid="<%= order._id %>" data-itemid="<%= order.orderItems._id %>" data-returnReason="<%=order.orderItems.returnReason || "Other"%>" data-returnstatus="<%= order.orderItems.returnStatus %>" class="">
+                                                                <p id="return-status-<%= order.orderItems._id %>" class="dropdown-item <%# order.uiData.class %>"><%= order.uiData.label %></p>
+                                                            </a>
+                                                        <% } %> 
+                                                        <a href="/api/admin/orders/<%= order._id %>" class="dropdown-item ms-1 rounded font-sm">Details</a>
                                                     </div>
                                                 </div>
                                                 <!-- dropdown //end -->
@@ -141,6 +195,77 @@
                     </nav>
                 </div>
             </section>
+
+            <div class="toast" id="admin-return-page-toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header bg-dark text-white justify-content-center" id="toast-header">
+                    <div class="d-flex p-2">
+                        <svg id="success-toast" class="d-none toast-icon" fill="#28a745" width="24px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <title>checkmark</title>
+                            <path d="M16 3c-7.18 0-13 5.82-13 13s5.82 13 13 13 13-5.82 13-13-5.82-13-13-13zM23.258 12.307l-9.486 9.485c-0.238 0.237-0.623 0.237-0.861 0l-0.191-0.191-0.001 0.001-5.219-5.256c-0.238-0.238-0.238-0.624 0-0.862l1.294-1.293c0.238-0.238 0.624-0.238 0.862 0l3.689 3.716 7.756-7.756c0.238-0.238 0.624-0.238 0.862 0l1.294 1.294c0.239 0.237 0.239 0.623 0.001 0.862z"></path>
+                        </svg>
+
+                        <svg id="warning-toast" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--emojione d-none toast-icon" width="24px" preserveAspectRatio="xMidYMid meet" fill="#000000" transform="rotate(0)"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M5.9 62c-3.3 0-4.8-2.4-3.3-5.3L29.3 4.2c1.5-2.9 3.9-2.9 5.4 0l26.7 52.5c1.5 2.9 0 5.3-3.3 5.3H5.9z" fill="#ffce31"> </path> <g fill="#231f20"> <path d="M27.8 23.6l2.8 18.5c.3 1.8 2.6 1.8 2.9 0l2.7-18.5c.5-7.2-8.9-7.2-8.4 0"> </path> <circle cx="32" cy="49.6" r="4.2"> </circle> </g> </g></svg>
+
+
+                        <svg id="failure-toast" class="d-none toast-icon" version="1.1"  fill="#DC3545" width="24px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                        viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
+                            <g>
+                                <g>
+                                    <path d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0z M327.115,365.904
+                                        L256,294.789l-71.115,71.115l-38.789-38.789L217.211,256l-71.115-71.115l38.789-38.789L256,217.211l71.115-71.115l38.789,38.789
+                                        L294.789,256l71.115,71.115L327.115,365.904z"/>
+                                </g>
+                            </g>
+                        </svg>
+
+                        <span class="ms-2" id="toast-title" style="font-size: 14px;">Notification</span>
+
+                    </div>
+
+                    <!-- <button type="button" class="ms-2 mb-1 btn btn-outline-secondary" data-dismiss="toast" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button> -->
+                </div>
+            </div>
+
+            <div class="modal fade" id="return-order-modal" tabindex="-1" role="dialog" aria-labelledby="returnOrderModal" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header alert-success p-2 ps-4 mb-0">
+                            <h5 class="modal-title" id="return-order-header">
+                                The user have raised a return request
+                            </h5>
+                            <button type="button" class="btn close" data-bs-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="m-4">
+                            <div class="d-flex align-items-center mb-1">
+                                <p id="returnReasonModalBody" class="">A well-known quote, contained in a blockquote element.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <form id="change-return-status-form" class="change-return-status-form d-flex justify-content-start gap-1">
+                            <!-- <select name="returnStatus" class="form-select d-inline-block mb-lg-0 mr-5 mw-200">
+                                <option hidden disabled selected value>Change Return Status</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select> -->
+                            <button type="submit" id="approveBtn" class="btn alert-success me-2" href="#" value="approved">
+                                <i class="material-icons md-done"></i>
+                                <span id="approveBtnText">Approve</span>
+                            </button>
+                            <button type="submit" id="rejectBtn" class="btn alert-danger" href="#" value="rejected">
+                                <i class="material-icons md-close"></i>
+                                <span id="rejectBtnText">Reject</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                </div>
+            </div>
             <!-- content-main end// -->
             <footer class="main-footer font-xs">
                 <div class="row pb-30 pt-15">
@@ -161,6 +286,101 @@
         <script src="/assets/js/vendors/select2.min.js"></script>
         <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
         <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <script type="module">
+            import {triggerToast} from '/assets/js/fetch/validationHelpers.js';
+            
+            const returnStatusModal = document.getElementById('return-order-modal');
+            let reason, orderId, itemId;
+            // const response = await fetch(`/api/json/order/${orderId}/item/${itemId}`, {
+            //     headers: {'Content-Type' : 'application/json'},
+            //     method: 'GET'
+            // });
+
+            returnStatusModal.addEventListener('show.bs.modal', function(e){
+                const button = e.relatedTarget;
+                orderId = button.dataset.orderid;
+                itemId = button.dataset.itemid;
+                const returnStatus = button.dataset.returnstatus;
+                const states = {
+                    broken:"Received broken/damaged item",
+                    wrong: "Received wrong item",
+                    defective: "The product received is defective",
+                    missing: "The product is missing in the package"
+                };
+
+
+                const uiData = {
+                    requested: {
+                        modalHeader: 'The user have raised a return request',
+                        modalBody:  states[button.dataset.returnreason] || button.dataset.returnreason,
+                        approveBtnText: 'Approve',
+                        approveBtnValue: 'approved',
+                        rejectBtnText: 'Reject',
+                        rejectBtnType: 'submit'
+                    },
+
+                    rejected: {
+                        modalHeader: 'Confirm Reopen request',
+                        modalBody:  'Are you sure you want to reopen return request for this item?',
+                        approveBtnText: 'Confirm',
+                        approveBtnValue: 'requested',
+                        rejectBtnText: 'Close',
+                        rejectBtnType: 'button'
+                    },
+
+                    approved: {
+                        modalHeader: 'Confirm Issue Refund',
+                        modalBody:  'Are you sure you want to issue refund for this order?',
+                        approveBtnText: 'Confirm',
+                        approveBtnValue: 'refunded',
+                        rejectBtnText: 'Close',
+                        rejectBtnType: 'button'
+                    },
+
+                };
+
+                document.getElementById('return-order-header').textContent = uiData[returnStatus].modalHeader;
+                document.getElementById('returnReasonModalBody').textContent = uiData[returnStatus].modalBody;
+                document.getElementById('approveBtnText').textContent = uiData[returnStatus].approveBtnText;
+                document.getElementById('rejectBtnText').textContent = uiData[returnStatus].rejectBtnText;
+                document.getElementById('approveBtn').value = uiData[returnStatus].approveBtnValue;
+                
+                const rejectBtn = document.getElementById('rejectBtn');
+                rejectBtn.setAttribute('type', uiData[returnStatus].rejectBtnType);
+
+                if (uiData[returnStatus].rejectBtnType == "button") {
+                    rejectBtn.setAttribute('data-bs-dismiss', 'modal');
+                } else {
+                    rejectBtn.removeAttribute('data-bs-dismiss');
+                };
+
+            });
+
+            document.getElementById('change-return-status-form').addEventListener('submit', async function(e){
+                e.preventDefault();
+                const button = e.submitter;
+                const response = await fetch(`/api/admin/orders/${orderId}/item/${itemId}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type' : 'application/json'},
+                    body: JSON.stringify({returnStatus: button.value})
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    triggerToast('failure', data.error || 'Some error occured!');
+                } else {
+                    triggerToast('success', data.message || 'Order status successfully changed!')
+                }
+                
+                $(button).closest('.modal').hide();
+
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            });
+
+        </script>
         <!-- Main Script -->
         <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>
     </body>

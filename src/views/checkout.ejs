@@ -34,7 +34,8 @@
             cursor: pointer;
         }
 
-        input[type="radio"][name='payment-method']{
+        input[type="radio"][name='payment-method'],
+        input[type="checkbox"][name='wallet']{
             display:none
         }
 
@@ -45,9 +46,22 @@
             transition: 0.4s
         }
 
+        input[type="checkbox"][name='wallet']:checked + label {
+            background: rgb(222, 255, 225);
+            border: 1px solid rgb(92, 255, 114);
+            border-radius: 4px;
+            transition: 0.4s
+        }
+
         .payment-text{
             font-weight: 400;
             font-size: inherit;
+        }
+
+        .disabled-div {
+            pointer-events: none; /* Blocks all mouse interactions */
+            opacity: 0.5;         /* Visually dims the content */
+            cursor: not-allowed;  /* Optional: Changes cursor to indicate disabled state */
         }
 
     </style>
@@ -199,14 +213,45 @@
                                                     </h2>
                                                 </div><!-- End .card-header -->
                                                 <div id="collapse3-3" class="collapse" aria-labelledby="heading3-3" data-parent="#accordion-3">
-
                                                     <div class="payment-options mx-5 mb-2">
-
-                                                        <input type="radio" name="payment-method" id="cod" value="cash-on-delivery">
-                                                        <label for="cod" class="w-100 my-2 cursor-pointer payment-label">
+                                                        <!-- <input type="checkbox" name="wallet" id="wallet" data-balance="<%#walletBalance%>">
+                                                        <label for="wallet" class="w-100 my-2 cursor-pointer payment-label">
                                                             <div class="border rounded p-4 d-flex align-items-center">
-                                                                <img src="/assets/imgs/payment/cod.svg" style="width: 40px;" alt="">
-                                                                <h6 class="payment-text mb-0 mx-4">Cash on Delivery</h6>
+                                                                <img src="/assets/imgs/payment/wallet.svg" style="width: 32px;" alt="">
+                                                                <h6 class="payment-text mb-0 mx-4">Use wallet</h6>
+                                                                <span class="payment-text mb-0 mx-4">
+                                                                    Available Balance: 
+                                                                    <h6 class="d-inline-block payment-text mb-0 mx-4">
+                                                                        ₹<%# walletBalance %>
+                                                                    </h6>
+                                                                </span>
+                                                            </div>
+                                                        </label>
+                                                        <hr> -->
+                                                        <input type="radio" name="payment-method" id="wallet" value="wallet" data-balance="<%=walletBalance%>">
+                                                        <label id="walletLabel" for="wallet" class="<%= disabledPaymentMethods.includes('wallet') ? "disabled-div" : "" %> w-100 my-2 cursor-pointer payment-label">
+                                                            <div class="border rounded p-4 d-flex align-items-center justify-content-between">
+                                                                <div class="d-flex align-items-center">
+                                                                    <img src="/assets/imgs/payment/wallet.svg" style="width: 32px;" alt="">
+                                                                    <h6 class="payment-text mb-0 mx-4">Use wallet</h6>
+                                                                    <span class="payment-text mb-0 mx-4">
+                                                                        Available Balance: 
+                                                                        <h6 id="walletBalance" data-balance=<%= walletBalance %> class="d-inline-block payment-text mb-0 mx-4">
+                                                                            ₹<%= walletBalance %>
+                                                                        </h6>
+                                                                    </span>
+                                                                </div>
+                                                                <small class="<%=disabledPaymentMethods.includes('wallet') ? "d-flex" : "d-none"  %>">⚠ Insufficient balance</small>
+                                                            </div>
+                                                        </label>
+                                                        <input type="radio" name="payment-method" id="cod" value="cash-on-delivery">
+                                                        <label id="codLabel" for="cod" class="<%= disabledPaymentMethods.includes('cod') ? "disabled-div" : "" %> w-100 my-2 cursor-pointer payment-label">
+                                                            <div class=" border rounded p-4 d-flex align-items-center justify-content-between">
+                                                                <div class="d-flex align-items-center">
+                                                                    <img src="/assets/imgs/payment/cod.svg" style="width: 40px;" alt="">
+                                                                    <h6 class="payment-text mb-0 mx-4">Cash on Delivery</h6>
+                                                                </div>
+                                                                <small class="<%=disabledPaymentMethods.includes('cod') ? "d-flex" : "d-none"  %>">⚠ COD is not available for orders above 1000</small>
                                                             </div>
                                                         </label>
                                                         
@@ -332,22 +377,29 @@
                                                     
                                                     <tr class="summary-subtotal">
                                                         <td>Subtotal:</td>
-                                                        <td id="subTotal">₹<%= cart.totalPrice %></td>
+                                                        <td id="subTotal">₹<%= cart.pricing.itemsTotal %></td>
                                                     </tr><!-- End .summary-subtotal -->
+                                                    
+                                                    <% if(cart.pricing.discount.offerDiscount) { %>
+                                                        <tr id="offerDiscount">
+                                                            <td>Offer Discount:</td>
+                                                            <td id="offerAmount">-₹<%=cart.pricing.discount.offerDiscount %></td>
+                                                        </tr>
+                                                    <% } %>
 
                                                     <tr id="couponDiscount" class="d-none">
                                                         <td>Coupon Discount:</td>
-                                                        <td id="discountedAmount"><em>Amount</em></td>
+                                                        <td id="discountedAmount">Amount</td>
                                                     </tr>
                                                     
                                                     <tr>
                                                         <td>Shipping:</td>
-                                                        <td>Free shipping</td>
+                                                        <td id="shippingFee"><%= cart.pricing.shipping || "Free shipping"%></td>
                                                     </tr>
 
                                                     <tr class="summary-total">
                                                         <td>Total:</td>
-                                                        <td id="totalPrice">₹<%= cart.totalPrice %></td>
+                                                        <td id="totalPrice">₹<%= cart.pricing.grandTotal %></td>
                                                     </tr><!-- End .summary-total -->
                                                 </tbody>
                                             </table><!-- End .table table-summary -->
@@ -894,7 +946,7 @@
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="module">
 
-        import {showAlert, setError, setSuccess} from "/assets/js/fetch/validationHelpers.js";
+        import {showAlert, setError, setSuccess, triggerToast} from "/assets/js/fetch/validationHelpers.js";
         let paymentMethod, address, coupon;
         
 
@@ -950,26 +1002,39 @@
                 let appliedCoupon = JSON.parse(sessionStorage.getItem(`appliedCoupon`))
 
                 const response = await fetch ('/api/user/coupon/is-valid', {
-
                     method: 'POST',
                     headers: {'Content-Type' : 'application/json'},
-                    body: JSON.stringify({couponCode: appliedCoupon.code})
-
+                    body: JSON.stringify({couponCode: appliedCoupon.code, couponId: appliedCoupon.id})
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
 
-                    document.getElementById('discountedAmount').textContent = `- ₹${appliedCoupon.discount}`
-                    let subTotal = Number(document.getElementById('subTotal').textContent.replace("₹", ""));
-                    document.getElementById('totalPrice').textContent = `₹${subTotal - appliedCoupon.discount}`;
+                    document.getElementById('discountedAmount').textContent = `- ₹${data.cart.pricing.discount.couponDiscount}`;
+                    document.getElementById('totalPrice').textContent = `₹${data.cart.pricing.grandTotal}`;
                     document.getElementById('couponDiscount').classList.remove('d-none');
+
+                    if (data.cart.pricing.grandTotal > 1000) {
+                        document.getElementById("codLabel").classList.add("disabled-div");
+                    } else {
+                        document.getElementById("codLabel").classList.remove("disabled-div");
+                    };
+
+                    let walletBalance = Number(document.getElementById("walletBalance").dataset.balance);
+
+                    if (data.cart.pricing.grandTotal > walletBalance) {
+                        document.getElementById("walletLabel").classList.add("disabled-div");
+                    } else {
+                        document.getElementById("walletLabel").classList.remove("disabled-div");
+                    };
+
+                    document.getElementById("shippingFee").textContent = data.cart.pricing.shipping || "Free Shipping";
 
 
 
                     document.querySelector(`#apply-coupon-text`).textContent = `1 Coupon Applied`;
-                    document.querySelector(`#coupon-info-text`).textContent = `You saved ₹${appliedCoupon.discount}`;
+                    document.querySelector(`#coupon-info-text`).textContent = `You saved ₹${data.cart.pricing.discount.couponDiscount}`;
                     document.querySelector(`#coupon-info-text`).classList.remove(`d-none`);
                     document.querySelector(`#coupon-modal-btn`).textContent = `EDIT`;
                     document.getElementById(appliedCoupon.id).checked = true;
@@ -979,7 +1044,7 @@
                     $('input[type="checkbox"]').not('#' + appliedCoupon.id).prop('checked', false);
                     let couponDiv = document.getElementById(`${appliedCoupon.id}-div`);
                     couponDiv.parentNode.insertBefore(couponDiv, couponDiv.parentNode.firstElementChild);
-                    document.getElementById("maximum-savings").textContent = `₹${appliedCoupon.discount}`;
+                    document.getElementById("maximum-savings").textContent = `₹${data.cart.pricing.discount.couponDiscount}`;
                 
                 } else {
                     sessionStorage.removeItem("appliedCoupon");
@@ -1001,24 +1066,18 @@
 
             // empty coupon code validation
             if(couponCode == ""){
-                
                 const element = document.getElementById("coupon-code-input");
                 element.classList.add("is-invalid");
                 element.classList.remove("is-valid");
                 document.querySelector(".coupon-check").textContent = "Field Cant be empty";
                 return;
-
             }
     
-
             const response = await fetch("/api/user/coupon/is-valid", {
-
                 method: "POST",
                 headers: {"Content-Type" : "application/json"},
                 body: JSON.stringify({couponCode})
-
-            })
-
+            });
 
             if (response.ok) {
                 
@@ -1098,8 +1157,7 @@
         // apply coupon
         document.getElementById("apply-coupon-btn").addEventListener("click", async function(e){
 
-            e.preventDefault()
-            
+            e.preventDefault();
             coupon = document.querySelector("input[type='checkbox'][name='usableCoupons']:checked");
             console.log(coupon);
 
@@ -1125,7 +1183,36 @@
                 document.getElementById('couponDiscount').classList.add('d-none');
 
                
-                document.getElementById('totalPrice').textContent = document.getElementById('subTotal').textContent;
+                let subTotal = document.getElementById('subTotal').textContent.replace("₹", "");
+                let offerDiscount = Number(document.getElementById('offerAmount').textContent.replace("-₹", "")) || 0;
+                console.log({subTotal, offerDiscount});
+                let totalPrice = subTotal - offerDiscount;
+                document.getElementById('totalPrice').textContent = `₹${totalPrice}`;
+                
+                if(Number(totalPrice) < 999) {
+                    totalPrice = Number(totalPrice) + 40;
+                };
+                
+                if (Number(totalPrice) > 1000) {
+                    document.getElementById("codLabel").classList.add("disabled-div");
+                } else {
+                    document.getElementById("codLabel").classList.remove("disabled-div");
+                };
+
+                let walletBalance = Number(document.getElementById("walletBalance").dataset.balance);
+                if (Number(totalPrice) > walletBalance) {
+                    document.getElementById("walletLabel").classList.add("disabled-div");
+                } else {
+                    document.getElementById("walletLabel").classList.remove("disabled-div");
+                };
+
+                if(Number(totalPrice) < 999) {
+                    document.getElementById("shippingFee").textContent = "₹40";
+                } else {
+                    document.getElementById("shippingFee").textContent = "Free Shipping";
+                };
+
+
 
                 // clear modal when closed
                 $(`#apply-coupon-modal`).on(`hidden.bs.modal`, function(e){
@@ -1155,11 +1242,39 @@
                 document.querySelector(`#coupon-info-text`).classList.remove(`d-none`);
                 document.querySelector(`#coupon-modal-btn`).textContent = `EDIT`;
                 $(`#apply-coupon-modal`).modal(`hide`);
-                document.getElementById('discountedAmount').textContent = `- ₹${coupon.dataset.discount}`
+
+                document.getElementById('discountedAmount').textContent = `-₹${coupon.dataset.discount}`
                 let subTotal = Number(document.getElementById('subTotal').textContent.replace("₹", ""));
-                document.getElementById('totalPrice').textContent = `₹${subTotal - coupon.dataset.discount}`
+                let offerDiscount = Number(document.getElementById('offerAmount').textContent.replace("-₹", "")) || 0
+                let priceAfterCoupon = subTotal - offerDiscount - coupon.dataset.discount;
+                
+                if(Number(priceAfterCoupon) < 999) {
+                    priceAfterCoupon = Number(priceAfterCoupon) + 40;
+                };
+
+                document.getElementById('totalPrice').textContent = `₹${priceAfterCoupon}`
                 document.getElementById('couponDiscount').classList.remove('d-none');
                 sessionStorage.setItem('appliedCoupon', JSON.stringify({id: coupon.id, code: coupon.value, discount: coupon.dataset.discount}));
+
+                if (Number(priceAfterCoupon) > 1000) {
+                    document.getElementById("codLabel").classList.add("disabled-div");
+                } else {
+                    document.getElementById("codLabel").classList.remove("disabled-div");
+                };
+
+                let walletBalance = Number(document.getElementById("walletBalance").dataset.balance);
+                if (Number(priceAfterCoupon) > walletBalance) {
+                    document.getElementById("walletLabel").classList.add("disabled-div");
+                } else {
+                    document.getElementById("walletLabel").classList.remove("disabled-div");
+                };
+
+                if(Number(priceAfterCoupon) < 999) {
+                    document.getElementById("shippingFee").textContent = "₹40";
+                } else {
+                    document.getElementById("shippingFee").textContent = "Free Shipping";
+                };
+
             }
 
         })
@@ -1228,6 +1343,11 @@
                 return;
             }
 
+            // const wallet = document.querySelector('input[type="checkbox"][name="wallet"]');
+            // let walletBalance = wallet.dataset.balance;
+            // let isWalletSelected = wallet.checked;
+            // disable wallet if balance = 0
+            // 
 
 
             //set payment method
@@ -1259,6 +1379,7 @@
                 }
 
                 if (data.error) {
+                    triggerToast('failure', data.error || 'Something wrong happened');
                     document.getElementById("checkout-error").innerHTML = data.error;
                     document.getElementById("checkout-error").className = "alert alert-danger";
                     document.getElementById("checkout-error").style.display = "block";

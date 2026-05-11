@@ -33,7 +33,12 @@
                     </div>
                     
                     <div>
-                        <a href="#" class="btn btn-primary"><i class="text-muted material-icons md-post_add"></i>Create report</a>
+                        <form action="/api/admin/generateSalesReport" method="get" id="generateReportForm">
+                            <input type="hidden" name="interval" id="intervalInput" value="<%= interval %>">
+                            <input type="hidden" name="start" id="startDate" class="form-control mx-2" value="<%= start || '' %>">
+                            <input type="hidden" name="end" id="endDate" class="form-control mx-2" value="<%= end || '' %>">
+                            <button type="submit" class="btn btn-primary"><i class="text-muted material-icons md-post_add"></i>Create report</button>
+                        </form>
                     </div>
                 </div>
 
@@ -113,15 +118,16 @@
                         </div>
                     </div>
                 </div>
-                <!-- <div class="row">
+                <div class="row">
                     <div class="col-xl-8 col-lg-12">
                         <div class="card mb-4">
                             <article class="card-body">
                                 <h5 class="card-title">Sale statistics</h5>
-                                <canvas id="myChart" height="120px"></canvas>
+                                <div id="splineChart"></div>
+                                <!-- <canvas id="myChart" height="120px"></canvas> -->
                             </article>
                         </div>
-                        <div class="row">
+                        <div class="row d-none">
                             <div class="col-lg-5">
                                 <div class="card mb-4">
                                     <article class="card-body">
@@ -161,7 +167,7 @@
                                     </article>
                                 </div>
                             </div>
-                            <div class="col-lg-7">
+                            <div class="col-lg-7 d-none">
                                 <div class="card mb-4">
                                     <article class="card-body">
                                         <h5 class="card-title">Recent activities</h5>
@@ -238,6 +244,50 @@
                         </div>
                     </div>
                     <div class="col-xl-4 col-lg-12">
+                        <div class="">
+                            <div class="card mb-4">
+                                <header class="card-header">
+                                    <h4 class="card-title">Top Spending Users</h4>
+                                </header>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <div class="table-responsive">
+                                            <table class="table align-middle table-nowrap mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <!-- <th scope="col" class="text-center">
+                                                            <div class="form-check align-middle">
+                                                                <input class="form-check-input" type="checkbox" id="transactionCheck01" />
+                                                                <label class="form-check-label" for="transactionCheck01"></label>
+                                                            </div>
+                                                        </th> -->
+                                                        <th class="align-middle" scope="col">#</th>
+                                                        <th class="align-middle" scope="col">User</th>
+                                                        <th class="align-middle" scope="col">Spending</th>
+                                                        <th class="align-middle" scope="col">Email</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <% data.topCustomers.forEach((user, index) => {%>
+                                                        <tr>
+                                                            <td><%= index+1 %></td>
+                                                            <td><%= user.userData.fullname %></td>
+                                                            <td>₹<%= user.spending %></td>
+                                                            <td><%= user.userData.email%></td>
+                                                        </tr>
+                                                    <% }) %>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <!-- table-responsive end// -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="col-xl-4 col-lg-12 d-none">
                         <div class="card mb-4">
                             <article class="card-body">
                                 <h5 class="card-title">Revenue Base on Area</h5>
@@ -270,11 +320,230 @@
                             </article>
                         </div>
                     </div>
-                </div> -->
+                </div>
+
+                <div class="card mb-4">
+                    <header class="card-header">
+                        <h4 class="card-title">Top Products</h4>
+                        <div class="row gx-3">
+                            <!-- <div class="col-lg-4 col-md-6 me-auto">
+                                <input type="text" placeholder="Search..." class="form-control" />
+                            </div> -->
+                                <!-- <div class="col-lg-2 col-6 col-md-3">
+                                    <select class="form-select">
+                                        <option>Status</option>
+                                        <option>Active</option>
+                                        <option>Disabled</option>
+                                        <option>Show all</option>
+                                    </select>
+                                </div> -->
+                            <!-- <div class="col-lg-2 col-6 col-md-3">
+                                <select class="form-select">
+                                    <option>Show 20</option>
+                                    <option>Show 30</option>
+                                    <option>Show 40</option>
+                                </select>
+                            </div> -->
+                        </div>
+                    </header>
+                    <!-- card-header end// -->
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#ID</th>
+                                        <th scope="col">Product</th>
+                                        <!-- <th scope="col">Date</th> -->
+                                        <!-- <th scope="col">Customer</th> -->
+                                        <th scope="col">Available Stock</th>
+                                        <th scope="col">Orders</th>
+                                        <th scope="col">Listing Price</th>
+                                        <!-- <th scope="col" class="text-end">Action</th> -->
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% data.topTenProducts.forEach(product => { %>
+                                        <tr class="border-bottom">
+                                            <td><%= product._id.toString().slice(12) %></td>
+                                            <td class="p-4">
+                                                <a class="itemside" href="#">
+                                                    <div class="left">
+                                                        <img src="/<%= product.productData.thumbnail %>" width="80" height="80" class="img-xs" alt="Item" />
+                                                    </div>
+                                                    <div class="ms-3">
+                                                        <div class="h6 mb-1"><%= product.productData.productname %></div>
+                                                        <!-- <span class="small text-secondary">Quantity: <%# order.orderItems.quantity %></span> -->
+                                                        <!-- <span class="ms-2 badge rounded-pill <%# order.uiData.badgeClass%>"><%# order.orderItems.returnStatus.toUpperCase() %></span> -->
+                                                    </div>
+                                                </a>
+                                            </td>
+                                            <!-- <td><%# order.username.fullname %></td> -->
+                                            <td>
+                                                <%= product.productData.stock %>
+                                            </td>
+
+                                            <td>
+                                                <%= product.count %>
+                                            </td>
+                                            <td class="h6 text-secondary">₹<%= product.productData.price %></td>
+                                            
+                                            <!-- <td class="text-end">
+                                                <div class="dropdown">
+                                                    <button class="btn alert-light" data-bs-toggle="dropdown">
+                                                        <i class="material-icons md-more_vert"></i>
+                                                    </button>
+                                                    <div class="dropdown-menu">
+                                                        <%# if (order.orderItems.returnStatus != 'refunded') { %> 
+                                                            <a data-bs-toggle="modal" data-bs-target="#return-order-modal" data-orderid="<%# order._id %>" data-itemid="<%# order.orderItems._id %>" data-returnReason="<%#order.orderItems.returnReason || "Other"%>" data-returnstatus="<%# order.orderItems.returnStatus %>" class="">
+                                                                <p id="return-status-<%# order.orderItems._id %>" class="dropdown-item <%# order.uiData.class %>"><%# order.uiData.label %></p>
+                                                            </a>
+                                                        <%# } %> 
+                                                        <a href="/api/admin/orders/<%# order._id %>" class="dropdown-item ms-1 rounded font-sm">Details</a>
+                                                    </div>
+                                                </div>
+                                            </td> -->
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- table-responsive //end -->
+                    </div>
+                    <!-- card-body end// -->
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <header class="card-header">
+                                <h4 class="card-title">Top Coupons</h4>
+                            </header>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <div class="table-responsive">
+                                        <table class="table align-middle table-nowrap mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <!-- <th scope="col" class="text-center">
+                                                        <div class="form-check align-middle">
+                                                            <input class="form-check-input" type="checkbox" id="transactionCheck01" />
+                                                            <label class="form-check-label" for="transactionCheck01"></label>
+                                                        </div>
+                                                    </th> -->
+                                                    <th class="align-middle" scope="col">#</th>
+                                                    <th class="align-middle" scope="col">Coupon</th>
+                                                    <th class="align-middle" scope="col">Usage</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% data.topTenCoupons.forEach((coupon, index) => {%>
+                                                    <tr>
+                                                        <!-- <td class="text-center">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" id="transactionCheck02" />
+                                                                <label class="form-check-label" for="transactionCheck02"></label>
+                                                            </div>
+                                                        </td> -->
+                                                        <td><%= index+1 %></td>
+                                                        <td><%= coupon.code || `sample-coupon-${index}` %></td>
+                                                        <td><%= coupon.count %></td>
+                                                    </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- table-responsive end// -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <header class="card-header">
+                                <h4 class="card-title">Top Offers</h4>
+                            </header>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <div class="table-responsive">
+                                        <table class="table align-middle table-nowrap mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <!-- <th scope="col" class="text-center">
+                                                        <div class="form-check align-middle">
+                                                            <input class="form-check-input" type="checkbox" id="transactionCheck01" />
+                                                            <label class="form-check-label" for="transactionCheck01"></label>
+                                                        </div>
+                                                    </th> -->
+                                                    <th class="align-middle" scope="col">#</th>
+                                                    <th class="align-middle" scope="col">Offer</th>
+                                                    <th class="align-middle" scope="col">Amount</th>
+                                                    <th class="align-middle" scope="col">Usage</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% data.topTenOffers.forEach((offer, index) => {%>
+                                                    <tr>
+                                                        <td><%= index+1 %></td>
+                                                        <td><%= offer.offerData.name %></td>
+                                                        <td><%= offer.offerData.isPercent ? `${offer.offerData.offerAmount}%` : `₹${offer.offerData.offerAmount}` %></td>
+                                                        <td><%= offer.count %></td>
+                                                    </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- table-responsive end// -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <header class="card-header">
+                                <h4 class="card-title">Top Categories</h4>
+                            </header>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <div class="table-responsive">
+                                        <table class="table align-middle table-nowrap mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <!-- <th scope="col" class="text-center">
+                                                        <div class="form-check align-middle">
+                                                            <input class="form-check-input" type="checkbox" id="transactionCheck01" />
+                                                            <label class="form-check-label" for="transactionCheck01"></label>
+                                                        </div>
+                                                    </th> -->
+                                                    <th class="align-middle" scope="col">#</th>
+                                                    <th class="align-middle" scope="col">Category</th>
+                                                    <th class="align-middle" scope="col">Orders</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% data.topTenCategories.forEach((category, index) => {%>
+                                                    <tr>
+                                                        <td><%= index+1 %></td>
+                                                        <td><%= category.categoryData.name %></td>
+                                                        <td><%= category.count %></td>
+                                                    </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- table-responsive end// -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card mb-4">
                     <header class="card-header">
                         <h4 class="card-title">Latest orders</h4>
-                        <div class="row align-items-center">
+                        <!-- <div class="row align-items-center">
                             <div class="col-md-3 col-12 me-auto mb-md-0 mb-3">
                                 <div class="custom_select">
                                     <select class="form-select select-nice">
@@ -306,7 +575,7 @@
                                     </select>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </header>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -397,6 +666,11 @@
         <script>
             function handleIntervalChange(select) {
                 const customRange = document.getElementById('custom-date-range');
+                // const hiddenInput = document.getElementById('intervalInput');
+
+                // if (hiddenInput) {
+                //     hiddenInput.value = select.value;
+                // }
         
                 if (select.value === 'custom') {
                     customRange.style.display = 'flex';
@@ -421,6 +695,36 @@
         <script src="/assets/js/vendors/select2.min.js"></script>
         <script src="/assets/js/vendors/perfect-scrollbar.js"></script>
         <script src="/assets/js/vendors/jquery.fullscreen.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+        <script>
+            const labels = <%- JSON.stringify(chartData.labels) %>;
+            const data = <%- JSON.stringify(chartData.data) %>;
+
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 350,
+                    toolbar: { show: false }
+                },
+                stroke: {
+                    curve: 'smooth'
+                },
+                series: [{
+                    name: 'Orders',
+                    data: data
+                }],
+                xaxis: {
+                    categories: labels,
+                    labels: {
+                        show: false
+                    }
+                },
+                colors: ['#00BFFF']
+            };
+
+            const chart = new ApexCharts(document.querySelector("#splineChart"), options);
+            chart.render();
+        </script>
         <script src="/assets/js/vendors/chart.js"></script>
         <!-- Main Script -->
         <script src="/assets/js/main.js?v=1.1" type="text/javascript"></script>

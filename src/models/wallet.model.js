@@ -1,6 +1,6 @@
 import {Schema, model} from "mongoose";
 
-const walletHistorySchema = new Schema({
+const walletTransactionSchema = new Schema({
 
     amount: {
         type: Number,
@@ -37,6 +37,13 @@ const walletHistorySchema = new Schema({
     referee: {
         type: Schema.Types.ObjectId,
         ref: "User"
+    },
+
+    status: {
+        type: String,
+        enum: ['pending', 'success', 'failed'],
+        required: true,
+        default: 'pending'
     }
 
 }, {timestamps: true})
@@ -46,7 +53,8 @@ const walletSchema = new Schema({
     owner: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        unique: true
     },
     
     balance: {
@@ -55,7 +63,7 @@ const walletSchema = new Schema({
         required: true
     },
 
-    history: [walletHistorySchema]
+    transactions: [walletTransactionSchema]
 
 
 })

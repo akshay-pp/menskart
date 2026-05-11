@@ -16,3 +16,9 @@ export const generateOrderId = () => {
 export const generateCheckoutSessionId = () => {
     return `CHK-${nanoid(12)}`;
 }
+
+export const generateReferralCode = (userName) => {
+    const namePart = userName.slice(0, 4).toUpperCase();
+    const numberPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `${namePart}${numberPart}`;
+}

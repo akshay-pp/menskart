@@ -117,6 +117,9 @@ function login(){
     
         event.preventDefault();
 
+        const url = new URL(window.location);
+        const redirect = url.searchParams.get('redirect');
+
         if(!formSubmitValidation()){
             return false;
         }
@@ -136,14 +139,19 @@ function login(){
                 loginError.textContent = data.error;
                 loginError.style.display = "block";
             
-            }else{
+            } else {
                 
                 loginError.className = "alert alert-primary";
                 loginError.textContent = data.message;
                 loginError.style.display = "block";
 
                 
-                if (window.location.pathname == "/api/user/login"){
+                if (window.location.pathname == "/api/user/login") {
+                    if (redirect) {
+                        console.log(url, redirect);
+                        window.location.href = redirect;
+                        return;
+                    };
                     window.location.href = "/";
                     return;
                 }
@@ -188,6 +196,7 @@ function register(){
     const registerEmail = document.getElementById("register-email");
     const registerPassword = document.getElementById("register-password");
     const registerConfirmPassword = document.getElementById("register-confirm-password");
+    const referralInput = document.getElementById("referral-code");
 
 
     //input blur validation 
@@ -289,7 +298,7 @@ function register(){
         
                 method: "POST",
                 headers: {"Content-Type" : "application/json"},
-                body: JSON.stringify({fullname: fullname.value, email: registerEmail.value, password: registerPassword.value, confirmPassword: registerConfirmPassword.value})
+                body: JSON.stringify({fullname: fullname.value, email: registerEmail.value, password: registerPassword.value, confirmPassword: registerConfirmPassword.value, referralInput: referralInput.value })
         
             });
         
@@ -306,7 +315,7 @@ function register(){
                 registerForm.style.display = "none";
                 registerOtpForm.style.display = "block";
                 
-                let timeLeft = 30;
+                let timeLeft = 60;
                 let timerId = setInterval(countdown, 1000);
     
                 function countdown() {
@@ -357,7 +366,7 @@ resendOtpBtn.addEventListener("click", async(event) => {
         
         resendOtpBtn.textContent = "Wait...";
         resendOtpBtn.disabled = true;
-        let resendTimeLeft = 30;
+        let resendTimeLeft = 60;
         let resendTimerId = setInterval(resendCountdown, 1000);
             
         function resendCountdown() {
@@ -438,6 +447,10 @@ function forgotPassword() {
     const forgotOtpForm = document.getElementById("forgot-password-otp-form");
     const forgotPasswordOtpBtn = document.getElementById("forgot-password-otp-btn");
 
+    const resendOtpTimer = document.getElementById('forgot-password-resend-otp-timer');
+    const resendOtpBtn = document.getElementById('forgot-password-resend-otp');
+    const forgotPasswordOtpError = document.getElementById('forgot-password-otp-error');
+
     //open forgot password modal
     document.getElementById("forgot-password").addEventListener("click", async function() {
         
@@ -452,7 +465,6 @@ function forgotPassword() {
     
         e.preventDefault();
     
-        
         const email = document.getElementById("forgot-password-email").value.trim();
         const response = await fetch("/api/user/forgot-password/request-otp", {
             method: "POST",
@@ -463,20 +475,78 @@ function forgotPassword() {
         const data = await response.json();
     
         if (!data.success){
-    
             showAlert(forgotPasswordError, data.error, "alert-danger");
-    
         }else{
-            
             showAlert(forgotPasswordError, data.message, "alert-primary");
             setTimeout(() => {
                 forgotForm.style.display = "none";
                 forgotOtpForm.style.display = "block";
+                let resendTimeLeft = 60;
+                let resendTimerId = setInterval(resendCountdown, 1000);
+                    
+                function resendCountdown() {
+                    if (resendTimeLeft == -1) {
+                        clearInterval(resendTimerId);
+                        resendOtpTimer.textContent = "";
+                        resendOtpBtn.removeAttribute("disabled");
+                        resendOtpBtn.textContent = "Resend OTP";      
+                    } else {
+                        resendOtpTimer.textContent = resendTimeLeft > 9 ? `00:${resendTimeLeft}` : `00:0${resendTimeLeft}`;
+                        resendTimeLeft--;
+                    }
+                }
             }, 1500);
     
         }
         
     }) 
+
+
+
+    resendOtpBtn.addEventListener("click", async(event) => {
+    
+        event.preventDefault();
+        
+        const response = await fetch("/api/user/resend-otp", {
+            method: "POST",
+            headers: {'Content-Type' : 'application/json'}
+        });
+
+        const data = await response.json();
+
+        if(!data.success){
+
+            forgotPasswordOtpError.className = "alert alert-danger";
+            forgotPasswordOtpError.textContent = data.error;
+            forgotPasswordOtpError.style.display = "block";
+            
+        }else{
+            
+            resendOtpBtn.textContent = "Wait...";
+            resendOtpBtn.disabled = true;
+            let resendTimeLeft = 60;
+            let resendTimerId = setInterval(resendCountdown, 1000);
+                
+            function resendCountdown() {
+                if (resendTimeLeft == -1) {
+                    clearInterval(resendTimerId);
+                    resendOtpTimer.textContent = "";
+                    resendOtpBtn.removeAttribute("disabled");
+                    resendOtpBtn.textContent = "Resend OTP";      
+                } else {
+                    resendOtpTimer.textContent = resendTimeLeft > 9 ? `00:${resendTimeLeft}` : `00:0${resendTimeLeft}`;
+                    resendTimeLeft--;
+                }
+            }
+            forgotPasswordOtpError.className = "alert alert-success";
+            forgotPasswordOtpError.textContent = data.message;
+            forgotPasswordOtpError.style.display = "block";
+            setTimeout(() => {
+                forgotPasswordOtpError.style.display = "none";
+            },2000);
+
+        }
+    })
     
     
     //submit otp
@@ -498,8 +568,11 @@ function forgotPassword() {
         if(!data.success){
     
             showAlert(otpError, data.error, "alert-danger");
+            if (data.otpExpired) {
+                document.getElementById('forgot-password-resend-otp').removeAttribute('disabled');
+            };
     
-        }else{
+        } else {
     
             showAlert(otpError, data.message, "alert-primary");
             
@@ -513,6 +586,27 @@ function forgotPassword() {
         }
         
     })
+
+    document.getElementById('forgot-password-resend-otp-timer').addEventListener('click', async function(e){
+        const response = await fetch('/api/user/resend-otp', {
+            method: 'POST',
+            headers: {"Content-Type" : "application/json"}
+        });
+
+        const data = await response.json();
+        if(!data.success) {
+            showAlert(otpError, data.error, "alert-danger");
+        } else {
+            showAlert(otpError, data.message, "alert-primary");
+            
+            setTimeout(() => {
+    
+                forgotOtpForm.style.display = "none";
+                document.getElementById("reset-password-form").style.display = "block";
+    
+            }, 1500);
+        }
+    }) 
 
     document.getElementById("reset-password-btn").addEventListener("click", async function(e) {
 

@@ -1,0 +1,45 @@
+.toast {
+    position: fixed;
+    top: 1rem;
+    left: 50%;;
+    z-index: 1055;
+    width: fit-content;
+    max-width: 450px;
+
+    transform: translate(-50%, -80px);
+    opacity: 0;
+}
+
+/* When toast becomes visible */
+.toast.show {
+    animation: toastDropBounce 0.6s cubic-bezier(.34,1.56,.64,1);
+    transform: translate(-50%, 0);
+    opacity: 1;
+}
+
+/* Fade out when hiding */
+.toast.hide {
+    animation: toastFadeOut 0.4s ease forwards;
+}
+
+@keyframes toastDropBounce {
+    0% {
+        transform: translate(-50%, -80px);
+        opacity: 0;
+    }
+    60% {
+        transform: translate(-50%, 10px);
+        opacity: 1;
+    }
+    80% {
+        transform: translate(-50%, -4px);
+    }
+    100% {
+        transform: translate(-50%, 0);
+    }
+}
+
+@keyframes toastFadeOut {
+    from {opacity: 1;}
+    to {opacity: 0;}
+}

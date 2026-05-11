@@ -58,7 +58,7 @@
 	                <div class="container">
 	                	<%# if (!cart || cart.items.length === 0) { %>
                             
-                            <div class="<%= !cart?.items?.length ? 'd-flex' : 'd-none' %>  flex-column align-items-center" id="empty-cart-div">
+                            <div class="<%= isEmpty ? 'd-flex' : 'd-none' %>  flex-column align-items-center" id="empty-cart-div">
                                 <div>
                                     <img src="/assets/images/Empty-cuate.svg" class="img-fluid" alt="Empty Cart Image" style="width: 400px; height: auto;">
                                 </div>
@@ -72,7 +72,7 @@
 
                         <%# } else { %>
 
-                            <div class="<%= cart?.items?.length ? 'd-flex' : 'd-none' %> row" id="cart-content">
+                            <div class="<%= !isEmpty ? 'd-flex' : 'd-none' %> row" id="cart-content">
 	                		    <div class="col-lg-9">
 	                			    <table class="table table-cart table-mobile">
 									    <thead>
@@ -120,7 +120,7 @@
                                                     <td class="total-col" id="total-per-product">₹<%= (item.offerPrice ?? item.price)  * item.quantity %></td>
                                                     <td class="remove-col"><button class="btn-remove remove-from-cart" data-id="<%= item._id %>" data-toggle="modal" data-target="#remove-from-cart-modal"><i class="icon-close"></i></button></td>
                                                 </tr>
-                                                <% }) %>
+                                            <% }) %>
                                         </tbody>
 								    </table><!-- End .table table-wishlist -->
 

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="UTF-8">
+        <title>Sales Report</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+                color: #333;
+            }
+
+            h1 {
+                text-align: center;
+                margin-bottom: 5px;
+            }
+
+            .meta {
+                text-align: center;
+                font-size: 12px;
+                margin-bottom: 20px;
+            }
+
+            .section {
+                margin-bottom: 25px;
+            }
+
+            .grid {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .card {
+                flex: 1;
+                border: 1px solid #ddd;
+                padding: 10px;
+                border-radius: 6px;
+                text-align: center;
+            }
+
+            .card h3 {
+                margin: 5px 0;
+                font-size: 14px;
+                color: #777;
+            }
+
+            .card p {
+                font-size: 18px;
+                font-weight: bold;
+                margin: 0;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 12px;
+            }
+
+            table th,
+            table td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+
+            table th {
+                background: #f5f5f5;
+            }
+
+            .small {
+                font-size: 11px;
+                color: #666;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <h1>Sales Report</h1>
+        <div class="meta">
+            Interval: <%= interval %> |
+            <%= start ? start : '' %> <%= end ? '- ' + end : '' %>
+        </div>
+
+        <!-- Summary -->
+        <div class="section">
+            <div class="grid">
+                <div class="card">
+                    <h3>Total Revenue</h3>
+                    <p>₹ <%= data.totalRevenue %>
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Total Orders</h3>
+                    <p>
+                        <%= data.totalOrders %>
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Product Sales</h3>
+                    <p>
+                        <%= data.productSales %>
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>This Month Revenue</h3>
+                    <p>₹ <%= data.thisMonthRevenue %>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="section">
+            <h2>Top Products</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Orders</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% data.topTenProducts.forEach(p=> { %>
+                        <tr>
+                            <td>
+                                <%= p.productData.productname %>
+                            </td>
+                            <td>
+                                <%= p.count %>
+                            </td>
+                            <td>₹ <%= p.productData.price %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Top Categories -->
+        <div class="section">
+            <h2>Top Categories</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Orders</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% data.topTenCategories.forEach(c=> { %>
+                        <tr>
+                            <td>
+                                <%= c.categoryData.name %>
+                            </td>
+                            <td>
+                                <%= c.count %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Coupons -->
+        <div class="section">
+            <h2>Top Coupons</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% data.topTenCoupons.forEach((c, i)=> { %>
+                        <tr>
+                            <td>
+                                <%= c.code || `SAMPLE-COUPON-${i+1}` %> %>
+                            </td>
+                            <td>
+                                <%= c.count %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Offers -->
+        <div class="section">
+            <h2>Top Offers</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Offer</th>
+                        <th>Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% data.topTenOffers.forEach(o=> { %>
+                        <tr>
+                            <td>
+                                <%= o.offerData.name %>
+                            </td>
+                            <td>
+                                <%= o.count %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Top Spending Users</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Spending</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% data.topCustomers.forEach(u=> { %>
+                        <tr>
+                            <td>
+                                <%= u.userData.fullname %>
+                            </td>
+                            <td>
+                                ₹<%= u.spending %>
+                            </td>
+                            <td>
+                                <%= u.userData.email%>
+                            </td>
+                        </tr>
+                        <% }) %>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="small">Generated on: <%= new Date().toLocaleString() %>
+        </p>
+
+    </body>
+
+</html>

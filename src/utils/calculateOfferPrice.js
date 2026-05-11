@@ -3,7 +3,7 @@ import {Offer} from "../models/offer.model.js"
 export const findBestPrice = async (...products) => {
 
     // if product has no offer, return as it is.
-    // else, attach a coupon object to the product doc.
+    // else, attach an offer object to the product doc.
 
     const productIds = products.map(p => p._id);
     const categoryIds = [...new Set(products.map(p => p.category))];
@@ -45,7 +45,7 @@ export const findBestPrice = async (...products) => {
             }
         } else if (offer.productIds) {
             console.log(`product offer: ${offer.productIds}`);
-            productOfferMap.set(offer.productIds, offer);
+            productOfferMap.set(offer.productIds.toString(), offer);
         } else {
             continue;
         }

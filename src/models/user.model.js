@@ -61,7 +61,29 @@ const userSchema = new Schema(
                     type: String
                 }
             }
-        ]
+        ],
+
+        referralCode: {
+            type: String,
+            unique: true,
+            index: true
+        },
+
+        referredBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            default: null
+        },
+
+        referrals: [{
+            type: Schema.Types.ObjectId,
+            ref: "User"
+        }]
+
+        // cancellations: {
+        //     type: Number,
+        //     default: 0
+        // }
 
     },
 

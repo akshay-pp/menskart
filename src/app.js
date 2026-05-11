@@ -33,6 +33,7 @@ import {getHome, errorPage, signUpGoogle, countCart, countWishlist} from "./cont
 // import routes
 import userRoutes from "./routes/user.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import apiRoutes from './routes/api.routes.js';
 
 
 // import productRoutes from "./routes/products.routes.js"
@@ -66,6 +67,7 @@ app.use(countWishlist);
 app.get("/", getHome)
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
+// app.use('/api/json', apiRoutes);
 // app.use("/api/p", productRoutes);
 
 

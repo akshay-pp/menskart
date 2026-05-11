@@ -53,7 +53,7 @@ const offerSchema = new Schema({
 
     minimumValue: {
         type: Number,
-        required: true,
+        required: function(){return this.type != 'product'},
         default: 199
     },
 

@@ -160,13 +160,13 @@
                         <td>
                             <%= invoiceData.item.product %>
                         </td>
-                        <td>₹<%= invoiceData.item.price.toFixed(2) %>
+                        <td>₹<%= invoiceData.pricing.listingPrice.toFixed(2) %>
                         </td>
                         <td>
                             <%= invoiceData.item.quantity %>
                         </td>
                         <td class="text-right">
-                            ₹<%= (invoiceData.item.price * invoiceData.item.quantity).toFixed(2) %>
+                            ₹<%=invoiceData.pricing.subTotal %>
                         </td>
                     </tr>
 
@@ -180,35 +180,43 @@
             <table>
                 <tr>
                     <td>Subtotal</td>
-                    <td class="text-right">₹<%= (invoiceData.item.price * invoiceData.item.quantity).toFixed(2) %>
+                    <td class="text-right">₹<%= invoiceData.pricing.subTotal%>
                     </td>
                 </tr>
 
                 <tr>
                     <td>Shipping</td>
-                    <td class="text-right">₹40<%# order.shipping || 0 %>
+                    <td class="text-right">₹<%= invoiceData.pricing.shippingFee%>
                     </td>
                 </tr>
 
                 <tr>
                     <td>Tax</td>
-                    <td class="text-right">₹25.99<%# order.tax || 0 %>
+                    <td class="text-right">₹0.00<%# order.tax || 0 %>
                     </td>
                 </tr>
 
-                <% if(invoiceData.coupon){ %>
+                <% if(invoiceData.pricing.offerDiscount){ %>
                     <tr>
-                        <td>Discount</td>
-                        <td class="text-right">- ₹<%= invoiceData.coupon.discount %>
+                        <td>Offer Discount</td>
+                        <td class="text-right">- ₹<%= invoiceData.pricing.offerDiscount%>
                         </td>
                     </tr>
-                    <% } %>
+                <% } %>
 
-                        <tr class="grand-total">
-                            <td>Total</td>
-                            <td class="text-right">₹<%= (invoiceData.item.price * invoiceData.item.quantity).toFixed(2) %>
-                            </td>
-                        </tr>
+                <% if(invoiceData.pricing.couponDiscount){ %>
+                    <tr>
+                        <td>Coupon Discount (<%= invoiceData.coupon.couponCode%>)</td>
+                        <td class="text-right">- ₹<%= invoiceData.pricing.couponDiscount%>
+                        </td>
+                    </tr>
+                <% } %>
+
+                <tr class="grand-total">
+                    <td>Total</td>
+                    <td class="text-right">₹<%= invoiceData.pricing.grandTotal%>
+                    </td>
+                </tr>
             </table>
         </div>
 

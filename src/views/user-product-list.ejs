@@ -60,7 +60,7 @@
                 			<div class="toolbox">
                 				<div class="toolbox-left">
                 					<div class="toolbox-info">
-                						<!-- Showing <span>5 of totalProducts</span> Products -->
+                						Showing <%= pagination.totalDocs %> Products
                 					</div><!-- End .toolbox-info -->
                 				</div><!-- End .toolbox-left -->
 
@@ -71,7 +71,7 @@
 											<select name="sortby" id="sortby" onchange="sortBy()" class="form-control">
                                                 <option value="default" <% if (sort == 'default') { %> selected <% } %> >Default</option>
 												<option value="popularity" <% if (sort == 'popularity') { %> selected <% } %> >Most Popular</option>
-												<option value="newArrivals" <% if (sort == 'newArrivals') { %> selected <% } %> >New Arrivals</option>
+												<option value="newestFirst" <% if (sort == 'newestFirst') { %> selected <% } %> >New Arrivals</option>
 												<option value="priceAsc" <% if (sort == 'priceAsc') { %> selected <% } %> >Price: Low to High</option>
 												<option value="priceDesc" <% if (sort == 'priceDesc') { %> selected <% } %> >Price: High to Low</option>
 												<option value="alphaAsc" <% if (sort == 'alphaAsc') { %> selected <% } %> >aA-zZ</option>
@@ -127,14 +127,13 @@
                 			</div><!-- End .toolbox -->
 
                             <div class="products mb-3">
-                                
                                 <% finalProductData.forEach(product => { %>
                                     <div class="product product-list">
                                         <div class="row">
                                             <div class="col-6 col-lg-3">
                                                 <figure class="product-media position-relative">
                                                     <a href="/api/user/products/<%= product._id %>">
-                                                        <img src="../../<%= product.images[0] %>" alt="Product image" class="product-image">
+                                                        <img src="/<%= product.images[0] %>" alt="Product image" class="product-image">
                                                     </a>
                                                 </figure><!-- End .product-media -->
                                             </div><!-- End .col-sm-6 col-lg-3 -->
@@ -208,10 +207,10 @@
                                                     
                                                     <div class="product-nav product-nav-thumbs">
                                                         <a href="#" class="active">
-                                                            <img src="../../<%= product.images[1] %>" alt="product desc">
+                                                            <img src="/<%= product.images[1] %>" alt="product desc">
                                                         </a>
                                                         <a href="#">
-                                                            <img src="../../<%= product.images[2] %>" alt="product desc">
+                                                            <img src="/<%= product.images[2] %>" alt="product desc">
                                                         </a>
                                                     </div><!-- End .product-nav -->
                                                 </div><!-- End .product-body -->
@@ -221,38 +220,8 @@
                                 <% }); %>
                             </div><!-- End .products -->
 
-                			<nav aria-label="Page navigation">
-							    <ul class="pagination">
-
-                                    <% if(page > 1) { %>
-
-                                        <li class="page-item">
-                                            <a class="page-link page-link-prev" href="?page=<%= page - 1 %>&sort=<%= sort %>&category=<%=  %>" aria-label="Previous" tabindex="-1" aria-disabled="true">
-                                                <span aria-hidden="true"><i class="icon-long-arrow-left"></i></span>Prev
-                                            </a>
-                                        </li>
-
-                                    <% } %>
-                                    
-                                    <% for (let i = 1; i <= totalPages; i++) { %>
-
-                                        <li class="page-item <%= page === i ? 'active' : '' %> " aria-current="page"><a class="page-link" href="?page=<%= i %>&sort=<%= sort %>&category=<%=  %>"><%= i %></a></li>
-                                        
-                                    <% } %>
-                                    
-                                    <li class="page-item-total">of <%= totalPages %></li>
-                                        
-                                    <% if(page < totalPages) { %>
-
-                                        <li class="page-item">
-                                            <a class="page-link page-link-next" href="?page=<%= page + 1 %>&sort=<%= sort %>&category=<%=  %>" aria-label="Next">
-                                                Next <span aria-hidden="true"><i class="icon-long-arrow-right"></i></span>
-                                            </a>
-                                        </li>
-
-                                    <% } %>
-							    </ul>
-							</nav>
+                            <%- include('./partials/user/pagination.ejs') %>
+                			
                 		</div><!-- End .col-lg-9 -->
                 		<aside class="col-lg-3 order-lg-first">
                 			<div class="sidebar sidebar-shop">
