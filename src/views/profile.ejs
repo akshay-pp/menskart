@@ -435,7 +435,7 @@
                                                 </div><!-- End .form-group -->
         
                                                 <div class="form-footer d-flex justify-content-between">
-                                                    <button type="submit" class="btn btn-outline-primary-2" id="edit-address-btn">
+                                                    <button type="submit" class="btn btn-outline-primary-2" id="save-edit-address-btn">
                                                         <span>Save</span>
                                                         <i class="icon-long-arrow-right"></i>
                                                     </button>
@@ -658,7 +658,8 @@
     <%- include("./partials/user/auth-modal") %>
 
     <!-- Plugins JS File -->
-    <script>
+    <script type="module">
+        import {emptyFieldCheck, typeValidation} from "/assets/js/fetch/validationHelpers.js";
 
         const cancelButtons = document.querySelectorAll('button[name = "cancel-order-button"]');
         let orderId
@@ -702,8 +703,141 @@
 
                 }
         })
+
+
+        //----------------------------- add new address  -----------------------------//
+
+        const form = document.getElementById("add-address-form");
+        const addressError = document.getElementById("add-address-error");
+
+
+        const fields = document.querySelectorAll(`#add-address-form input, #add-address-form textarea`);
+
+        emptyFieldCheck("blur", ...fields);
+        typeValidation("blur", ...fields);
+
+
+        form.addEventListener("submit", async (e) => {
+
+            e.preventDefault();
+            emptyFieldCheck("submit", ...fields);
+
+            const formData = new FormData(form);
+            const payload = Object.fromEntries(formData);
+
+            const response = await fetch("/api/user/profile/add-address", {
+
+                method: "POST",
+                headers: {"Content-Type" : "application/json"},
+                body: JSON.stringify({...payload})
+
+            })
+
+            const data = await response.json();
+
+            if (!data.success){
+
+                addressError.className = "alert alert-danger";
+                addressError.textContent = data.error;
+                addressError.style.display = "block";
+            
+            }else {
+
+                addressError.className = "alert alert-primary";
+                addressError.textContent = data.message;
+                addressError.style.display = "block";
+                setTimeout(() => {
+                    addressError.style.display = "none";
+                    location.reload();
+                }, 3000);
+
+
+            }
+
+        })
+
+        // $('#add-address-modal').on('hidden.bs.modal', function () {
+        //     $(this).find('input').val('');
+        // });
+
+
+        //----------------------------- delete address  -----------------------------//
+
+        document.querySelectorAll("#delete-address-btn").forEach(button => {
+
+            button.addEventListener("click", async function (e) {
+
+                const addressId = this.getAttribute("data-id");
+                const confirmDelete = document.getElementById("confirm-delete-form");
+                confirmDelete.action = `/api/user/profile/delete-address/${addressId}`;
+
+            })
+
+        })
+
+
+
+        //----------------------------- edit address  -----------------------------//
+
+        document.querySelectorAll("#edit-address-btn").forEach(button => {
+
+            button.addEventListener("click", async function(){
+                console.log("edit button clicked");
+                const dataAddress = this.getAttribute("data-address");
+                const address = JSON.parse(dataAddress);
+                console.log({address});
+                document.getElementById("address-id").value = address._id;
+                document.getElementById("edit-address-name").value = address.name;
+                document.getElementById("edit-address-phone").value = address.phone;
+                document.getElementById("edit-address-textarea").value = address.address;
+                document.getElementById("edit-address-pincode").value = address.pincode;
+                document.getElementById("edit-address-city").value = address.city;
+                document.getElementById("edit-address-state").value = address.state;
+                document.getElementById("edit-address-type").value = address.type;
+
+            })
+
+        });
+
+
+        const editForm = document.getElementById("edit-address-form");
+        const editAddressError = document.getElementById("edit-address-error");
+
+        editForm.addEventListener("submit", async function(e){
+            e.preventDefault();
+
+            const formData = new FormData(editForm);
+            const payload = Object.fromEntries(formData);
+            // console.log(payload);
+
+            const response = await fetch("/api/user/profile/edit-address", {
+                method: "PUT",
+                headers: {"Content-Type" : "application/json"},
+                body: JSON.stringify({...payload})
+            });
+
+            const data = await response.json();
+            console.log(data);
+
+            if(!data.success){
+                editAddressError.className = "alert alert-danger";
+                editAddressError.textContent = data.error;
+                editAddressError.style.display = "block";
+            }else{
+                editAddressError.className = "alert alert-primary";
+                editAddressError.textContent = data.message;
+                editAddressError.style.display = "block";
+                setTimeout(() => {
+                    editAddressError.style.display = "none";
+                    location.reload();
+                }, 3000);
+            }
+
+        })
+
+
      </script>
-    <script type="module" src="/assets/js/fetch/profile.js"></script>
+    <!-- <script type="module" src="/assets/js/fetch/profile.js"></script> -->
     <script src="/assets/js/fetch/index-fetch.js"></script>
     <script src="/assets/js/jquery.min.js"></script>
     <script src="/assets/js/bootstrap.bundle.min.js"></script>

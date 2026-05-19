@@ -1720,7 +1720,10 @@ export const generateInvoice = async (req, res) => {
         {invoiceData}
     );
 
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
     const page = await browser.newPage();
     await page.setContent(htmlData);
     const pdfData = await page.pdf({
@@ -1786,7 +1789,7 @@ export const deleteAddress = async (req,res) => {
         try {
 
             await Address.findByIdAndDelete(addressId);
-            return res.redirect("/api/user/profile");
+            return res.redirect("/api/user/profile/address");
         
         } catch (error) {
             return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({success:false, error: error.message});
@@ -2145,22 +2148,12 @@ export const getProductPage  = async(req,res) => {
     const {pId} = req.params;
     const user = req.session.user || null;
 
-    // const [productData, isWishlisted] = await Promise.all([
-
-    //     Product.findById(pId)
-    //     .populate('category', 'name')
-    //     .populate('subcategory', 'name')
-    //     .lean(),
-
-    //     Wishlist.exists({
-    //         owner: req.user.session._id,
-    //         products: pId
-    //     })
-
-    // ])
-
     
     const productData = await Product.findById(pId).populate("category", "name _id").populate("subcategory", "name").lean();
+
+    if(productData.isUnListed) {
+        return res.redirect("/api/user/products");
+    };
     
     let isWishlisted = false;
 
