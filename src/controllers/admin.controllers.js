@@ -53,7 +53,11 @@ export const generateSalesReport = async(req, res) => {
         {...salesReportData}
     );
 
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        executablePath: "/usr/bin/chromium-browser",
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
     const page = await browser.newPage();
     await page.setContent(htmlData);
     const pdfData = await page.pdf({
