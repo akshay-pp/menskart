@@ -16,7 +16,7 @@ app.use(express.urlencoded({extended:true}));
 app.set('views', './src/views');
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, "src/views")));
-app.use(express.static("./"));
+// app.use(express.static("./"));
 app.use(morgan('dev'));
 
 
