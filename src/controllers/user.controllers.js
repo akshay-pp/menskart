@@ -1721,6 +1721,7 @@ export const generateInvoice = async (req, res) => {
     );
 
     const browser = await puppeteer.launch({
+        executablePath: "/usr/bin/chromium-browser",
         headless: true,
         args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
