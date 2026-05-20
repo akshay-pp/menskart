@@ -2270,9 +2270,17 @@ export const countWishlist = async (req, res, next) => {
 
 
 //404 error page
-export const errorPage = async (req,res) => {
-    
+export const errorPage = async (req, res) => {
+
+    if (
+        req.path.startsWith("/assets") ||
+        req.path.startsWith("/uploads")
+    ) {
+        return res.status(404).end();
+    }
+
     const user = req.session.user || null;
-    res.status(STATUS_CODES.NOT_FOUND).render("404", {user});
+
+    res.status(STATUS_CODES.NOT_FOUND).render("404", { user });
 
 };
