@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+console.log({__dirname});
 
 const app = express();
 
@@ -15,7 +16,8 @@ app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.set('views', './src/views');
 app.set('view engine', 'ejs');
-app.use(express.static(path.join(__dirname, "src/views")));
+app.use(express.static(path.join(__dirname, "views")));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // app.use(express.static("./"));
 app.use(morgan('dev'));
 
