@@ -1,9 +1,9 @@
 node_modules/
-uploads
+# uploads
 .env
 mongoatlas.txt
-src/views/assets/images
-src/views/assets/imgs
+# src/views/assets/images
+# src/views/assets/imgs
 
 # Logs
 logs
